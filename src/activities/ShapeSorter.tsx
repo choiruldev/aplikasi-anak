@@ -89,6 +89,7 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
   const [roundIdx, setRoundIdx] = useState(0);
   const [board, setBoard] = useState(() => buildRound(0));
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const draggingIdRef = useRef<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('Geser keping bentuk ke lubang bayangan yang cocok.');
   const [currentClip, setCurrentClip] = useState<VoiceClipId>('shapes-intro');
@@ -145,8 +146,13 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
 
   function handlePointerDown(e: ReactPointerEvent<SVGGElement>, piece: PieceState): void {
     if (piece.placedSlotId) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Safe fallback when pointer capture is unsupported or synthetic
+    }
     playGentlePop();
+    draggingIdRef.current = piece.id;
     setDraggingId(piece.id);
     setSelectedId(piece.id);
     const pt = toSvgPoint(e.clientX, e.clientY);
@@ -157,7 +163,7 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
   }
 
   function handlePointerMove(e: ReactPointerEvent<SVGGElement>, piece: PieceState): void {
-    if (draggingId !== piece.id) return;
+    if (draggingIdRef.current !== piece.id) return;
     const pt = toSvgPoint(e.clientX, e.clientY);
     setBoard((prev) => ({
       ...prev,
@@ -166,16 +172,22 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
   }
 
   function handlePointerUp(e: ReactPointerEvent<SVGGElement>, piece: PieceState): void {
-    if (draggingId !== piece.id) return;
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
+    if (draggingIdRef.current !== piece.id) return;
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // Ignore release capture errors
     }
+    draggingIdRef.current = null;
     setDraggingId(null);
 
+    const pt = toSvgPoint(e.clientX, e.clientY);
     const occupied = new Set(
       board.pieces.map((p) => p.placedSlotId).filter((id): id is string => id !== null)
     );
-    const hit = findSnapTarget(piece.pos, board.slots, piece.shape.kind, occupied, 62);
+    const hit = findSnapTarget(pt, board.slots, piece.shape.kind, occupied, 68);
     if (hit) {
       const fullSlot = board.slots.find((s) => s.id === hit.id)!;
       setSelectedId(null);
@@ -212,6 +224,7 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
     setRoundIdx(next);
     setBoard(buildRound(next));
     setSelectedId(null);
+    draggingIdRef.current = null;
     setDraggingId(null);
     setPrompt('Papan baru siap! Ayo pasang keempat bentuknya.');
     setCurrentClip('shapes-new-board');
@@ -246,8 +259,26 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
           role="application"
           aria-label="Papan pasang bentuk"
         >
-          <rect x="24" y="20" width="592" height="146" rx="24" fill="#EFE8D8" stroke="#D5CBB4" strokeWidth="3" />
-          <rect x="24" y="190" width="592" height="150" rx="24" fill="#E4ECE0" />
+          <rect
+            x="24"
+            y="20"
+            width="592"
+            height="146"
+            rx="24"
+            fill="#EFE8D8"
+            stroke="#D5CBB4"
+            strokeWidth="3"
+            pointerEvents="none"
+          />
+          <rect
+            x="24"
+            y="190"
+            width="592"
+            height="150"
+            rx="24"
+            fill="#E4ECE0"
+            pointerEvents="none"
+          />
 
           {board.slots.map((slot) => (
             <g
@@ -281,11 +312,18 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
                 onPointerMove={(e) => handlePointerMove(e, piece)}
                 onPointerUp={(e) => handlePointerUp(e, piece)}
                 onPointerCancel={(e) => handlePointerUp(e, piece)}
+                onClick={() => {
+                  if (piece.placedSlotId) return;
+                  playGentlePop();
+                  setSelectedId(piece.id);
+                  setPrompt(`Keping ${piece.shape.label} dipilih. Ketuk lubang yang cocok di atas!`);
+                }}
                 onKeyDown={(e) => {
                   if ((e.key === 'Enter' || e.key === ' ') && !piece.placedSlotId) {
                     e.preventDefault();
                     playGentlePop();
                     setSelectedId(piece.id);
+                    setPrompt(`Keping ${piece.shape.label} dipilih. Ketuk lubang yang cocok di atas!`);
                   }
                 }}
                 tabIndex={piece.placedSlotId ? -1 : 0}

@@ -1,4 +1,4 @@
-import { useEffect, useState, type JSX } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
 import { ActionPoseIllustration, IconSpeaker, type ActionPoseId } from '../components/Art';
 import {
   playNote,
@@ -75,6 +75,7 @@ export function GrossMotorPlay({ onComplete }: { onComplete: (stickerId: string)
   const card = CARDS[cardIdx];
 
   const [count, setCount] = useState(0);
+  const countRef = useRef(0);
   const [running, setRunning] = useState(false);
   const [frozenPhase, setFrozenPhase] = useState(false);
   const [posePulse, setPosePulse] = useState(false);
@@ -94,6 +95,7 @@ export function GrossMotorPlay({ onComplete }: { onComplete: (stickerId: string)
   }, []);
 
   useEffect(() => {
+    countRef.current = 0;
     setCount(0);
     setRunning(false);
     setFrozenPhase(false);
@@ -106,37 +108,37 @@ export function GrossMotorPlay({ onComplete }: { onComplete: (stickerId: string)
     if (card.mode === 'count') return;
 
     const timer = window.setInterval(() => {
-      setCount((prev) => {
-        const next = prev + 1;
-        if (card.mode === 'freeze') {
-          const shouldFreeze = next === 4 || next === 5 || next === 6;
-          setFrozenPhase(shouldFreeze);
-          setPosePulse(!shouldFreeze && next % 2 === 1);
-          if (next === 4) {
-            playNote(587.33, 0.35, 0.22);
-            playVoice('motor-freeze-now');
-          } else if (next === 7) {
-            playVoice('motor-dance-again');
-          } else if (!shouldFreeze) {
-            playStepNote(next);
-          }
-        } else {
-          setPosePulse(next % 2 === 1);
+      const next = countRef.current + 1;
+      countRef.current = next;
+      setCount(next);
+
+      if (card.mode === 'freeze') {
+        const shouldFreeze = next === 4 || next === 5 || next === 6;
+        setFrozenPhase(shouldFreeze);
+        setPosePulse(!shouldFreeze && next % 2 === 1);
+        if (next === 4) {
+          playNote(587.33, 0.35, 0.22);
+          playVoice('motor-freeze-now');
+        } else if (next === 7) {
+          playVoice('motor-dance-again');
+        } else if (!shouldFreeze) {
           playStepNote(next);
         }
+      } else {
+        setPosePulse(next % 2 === 1);
+        playStepNote(next);
+      }
 
-        if (next >= card.target) {
-          setRunning(false);
-          setFrozenPhase(false);
-          setFinished(true);
-          window.setTimeout(() => {
-            playSuccessChime();
-            onComplete('sticker-motor');
-            playVoice('motor-done', 460);
-          }, 220);
-        }
-        return next;
-      });
+      if (next >= card.target) {
+        setRunning(false);
+        setFrozenPhase(false);
+        setFinished(true);
+        window.setTimeout(() => {
+          playSuccessChime();
+          onComplete('sticker-motor');
+          playVoice('motor-done', 460);
+        }, 220);
+      }
     }, 1000);
 
     return () => window.clearInterval(timer);

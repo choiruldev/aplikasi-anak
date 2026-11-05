@@ -111,6 +111,8 @@ export function BalloonCatch({ onComplete }: { onComplete: (stickerId: string) =
     }
   }
 
+  const balloonsRef = useRef<Balloon[]>([]);
+
   // Spawn initial balloons
   useEffect(() => {
     const initial: Balloon[] = [];
@@ -127,6 +129,7 @@ export function BalloonCatch({ onComplete }: { onComplete: (stickerId: string) =
         scaleNote: c.note
       });
     }
+    balloonsRef.current = initial;
     setBalloons(initial);
   }, []);
 
@@ -152,9 +155,11 @@ export function BalloonCatch({ onComplete }: { onComplete: (stickerId: string) =
     }
     setParticles((prev) => [...prev, ...newParticles]);
 
-    setBalloons((prev) =>
-      prev.map((b) => (b.id === balloon.id ? { ...b, popped: true } : b))
-    );
+    setBalloons((prev) => {
+      const next = prev.map((b) => (b.id === balloon.id ? { ...b, popped: true } : b));
+      balloonsRef.current = next;
+      return next;
+    });
 
     setPopCount((prev) => {
       const next = prev + 1;
@@ -192,38 +197,40 @@ export function BalloonCatch({ onComplete }: { onComplete: (stickerId: string) =
 
           if (prevFrameData.current) {
             const prev = prevFrameData.current;
-            // Check motion per balloon
-            setBalloons((prevBalloons) => {
-              for (const b of prevBalloons) {
-                if (b.popped) continue;
-                // Mirrored coordinates because video is mirrored
-                const bxNorm = (100 - b.x) / 100;
-                const byNorm = b.y / 100;
-                const pxX = Math.floor(bxNorm * 48);
-                const pxY = Math.floor(byNorm * 36);
+            const toPop: Balloon[] = [];
 
-                let motionScore = 0;
-                for (let dy = -2; dy <= 2; dy++) {
-                  for (let dx = -2; dx <= 2; dx++) {
-                    const cx = pxX + dx;
-                    const cy = pxY + dy;
-                    if (cx >= 0 && cx < 48 && cy >= 0 && cy < 36) {
-                      const idx = (cy * 48 + cx) * 4;
-                      const diff =
-                        Math.abs(data[idx] - prev[idx]) +
-                        Math.abs(data[idx + 1] - prev[idx + 1]) +
-                        Math.abs(data[idx + 2] - prev[idx + 2]);
-                      if (diff > 75) motionScore++;
-                    }
+            for (const b of balloonsRef.current) {
+              if (b.popped) continue;
+              // Mirrored coordinates because video is mirrored
+              const bxNorm = (100 - b.x) / 100;
+              const byNorm = b.y / 100;
+              const pxX = Math.floor(bxNorm * 48);
+              const pxY = Math.floor(byNorm * 36);
+
+              let motionScore = 0;
+              for (let dy = -2; dy <= 2; dy++) {
+                for (let dx = -2; dx <= 2; dx++) {
+                  const cx = pxX + dx;
+                  const cy = pxY + dy;
+                  if (cx >= 0 && cx < 48 && cy >= 0 && cy < 36) {
+                    const idx = (cy * 48 + cx) * 4;
+                    const diff =
+                      Math.abs(data[idx] - prev[idx]) +
+                      Math.abs(data[idx + 1] - prev[idx + 1]) +
+                      Math.abs(data[idx + 2] - prev[idx + 2]);
+                    if (diff > 75) motionScore++;
                   }
                 }
-
-                if (motionScore >= 6) {
-                  popBalloon(b);
-                }
               }
-              return prevBalloons;
-            });
+
+              if (motionScore >= 6) {
+                toPop.push(b);
+              }
+            }
+
+            for (const b of toPop) {
+              popBalloon(b);
+            }
           }
           prevFrameData.current = new Uint8ClampedArray(data);
         }
@@ -231,7 +238,7 @@ export function BalloonCatch({ onComplete }: { onComplete: (stickerId: string) =
 
       // 2. Float balloons upwards
       setBalloons((prev) => {
-        return prev.map((b) => {
+        const next = prev.map((b) => {
           if (b.popped) {
             // Respawn popped balloon from bottom
             const c = BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)];
@@ -253,6 +260,8 @@ export function BalloonCatch({ onComplete }: { onComplete: (stickerId: string) =
           }
           return { ...b, y: newY };
         });
+        balloonsRef.current = next;
+        return next;
       });
 
       // 3. Update particles
@@ -284,6 +293,23 @@ export function BalloonCatch({ onComplete }: { onComplete: (stickerId: string) =
   function handlePlayAgain(): void {
     setPopCount(0);
     setIsDone(false);
+    setParticles([]);
+    const initial: Balloon[] = [];
+    for (let i = 0; i < 5; i++) {
+      const c = BALLOON_COLORS[i % BALLOON_COLORS.length];
+      initial.push({
+        id: ++balloonIdCounter.current,
+        x: 12 + i * 17 + Math.random() * 5,
+        y: 60 + i * 14 + Math.random() * 8,
+        speed: 0.16 + Math.random() * 0.1,
+        color: c.hex,
+        size: 58 + Math.random() * 14,
+        popped: false,
+        scaleNote: c.note
+      });
+    }
+    balloonsRef.current = initial;
+    setBalloons(initial);
     setPrompt('Sentuh atau lambaikan tangan untuk pecahkan balon!');
     playVoice('balloon-intro');
   }

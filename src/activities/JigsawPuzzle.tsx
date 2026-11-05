@@ -113,6 +113,7 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
   const [picIdx, setPicIdx] = useState(0);
   const [selectedPieceId, setSelectedPieceId] = useState<number | null>(null);
   const [draggingId, setDraggingId] = useState<number | null>(null);
+  const draggingIdRef = useRef<number | null>(null);
   const [prompt, setPrompt] = useState('Susun empat keping gambar ke kotak yang cocok.');
   const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -173,7 +174,12 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
 
   function onPointerDownPiece(e: ReactPointerEvent<SVGGElement>, piece: PieceState): void {
     if (piece.placedSlotId !== null) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Safe fallback when pointer capture is unsupported or synthetic
+    }
+    draggingIdRef.current = piece.pieceId;
     setDraggingId(piece.pieceId);
     setSelectedPieceId(piece.pieceId);
     const pt = toSvgCoords(e.clientX, e.clientY);
@@ -183,7 +189,7 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
   }
 
   function onPointerMovePiece(e: ReactPointerEvent<SVGGElement>, piece: PieceState): void {
-    if (draggingId !== piece.pieceId) return;
+    if (draggingIdRef.current !== piece.pieceId) return;
     const pt = toSvgCoords(e.clientX, e.clientY);
     setPieces((prev) =>
       prev.map((p) => (p.pieceId === piece.pieceId ? { ...p, pos: { x: pt.x - 70, y: pt.y - 70 } } : p))
@@ -191,17 +197,24 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
   }
 
   function onPointerUpPiece(e: ReactPointerEvent<SVGGElement>, piece: PieceState): void {
-    if (draggingId !== piece.pieceId) return;
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
+    if (draggingIdRef.current !== piece.pieceId) return;
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // Ignore release capture errors
     }
+    draggingIdRef.current = null;
     setDraggingId(null);
 
+    const dropPt = toSvgCoords(e.clientX, e.clientY);
     const matchingSlot = SLOTS[piece.pieceId];
-    const targetBoardPos: Point = { x: matchingSlot.x, y: matchingSlot.y };
-    const dist = distance(piece.pos, targetBoardPos);
+    // Center-to-center distance between drop pointer and slot
+    const slotCenter: Point = { x: matchingSlot.x + 69, y: matchingSlot.y + 69 };
+    const dist = distance(dropPt, slotCenter);
 
-    if (dist <= 85) {
+    if (dist <= 95) {
       setSelectedPieceId(null);
       snapPiece(piece.pieceId, matchingSlot.id);
     } else {
@@ -212,7 +225,10 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
   }
 
   function handleSlotClick(slotId: number): void {
-    if (selectedPieceId === null) return;
+    if (selectedPieceId === null) {
+      setPrompt('Pilih salah satu keping di bawah terlebih dahulu ya.');
+      return;
+    }
     const piece = pieces.find((p) => p.pieceId === selectedPieceId);
     if (!piece || piece.placedSlotId !== null) return;
 
@@ -220,7 +236,7 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
       setSelectedPieceId(null);
       snapPiece(piece.pieceId, slotId);
     } else {
-      setPrompt('Keping ini belum pas di kotak ini, coba cari kotak yang cocok ya.');
+      setPrompt(`Keping ini belum pas di kotak ini, coba cari kotak yang cocok ya.`);
     }
   }
 
@@ -229,6 +245,7 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
     setPicIdx(nextIdx);
     setPieces(initPieces());
     setSelectedPieceId(null);
+    draggingIdRef.current = null;
     setDraggingId(null);
     setPrompt(`Gambar baru: ${PICTURES[nextIdx].title}. Ayo pasang kepingannya!`);
     playVoice('puzzle-new');
@@ -268,12 +285,22 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
           aria-label="Papan Puzzle Keping"
         >
           {/* Wooden Board Frame */}
-          <rect x="168" y="8" width="304" height="304" rx="28" fill="#EFE8D8" stroke="#D5CBB4" strokeWidth="4" />
+          <rect
+            x="168"
+            y="8"
+            width="304"
+            height="304"
+            rx="28"
+            fill="#EFE8D8"
+            stroke="#D5CBB4"
+            strokeWidth="4"
+            pointerEvents="none"
+          />
 
           {/* Guidelines and target slots on the board */}
           <g>
             {/* Ghost background outline for visual hint */}
-            <g opacity="0.22" transform="translate(180, 20)">
+            <g opacity="0.22" transform="translate(180, 20)" pointerEvents="none">
               {picture.renderSvg()}
             </g>
 
@@ -292,6 +319,7 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
                   stroke="#9EAFA5"
                   strokeWidth="2.5"
                   strokeDasharray={isOccupied ? 'none' : '6 5'}
+                  pointerEvents="all"
                   onClick={() => handleSlotClick(slot.id)}
                   tabIndex={0}
                   role="button"
@@ -313,11 +341,20 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
               fill="none"
               stroke="#E89F1C"
               strokeWidth="6"
+              pointerEvents="none"
             />
           )}
 
           {/* Lower Tray Shelf */}
-          <rect x="14" y="322" width="612" height="150" rx="22" fill="#E6EDE3" />
+          <rect
+            x="14"
+            y="322"
+            width="612"
+            height="150"
+            rx="22"
+            fill="#E6EDE3"
+            pointerEvents="none"
+          />
 
           {/* Pieces */}
           {pieces.map((piece) => {
@@ -336,12 +373,27 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
                 onPointerMove={(e) => onPointerMovePiece(e, piece)}
                 onPointerUp={(e) => onPointerUpPiece(e, piece)}
                 onPointerCancel={(e) => onPointerUpPiece(e, piece)}
+                onClick={() => {
+                  if (isPlaced) return;
+                  playWoodClick();
+                  setSelectedPieceId(piece.pieceId);
+                  setPrompt(`Keping bagian ${piece.pieceId + 1} dipilih. Sekarang ketuk kotak nomor ${piece.pieceId + 1} di papan!`);
+                }}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ' ') && !isPlaced) {
+                    e.preventDefault();
+                    playWoodClick();
+                    setSelectedPieceId(piece.pieceId);
+                    setPrompt(`Keping bagian ${piece.pieceId + 1} dipilih. Sekarang ketuk kotak nomor ${piece.pieceId + 1} di papan!`);
+                  }
+                }}
                 tabIndex={isPlaced ? -1 : 0}
                 role="button"
                 aria-label={`Keping puzzle bagian ${piece.pieceId + 1}`}
                 style={{
                   cursor: isPlaced ? 'default' : 'grab',
-                  touchAction: 'none'
+                  touchAction: 'none',
+                  pointerEvents: 'all'
                 }}
               >
                 {/* Visual piece background */}
@@ -354,6 +406,7 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
                   fill="#FFFFFF"
                   stroke={isSelected ? '#1F7A5C' : '#182421'}
                   strokeWidth={isSelected ? '4' : '2.5'}
+                  pointerEvents="all"
                 />
 
                 {/* Nested SVG cleanly showing the exact 140x140 quadrant! */}
@@ -363,6 +416,7 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
                   width="138"
                   height="138"
                   viewBox={`${slot.col * 140} ${slot.row * 140} 140 140`}
+                  pointerEvents="none"
                 >
                   {picture.renderSvg()}
                 </svg>
@@ -377,6 +431,7 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
                   fill="none"
                   stroke={isSelected ? '#1F7A5C' : '#182421'}
                   strokeWidth={isSelected ? '4' : '2.5'}
+                  pointerEvents="none"
                 />
 
                 {/* Selected highlight indicator */}
