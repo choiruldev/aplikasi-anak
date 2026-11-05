@@ -643,6 +643,94 @@ input:focus-visible {
   transform: translateY(3px);
 }
 
+.motor-pose-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 28px;
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.motor-pose-btn:hover {
+  transform: scale(1.05);
+}
+
+.motor-pose-btn:active {
+  transform: scale(0.95);
+}
+
+.motor-pose-hint {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  padding: 4px 14px;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.motor-finish-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.secondary-action-btn {
+  min-height: 54px;
+  padding: 0 22px;
+  border-radius: 22px;
+  border: 2px solid var(--border);
+  border-bottom: 5px solid var(--border-dark, #cbd5e1);
+  background-color: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 90ms ease, background-color 120ms ease;
+}
+
+.secondary-action-btn:hover {
+  background-color: var(--surface-raised, #f8fafc);
+}
+
+.secondary-action-btn:active {
+  transform: translateY(2px);
+}
+
+.motor-guide-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 460px;
+  margin-top: 10px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background-color: #f7f9f6;
+  border: 1.5px solid #d5e4d2;
+  text-align: left;
+}
+
+.motor-guide-icon {
+  font-size: 1.3rem;
+  line-height: 1.2;
+}
+
+.motor-guide-text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--ink-muted);
+}
+
 /* 5. Coloring Book & Sound Paint */
 .coloring-content-wrap,
 .music-paint-wrap {

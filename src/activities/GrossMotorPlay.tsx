@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type JSX } from 'react';
 import { ActionPoseIllustration, IconSpeaker, type ActionPoseId } from '../components/Art';
 import {
+  playGentlePop,
   playNote,
   playStepNote,
   playSuccessChime,
@@ -74,6 +75,11 @@ export function GrossMotorPlay({ onComplete }: { onComplete: (stickerId: string)
   const [cardIdx, setCardIdx] = useState(0);
   const card = CARDS[cardIdx];
 
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
   const [count, setCount] = useState(0);
   const countRef = useRef(0);
   const [running, setRunning] = useState(false);
@@ -95,12 +101,16 @@ export function GrossMotorPlay({ onComplete }: { onComplete: (stickerId: string)
   }, []);
 
   useEffect(() => {
+    stopVoice();
     countRef.current = 0;
     setCount(0);
     setRunning(false);
     setFrozenPhase(false);
     setFinished(false);
     playVoice(card.voiceId, 80);
+    return () => {
+      stopVoice();
+    };
   }, [card]);
 
   useEffect(() => {
@@ -135,14 +145,14 @@ export function GrossMotorPlay({ onComplete }: { onComplete: (stickerId: string)
         setFinished(true);
         window.setTimeout(() => {
           playSuccessChime();
-          onComplete('sticker-motor');
+          onCompleteRef.current('sticker-motor');
           playVoice('motor-done', 460);
         }, 220);
       }
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [running, finished, card, onComplete]);
+  }, [running, finished, card]);
 
   function handleCountStep(): void {
     if (finished) return;
@@ -163,6 +173,52 @@ export function GrossMotorPlay({ onComplete }: { onComplete: (stickerId: string)
         onComplete('sticker-motor');
         playVoice('motor-done', 480);
       }, 650);
+    }
+  }
+
+  function handleToggleTimer(): void {
+    if (!running) {
+      setRunning(true);
+      playGentlePop();
+      playVoice(card.mode === 'freeze' ? 'motor-start-dance' : 'motor-start-balance');
+    } else {
+      stopVoice();
+      playGentlePop();
+      setRunning(false);
+    }
+  }
+
+  function handleRestart(): void {
+    stopVoice();
+    countRef.current = 0;
+    setCount(0);
+    setRunning(false);
+    setFrozenPhase(false);
+    setFinished(false);
+    playGentlePop();
+    playVoice(card.voiceId, 80);
+  }
+
+  function handleSelectCard(idx: number): void {
+    if (idx === cardIdx) return;
+    stopVoice();
+    countRef.current = 0;
+    setCount(0);
+    setRunning(false);
+    setFrozenPhase(false);
+    setFinished(false);
+    setCardIdx(idx);
+  }
+
+  function handlePoseClick(): void {
+    if (finished) {
+      handleRestart();
+      return;
+    }
+    if (card.mode === 'count') {
+      handleCountStep();
+    } else {
+      handleToggleTimer();
     }
   }
 
@@ -191,7 +247,7 @@ export function GrossMotorPlay({ onComplete }: { onComplete: (stickerId: string)
             role="tab"
             aria-selected={idx === cardIdx}
             className={`mode-tab ${idx === cardIdx ? 'is-active' : ''}`}
-            onClick={() => setCardIdx(idx)}
+            onClick={() => handleSelectCard(idx)}
           >
             {c.title}
           </button>
@@ -199,7 +255,21 @@ export function GrossMotorPlay({ onComplete }: { onComplete: (stickerId: string)
       </div>
 
       <div className={`motor-arena ${frozenPhase ? 'is-frozen' : ''}`}>
-        <ActionPoseIllustration pose={card.id} active={posePulse} />
+        <button
+          type="button"
+          className="motor-pose-btn"
+          onClick={handlePoseClick}
+          aria-label={`Aksi gerak ${card.title}`}
+        >
+          <ActionPoseIllustration pose={card.id} active={posePulse} />
+          <span className="motor-pose-hint">
+            {card.mode === 'count'
+              ? 'Ketuk untuk hitung 👆'
+              : running
+                ? (frozenPhase ? '🧊 Diam jadi patung!' : '⏱ Sedang berjalan...')
+                : '▶ Ketuk untuk Mulai'}
+          </span>
+        </button>
 
         <div className="motor-controls">
           <div className="motor-counter">
@@ -210,13 +280,22 @@ export function GrossMotorPlay({ onComplete }: { onComplete: (stickerId: string)
           {frozenPhase && <p className="freeze-banner">DIAM JADI PATUNG!</p>}
 
           {finished ? (
-            <button
-              type="button"
-              className="primary-action-btn"
-              onClick={() => setCardIdx((prev) => (prev + 1) % CARDS.length)}
-            >
-              Tantangan Berikutnya
-            </button>
+            <div className="motor-finish-actions">
+              <button
+                type="button"
+                className="secondary-action-btn"
+                onClick={handleRestart}
+              >
+                🔄 Ulangi
+              </button>
+              <button
+                type="button"
+                className="primary-action-btn"
+                onClick={() => handleSelectCard((cardIdx + 1) % CARDS.length)}
+              >
+                Tantangan Berikutnya ➡
+              </button>
+            </div>
           ) : card.mode === 'count' ? (
             <button
               type="button"
@@ -229,19 +308,43 @@ export function GrossMotorPlay({ onComplete }: { onComplete: (stickerId: string)
             <button
               type="button"
               className="giant-tap-btn"
-              onClick={() => {
-                if (!running) {
-                  setRunning(true);
-                  playVoice(card.mode === 'freeze' ? 'motor-start-dance' : 'motor-start-balance');
-                } else {
-                  stopVoice();
-                  setRunning(false);
-                }
-              }}
+              onClick={handleToggleTimer}
             >
-              {running ? 'Jeda Sebentar' : 'Mulai Musik & Hitung'}
+              {card.mode === 'freeze' ? (
+                running ? (
+                  frozenPhase ? '🧊 DIAM JADI PATUNG!' : '⏸ Jeda Musik Menari'
+                ) : count > 0 ? (
+                  '▶ Lanjutkan Menari'
+                ) : (
+                  '▶ Putar Musik Menari'
+                )
+              ) : (
+                running ? (
+                  `⏸ Jeda (${count}/${card.target}s)`
+                ) : count > 0 ? (
+                  '▶ Lanjutkan Hitung'
+                ) : (
+                  `▶ Mulai Hitung (${card.target} Detik)`
+                )
+              )}
             </button>
           )}
+
+          <div className="motor-guide-box">
+            <span className="motor-guide-icon">💡</span>
+            <div className="motor-guide-text">
+              <strong>Panduan Orang Tua:</strong>{' '}
+              {card.mode === 'timer' && (
+                <span>Tekan tombol <strong>Mulai</strong> 1 kali. Balita berdiri merentangkan tangan seperti sayap pesawat selama 8 detik. Timer & musik berjalan otomatis tanpa perlu diklik terus-menerus!</span>
+              )}
+              {card.mode === 'freeze' && (
+                <span>Tekan tombol <strong>Mulai</strong> 1 kali. Musik akan berputar dan anak bebas menari. Saat musik berhenti & muncul tanda <em>DIAM JADI PATUNG</em>, anak harus mematung!</span>
+              )}
+              {card.mode === 'count' && (
+                <span>Ajak anak melakukan gerakan di ruangan nyata. Setiap kali selesai 1 kali gerakan, ketuk tombol atau gambar untuk menambah hitungan!</span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </section>
