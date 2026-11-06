@@ -9,6 +9,7 @@ import {
   stopVoice,
   type VoiceClipId
 } from '../lib/audio';
+import { fireConfetti, triggerHaptic } from '../lib/confetti';
 
 interface AnimalCard {
   id: AnimalId;
@@ -75,6 +76,8 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
       next.add(key);
       if (next.size >= 5 && !rewarded) {
         setRewarded(true);
+        triggerHaptic('success');
+        fireConfetti();
         window.setTimeout(() => {
           playSuccessChime();
           onComplete('sticker-sensory');
@@ -85,6 +88,7 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
   }
 
   function handleAnimalTap(animal: AnimalCard): void {
+    triggerHaptic('tap');
     setActiveId(animal.id);
     setCaption(`${animal.name}. ${animal.soundWord} ${animal.fact}`);
     setCurrentClip(animal.voiceId);
@@ -94,6 +98,7 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
   }
 
   function handleBarTap(bar: XylophoneBar): void {
+    triggerHaptic('tap');
     setActiveId(bar.id);
     setCaption(`${bar.colorName}, nada ${bar.noteLabel}. ${bar.objectExample}.`);
     setCurrentClip(bar.voiceId);

@@ -8,6 +8,7 @@ import {
   stopVoice
 } from '../lib/audio';
 import { distance, type Point } from '../lib/geometry';
+import { fireConfetti, triggerHaptic } from '../lib/confetti';
 
 interface PuzzlePicture {
   id: string;
@@ -82,6 +83,49 @@ const PICTURES: PuzzlePicture[] = [
         <circle cx="160" cy="155" r="4.5" fill="#182421" />
       </g>
     )
+  },
+  {
+    id: 'sun',
+    title: 'Matahari Ceria',
+    renderSvg: () => (
+      <g>
+        <rect width="280" height="280" rx="16" fill="#FFF9E6" />
+        {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => (
+          <line
+            key={angle}
+            x1="140"
+            y1="140"
+            x2={140 + Math.cos((angle * Math.PI) / 180) * 115}
+            y2={140 + Math.sin((angle * Math.PI) / 180) * 115}
+            stroke="#FFA931"
+            strokeWidth="12"
+            strokeLinecap="round"
+          />
+        ))}
+        <circle cx="140" cy="140" r="72" fill="#FFD166" stroke="#FFA931" strokeWidth="6" />
+        <circle cx="112" cy="125" r="9" fill="#182421" />
+        <circle cx="168" cy="125" r="9" fill="#182421" />
+        <circle cx="95" cy="142" r="8" fill="#FF8A80" opacity="0.6" />
+        <circle cx="185" cy="142" r="8" fill="#FF8A80" opacity="0.6" />
+        <path d="M115 155C125 175 155 175 165 155" stroke="#182421" strokeWidth="6" strokeLinecap="round" fill="none" />
+      </g>
+    )
+  },
+  {
+    id: 'boat',
+    title: 'Perahu Layar',
+    renderSvg: () => (
+      <g>
+        <rect width="280" height="280" rx="16" fill="#EAF4FC" />
+        <path d="M0 200C50 185 90 215 140 200C190 185 230 215 280 200V280H0Z" fill="#2978B5" />
+        <path d="M0 225C60 210 100 240 160 225C220 210 250 235 280 225V280H0Z" fill="#1B5685" opacity="0.7" />
+        <polygon points="50,175 230,175 200,215 80,215" fill="#E89F1C" stroke="#182421" strokeWidth="5" />
+        <line x1="140" y1="50" x2="140" y2="175" stroke="#182421" strokeWidth="6" strokeLinecap="round" />
+        <polygon points="140,55 65,160 140,160" fill="#FF5E7E" stroke="#182421" strokeWidth="4" />
+        <polygon points="148,70 215,160 148,160" fill="#FFD166" stroke="#182421" strokeWidth="4" />
+        <polygon points="140,46 165,54 140,62" fill="#28C76F" />
+      </g>
+    )
   }
 ];
 
@@ -149,6 +193,7 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
 
   function snapPiece(pieceId: number, slotId: number): void {
     playWoodClick();
+    triggerHaptic('snap');
     setPieces((prev) => {
       const targetSlot = SLOTS[slotId];
       const boardPos: Point = { x: targetSlot.x, y: targetSlot.y };
@@ -158,6 +203,8 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
       const placedCount = next.filter((p) => p.placedSlotId !== null).length;
 
       if (placedCount === 4) {
+        triggerHaptic('success');
+        fireConfetti();
         window.setTimeout(() => {
           playSuccessChime();
           onComplete('sticker-puzzle');
@@ -274,6 +321,30 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
             {allDone ? 'Gambar Berikutnya' : 'Ganti Gambar'}
           </button>
         </div>
+      </div>
+
+      <div className="glyph-picker" role="tablist" aria-label="Pilih gambar puzzle">
+        {PICTURES.map((pic, idx) => (
+          <button
+            key={pic.id}
+            type="button"
+            role="tab"
+            aria-selected={idx === picIdx}
+            className={`mode-tab ${idx === picIdx ? 'is-active' : ''}`}
+            onClick={() => {
+              if (idx === picIdx) return;
+              setPicIdx(idx);
+              setPieces(initPieces());
+              setSelectedPieceId(null);
+              draggingIdRef.current = null;
+              setDraggingId(null);
+              setPrompt(`Gambar baru: ${pic.title}. Ayo pasang kepingannya!`);
+              playVoice('puzzle-new');
+            }}
+          >
+            {pic.title}
+          </button>
+        ))}
       </div>
 
       <div className="puzzle-board-wrap">

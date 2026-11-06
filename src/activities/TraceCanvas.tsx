@@ -16,6 +16,7 @@ import {
   type VoiceClipId
 } from '../lib/audio';
 import { advanceCheckpoint, sampleStrokes, type Point } from '../lib/geometry';
+import { fireConfetti, triggerHaptic } from '../lib/confetti';
 
 interface TraceGlyph {
   id: string;
@@ -240,9 +241,12 @@ export function TraceCanvas({ onComplete }: { onComplete: (stickerId: string) =>
     setProgressIdx((prev) => {
       const next = advanceCheckpoint(pt, checkpoints, prev, 38);
       if (next > prev) {
+        triggerHaptic('tap');
         playStepNote(next);
         if (next >= checkpoints.length && !completedRef.current) {
           completedRef.current = true;
+          triggerHaptic('success');
+          fireConfetti();
           window.setTimeout(() => {
             playSuccessChime();
             onComplete('sticker-trace');

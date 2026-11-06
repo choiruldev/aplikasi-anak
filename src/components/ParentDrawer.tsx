@@ -144,7 +144,7 @@ export function ParentDrawer({
                     onUpdateSettings({ ...settings, soundEnabled: !settings.soundEnabled })
                   }
                 >
-                  Nada Musik: {settings.soundEnabled ? 'Aktif' : 'Mati'}
+                  Efek Bunyi: {settings.soundEnabled ? 'Aktif' : 'Mati'}
                 </button>
                 <button
                   type="button"
@@ -153,8 +153,82 @@ export function ParentDrawer({
                     onUpdateSettings({ ...settings, voiceEnabled: !settings.voiceEnabled })
                   }
                 >
-                  Suara Panduan: {settings.voiceEnabled ? 'Aktif' : 'Mati'}
+                  Suara Pemandu: {settings.voiceEnabled ? 'Aktif' : 'Mati'}
                 </button>
+                <button
+                  type="button"
+                  className={`mode-tab ${settings.bgmEnabled ? 'is-active' : ''}`}
+                  onClick={() =>
+                    onUpdateSettings({ ...settings, bgmEnabled: !settings.bgmEnabled })
+                  }
+                >
+                  🎵 Musik Pengantar: {settings.bgmEnabled ? 'Aktif' : 'Mati'}
+                </button>
+              </div>
+            </div>
+
+            <div className="field-group">
+              <span className="field-label">Pilar Tumbuh Kembang Hari Ini</span>
+              <div className="development-pillars-grid">
+                <div className="pillar-item">
+                  <div className="pillar-top">
+                    <span className="pillar-title">🧠 Kognitif &amp; Spasial</span>
+                    <span className="pillar-count">{(progress.completedCounts['shapes'] ?? 0) + (progress.completedCounts['puzzle'] ?? 0)} sesi</span>
+                  </div>
+                  <div className="pillar-bar-track">
+                    <div
+                      className="pillar-bar-fill fill-blue"
+                      style={{
+                        width: `${Math.min(100, (((progress.completedCounts['shapes'] ?? 0) + (progress.completedCounts['puzzle'] ?? 0)) / 4) * 100)}%`
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="pillar-item">
+                  <div className="pillar-top">
+                    <span className="pillar-title">🖐️ Motorik Halus &amp; Menulis</span>
+                    <span className="pillar-count">{(progress.completedCounts['trace'] ?? 0) + (progress.completedCounts['coloring'] ?? 0)} sesi</span>
+                  </div>
+                  <div className="pillar-bar-track">
+                    <div
+                      className="pillar-bar-fill fill-green"
+                      style={{
+                        width: `${Math.min(100, (((progress.completedCounts['trace'] ?? 0) + (progress.completedCounts['coloring'] ?? 0)) / 4) * 100)}%`
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="pillar-item">
+                  <div className="pillar-top">
+                    <span className="pillar-title">🏃 Motorik Kasar &amp; Refleks</span>
+                    <span className="pillar-count">{(progress.completedCounts['motor'] ?? 0) + (progress.completedCounts['balloon'] ?? 0)} sesi</span>
+                  </div>
+                  <div className="pillar-bar-track">
+                    <div
+                      className="pillar-bar-fill fill-orange"
+                      style={{
+                        width: `${Math.min(100, (((progress.completedCounts['motor'] ?? 0) + (progress.completedCounts['balloon'] ?? 0)) / 4) * 100)}%`
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="pillar-item">
+                  <div className="pillar-top">
+                    <span className="pillar-title">👂 Sensori &amp; Bahasa</span>
+                    <span className="pillar-count">{progress.completedCounts['sensory'] ?? 0} sesi</span>
+                  </div>
+                  <div className="pillar-bar-track">
+                    <div
+                      className="pillar-bar-fill fill-purple"
+                      style={{
+                        width: `${Math.min(100, ((progress.completedCounts['sensory'] ?? 0) / 3) * 100)}%`
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 

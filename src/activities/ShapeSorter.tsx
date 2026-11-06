@@ -10,6 +10,7 @@ import {
   type VoiceClipId
 } from '../lib/audio';
 import { findSnapTarget, type Point, type SnapSlot } from '../lib/geometry';
+import { fireConfetti, triggerHaptic } from '../lib/confetti';
 
 interface ShapeDef {
   kind: ShapeId;
@@ -118,6 +119,7 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
   }
 
   function finishPlacement(pieceId: string, slot: SnapSlot & { shape: ShapeDef }): void {
+    triggerHaptic('snap');
     setBoard((prev) => {
       const updated = prev.pieces.map((p) =>
         p.id === pieceId ? { ...p, pos: { x: slot.x, y: slot.y }, placedSlotId: slot.id } : p
@@ -128,6 +130,8 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
       setPrompt(msg);
 
       if (placedCount === updated.length) {
+        triggerHaptic('success');
+        fireConfetti();
         setCurrentClip('shapes-done');
         playVoice(slot.shape.okVoice, 120);
         window.setTimeout(() => {

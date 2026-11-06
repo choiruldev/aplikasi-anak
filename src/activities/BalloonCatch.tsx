@@ -8,6 +8,7 @@ import {
   preloadVoices,
   stopVoice
 } from '../lib/audio';
+import { fireConfetti, triggerHaptic } from '../lib/confetti';
 
 interface Balloon {
   id: number;
@@ -135,6 +136,7 @@ export function BalloonCatch({ onComplete }: { onComplete: (stickerId: string) =
 
   function popBalloon(balloon: Balloon): void {
     if (balloon.popped || isDone) return;
+    triggerHaptic('tap');
     playBubblePop(balloon.scaleNote * 1.4);
     playNote(balloon.scaleNote, 0.35, 0.22);
 
@@ -165,6 +167,8 @@ export function BalloonCatch({ onComplete }: { onComplete: (stickerId: string) =
       const next = prev + 1;
       if (next >= TARGET_POPS) {
         setIsDone(true);
+        triggerHaptic('success');
+        fireConfetti();
         window.setTimeout(() => {
           playSuccessChime();
           onComplete('sticker-balloon');

@@ -10,6 +10,7 @@ import {
   stopVoice,
   type VoiceClipId
 } from '../lib/audio';
+import { fireConfetti, triggerHaptic } from '../lib/confetti';
 
 interface GrossMotorCard {
   id: ActionPoseId;
@@ -143,6 +144,8 @@ export function GrossMotorPlay({ onComplete }: { onComplete: (stickerId: string)
         setRunning(false);
         setFrozenPhase(false);
         setFinished(true);
+        triggerHaptic('success');
+        fireConfetti();
         window.setTimeout(() => {
           playSuccessChime();
           onCompleteRef.current('sticker-motor');
@@ -156,6 +159,7 @@ export function GrossMotorPlay({ onComplete }: { onComplete: (stickerId: string)
 
   function handleCountStep(): void {
     if (finished) return;
+    triggerHaptic('tap');
     const next = count + 1;
     setCount(next);
     setPosePulse(true);
@@ -168,6 +172,8 @@ export function GrossMotorPlay({ onComplete }: { onComplete: (stickerId: string)
 
     if (next >= card.target) {
       setFinished(true);
+      triggerHaptic('success');
+      fireConfetti();
       window.setTimeout(() => {
         playSuccessChime();
         onComplete('sticker-motor');

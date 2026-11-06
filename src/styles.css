@@ -1493,3 +1493,395 @@ input:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* --- Interactive Sticker Album & BGM Pill --- */
+.sticker-pill.is-interactive {
+  cursor: pointer;
+  background-color: #fff9e6;
+  border-color: #ffd166;
+  color: #b87b0e;
+  border-bottom: 4px solid #e89f1c;
+  transition: transform 120ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 150ms ease;
+}
+
+.sticker-pill.is-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(232, 159, 28, 0.25);
+}
+
+.sticker-pill.is-interactive:active {
+  transform: translateY(2px);
+}
+
+.bgm-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  border-bottom: 4px solid var(--border-dark, #cbd5e1);
+  background-color: var(--surface);
+  color: var(--ink-muted);
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: transform 90ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+
+.bgm-pill-btn.is-active {
+  background-color: #eff6ff;
+  border-color: #2978b5;
+  border-bottom-color: #1b5685;
+  color: #1b5685;
+}
+
+.bgm-pill-btn:active {
+  transform: translateY(2px);
+}
+
+/* --- Sticker Album Modal Sheet --- */
+.sticker-album-sheet {
+  max-width: 680px;
+}
+
+.sticker-album-sub {
+  margin: 4px 0 0 0;
+  font-size: 0.95rem;
+  color: var(--ink-muted);
+}
+
+.sticker-progress-box {
+  margin: 18px 0;
+  padding: 18px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #fffdf8 0%, #fef5e6 100%);
+  border: 2px solid #fedfa3;
+}
+
+.sticker-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-family: var(--font-display);
+}
+
+.sticker-progress-label {
+  font-size: 1.1rem;
+  color: var(--ink);
+}
+
+.sticker-progress-pct {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #e89f1c;
+}
+
+.sticker-progress-track {
+  width: 100%;
+  height: 16px;
+  border-radius: 999px;
+  background-color: #f0e6d2;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.sticker-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff9f43 0%, #ffd166 100%);
+  transition: width 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sticker-album-praise {
+  margin: 10px 0 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #2b9361;
+}
+
+.sticker-album-hint-general {
+  margin: 8px 0 0 0;
+  font-size: 0.88rem;
+  color: var(--ink-muted);
+}
+
+.sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  margin-top: 14px;
+  max-height: 52vh;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.sticker-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 16px 12px;
+  border-radius: 22px;
+  border: 2.5px solid var(--border);
+  border-bottom-width: 5px;
+  cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 160ms ease;
+  background-color: var(--surface);
+}
+
+.sticker-card:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.sticker-card:active {
+  transform: translateY(2px) scale(0.98);
+}
+
+.sticker-card.is-locked {
+  opacity: 0.65;
+  filter: grayscale(0.5);
+}
+
+.sticker-icon-wrap {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.sticker-locked-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 3px dashed #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #e5e7eb;
+}
+
+.sticker-lock-symbol {
+  font-size: 1.5rem;
+}
+
+.sticker-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+.sticker-name {
+  font-family: var(--font-display);
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.sticker-skill {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+.sticker-status {
+  margin: 4px 0 0 0;
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.unlocked-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: #d1fae5;
+  color: #065f46;
+  font-weight: 700;
+}
+
+.locked-hint {
+  color: #6b7280;
+}
+
+/* --- Mascot Guide ("Kiki si Kelinci") --- */
+.mascot-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.mascot-speech-bubble {
+  pointer-events: auto;
+  position: relative;
+  max-width: 240px;
+  padding: 12px 34px 12px 14px;
+  border-radius: 18px;
+  background-color: #ffffff;
+  border: 2px solid #ffa931;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  margin-bottom: 10px;
+  animation: mascotPopIn 220ms ease-out;
+}
+
+.mascot-speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -9px;
+  right: 28px;
+  width: 14px;
+  height: 14px;
+  background-color: #ffffff;
+  border-right: 2px solid #ffa931;
+  border-bottom: 2px solid #ffa931;
+  transform: rotate(45deg);
+}
+
+.mascot-speech-text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.mascot-bubble-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 4px;
+}
+
+.mascot-avatar-btn {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px 4px 6px;
+  border-radius: 999px;
+  border: 3px solid #ffa931;
+  border-bottom: 5px solid #d97706;
+  background-color: #ffffff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.mascot-avatar-btn:hover {
+  transform: translateY(-3px) scale(1.05);
+}
+
+.mascot-avatar-btn:active {
+  transform: translateY(2px) scale(0.95);
+}
+
+.mascot-avatar-btn.is-wobbling {
+  animation: bunnyWobble 450ms ease-in-out;
+}
+
+.mascot-pill-label {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #b45309;
+}
+
+@keyframes bunnyWobble {
+  0% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.1) rotate(-8deg); }
+  50% { transform: scale(1.1) rotate(8deg); }
+  75% { transform: scale(1.05) rotate(-4deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes mascotPopIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.92); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* --- Developmental Pillars in Parent Drawer --- */
+.development-pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.pillar-item {
+  padding: 12px;
+  border-radius: 16px;
+  background-color: var(--surface-raised, #f9fafb);
+  border: 1.5px solid var(--border);
+}
+
+.pillar-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.pillar-title {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.pillar-count {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--ink-muted);
+}
+
+.pillar-bar-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background-color: #e5e7eb;
+  overflow: hidden;
+}
+
+.pillar-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 300ms ease;
+}
+
+.pillar-bar-fill.fill-blue {
+  background-color: #2978b5;
+}
+
+.pillar-bar-fill.fill-green {
+  background-color: #2b9361;
+}
+
+.pillar-bar-fill.fill-orange {
+  background-color: #e06b34;
+}
+
+.pillar-bar-fill.fill-purple {
+  background-color: #7367f0;
+}
+
+@media (max-width: 580px) {
+  .development-pillars-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

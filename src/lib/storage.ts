@@ -5,6 +5,7 @@ export interface AppSettings {
   ageFilter: AgeFilter;
   soundEnabled: boolean;
   voiceEnabled: boolean;
+  bgmEnabled: boolean;
   dailyLimitMinutes: number; // 0 = unlimited
 }
 
@@ -28,6 +29,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   ageFilter: 'all',
   soundEnabled: true,
   voiceEnabled: true,
+  bgmEnabled: false,
   dailyLimitMinutes: 20
 };
 
@@ -47,6 +49,7 @@ export function loadSettings(): AppSettings {
         : 'all',
       soundEnabled: typeof parsed.soundEnabled === 'boolean' ? parsed.soundEnabled : true,
       voiceEnabled: typeof parsed.voiceEnabled === 'boolean' ? parsed.voiceEnabled : true,
+      bgmEnabled: typeof parsed.bgmEnabled === 'boolean' ? parsed.bgmEnabled : false,
       dailyLimitMinutes:
         typeof parsed.dailyLimitMinutes === 'number' && parsed.dailyLimitMinutes >= 0
           ? parsed.dailyLimitMinutes

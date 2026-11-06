@@ -10,6 +10,7 @@ import {
   stopVoice,
   type VoiceClipId
 } from '../lib/audio';
+import { fireConfetti, triggerHaptic } from '../lib/confetti';
 
 interface PaletteColor {
   id: string;
@@ -77,6 +78,7 @@ export function ColoringBook({ onComplete }: { onComplete: (stickerId: string) =
   }
 
   function handlePartClick(partKey: string, freq = 392): void {
+    triggerHaptic('tap');
     playBubblePop(freq);
     playNote(freq, 0.35, 0.22);
     setFilledParts((prev) => {
@@ -85,6 +87,8 @@ export function ColoringBook({ onComplete }: { onComplete: (stickerId: string) =
       const filledCount = Object.keys(next).filter((k) => currentTemplate.parts.includes(k)).length;
 
       if (filledCount >= totalParts) {
+        triggerHaptic('success');
+        fireConfetti();
         window.setTimeout(() => {
           playSuccessChime();
           onComplete('sticker-coloring');

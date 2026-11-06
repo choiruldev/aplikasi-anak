@@ -20,8 +20,11 @@ import {
   ShapeGlyph
 } from './components/Art';
 import { InstallModal } from './components/InstallModal';
+import { MascotGuide } from './components/MascotGuide';
 import { ParentDrawer, type BeforeInstallPromptEvent } from './components/ParentDrawer';
+import { StickerAlbumModal } from './components/StickerAlbumModal';
 import { playGentlePop, setAudioPreferences, stopVoice, unlockAudio } from './lib/audio';
+import { startLullabyBgm, stopLullabyBgm } from './lib/bgm';
 import { formatRemainingSeconds } from './lib/geometry';
 import {
   loadProgress,
@@ -144,11 +147,21 @@ export function App(): JSX.Element {
   const [isIos, setIsIos] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [installModalOpen, setInstallModalOpen] = useState(false);
+  const [stickerAlbumOpen, setStickerAlbumOpen] = useState(false);
 
   useEffect(() => {
     setAudioPreferences(settings.soundEnabled, settings.voiceEnabled);
     saveSettings(settings);
+    if (settings.bgmEnabled) {
+      startLullabyBgm();
+    } else {
+      stopLullabyBgm();
+    }
   }, [settings]);
+
+  useEffect(() => {
+    return () => stopLullabyBgm();
+  }, []);
 
   useEffect(() => {
     saveProgress(progress);
@@ -274,10 +287,34 @@ export function App(): JSX.Element {
         </div>
 
         <div className="topbar-right">
-          <div className="sticker-pill" aria-label={`${progress.stickers.length} dari 7 bintang stiker terkumpul`}>
+          <button
+            type="button"
+            className="sticker-pill is-interactive"
+            onClick={() => {
+              playGentlePop();
+              setStickerAlbumOpen(true);
+            }}
+            aria-label={`Buka Buku Album Stiker, ${progress.stickers.length} dari 7 stiker terkumpul`}
+            title="Buka Buku Album Stiker"
+          >
             <IconStar size={20} filled />
-            <span>{progress.stickers.length} / 7</span>
-          </div>
+            <span>{progress.stickers.length} / 7 Stiker</span>
+          </button>
+
+          <button
+            type="button"
+            className={`bgm-pill-btn ${settings.bgmEnabled ? 'is-active' : ''}`}
+            onClick={() => {
+              playGentlePop();
+              unlockAudio();
+              const next = !settings.bgmEnabled;
+              setSettings((prev) => ({ ...prev, bgmEnabled: next }));
+            }}
+            aria-label="Musik santai pengantar"
+            title={settings.bgmEnabled ? 'Matikan musik pengantar' : 'Nyalakan musik pengantar'}
+          >
+            <span>{settings.bgmEnabled ? '🎵 Musik On' : '🔇 Musik'}</span>
+          </button>
 
           {remainingSec !== null && (
             <div className="timer-pill" title="Sisa waktu bermain hari ini">
@@ -448,6 +485,7 @@ export function App(): JSX.Element {
               );
             })}
           </section>
+          <MascotGuide childName={settings.childName} />
         </main>
       ) : (
         <main className="game-main">
@@ -503,6 +541,13 @@ export function App(): JSX.Element {
         }}
         isIos={isIos}
       />
+
+      {stickerAlbumOpen && (
+        <StickerAlbumModal
+          unlockedStickers={progress.stickers}
+          onClose={() => setStickerAlbumOpen(false)}
+        />
+      )}
     </div>
   );
 }
