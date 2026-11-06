@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "node --test src/lib/geometry.test.ts"
+    "test": "node --experimental-strip-types --test src/lib/geometry.test.ts"
   },
   "dependencies": {
     "react": "^19.0.0",
