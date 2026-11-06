@@ -156,6 +156,35 @@ const STICKER_LIST: StickerItem[] = [
         <path d="M34 49C36 53 32 56 35 60" stroke="#182421" strokeWidth="1.8" fill="none" strokeLinecap="round" />
       </svg>
     )
+  },
+  {
+    id: 'sticker-numbers',
+    name: 'Bintang Angka Pintar',
+    skill: 'Konsep Angka & Berhitung',
+    hint: 'Hitung benda pada 4 angka di Taman Angka',
+    bgColor: '#FFF9E6',
+    borderColor: '#E89F1C',
+    iconSvg: (
+      <svg width="68" height="68" viewBox="0 0 68 68" fill="none">
+        <circle cx="34" cy="34" r="30" fill="#FFF2D6" stroke="#E89F1C" strokeWidth="3" />
+        <circle cx="34" cy="34" r="24" fill="#FFE8A3" />
+        <text
+          x="34"
+          y="42"
+          textAnchor="middle"
+          fontSize="24"
+          fontWeight="900"
+          fill="#B87B0E"
+          fontFamily="system-ui, sans-serif"
+        >
+          123
+        </text>
+        <polygon
+          points="50,14 52,19 57,20 53,24 54,29 50,26 46,29 47,24 43,20 48,19"
+          fill="#FF5E7E"
+        />
+      </svg>
+    )
   }
 ];
 

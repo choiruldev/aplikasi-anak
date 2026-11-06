@@ -262,6 +262,22 @@ input:focus-visible {
   padding: 6px 14px;
 }
 
+.numbers-preview-badge {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #b87b0e;
+  background: linear-gradient(135deg, #fff2d6 0%, #ffe082 100%);
+  border: 3px solid #e89f1c;
+  border-radius: 20px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 10px rgba(232, 159, 28, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: -1px;
+}
+
 .activity-card-body {
   flex: 1;
   min-width: 0;
@@ -1883,5 +1899,222 @@ input:focus-visible {
   .development-pillars-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* --- Number Garden (Taman Angka 1 - 10) --- */
+.number-bar {
+  display: flex;
+  gap: 10px;
+  padding: 6px 4px 14px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.number-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.number-tab-btn {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-bottom-width: 5px;
+  background-color: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: transform 140ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 150ms ease;
+}
+
+.number-tab-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+.number-tab-btn:active {
+  transform: translateY(2px) scale(0.95);
+}
+
+.number-tab-btn.is-active {
+  background-color: #ffffff;
+  transform: translateY(-3px) scale(1.1);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+}
+
+.number-tab-digit {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.number-done-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: #2b9361;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.number-arena {
+  padding: 24px;
+  border-radius: 28px;
+  border: 3px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  transition: background-color 300ms ease, border-color 300ms ease;
+  min-height: 440px;
+}
+
+.number-card-spotlight {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.number-giant-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 28px;
+  border-radius: 24px;
+  border: 3px solid rgba(0, 0, 0, 0.15);
+  border-bottom-width: 6px;
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.number-giant-num {
+  font-family: var(--font-display);
+  font-size: 3.8rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.number-giant-word {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.number-counter-badge {
+  padding: 8px 18px;
+  border-radius: 999px;
+  background-color: var(--surface);
+  border: 2px solid var(--border);
+  font-size: 1.05rem;
+  color: var(--ink);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.number-items-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  max-width: 640px;
+  padding: 10px;
+}
+
+.number-item-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 22px;
+  background-color: var(--surface);
+  border: 2.5px solid var(--border);
+  border-bottom-width: 5px;
+  cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 160ms ease;
+  min-width: 88px;
+  min-height: 98px;
+}
+
+.number-item-btn:hover {
+  transform: translateY(-4px) scale(1.06);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+.number-item-btn:active {
+  transform: translateY(2px) scale(0.96);
+}
+
+.number-item-btn.is-active {
+  background-color: #ffffff;
+  border-color: #ffd166;
+  border-bottom-color: #e89f1c;
+  box-shadow: 0 6px 16px rgba(232, 159, 28, 0.2);
+}
+
+.item-svg-box.is-counted {
+  animation: itemPopBounce 360ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes itemPopBounce {
+  0% { transform: scale(0.85); }
+  50% { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+
+.number-item-order {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--ink-muted);
+}
+
+.number-item-order.is-visible {
+  color: var(--accent);
+  font-size: 1.25rem;
+}
+
+.number-finish-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  border-radius: 20px;
+  background-color: var(--surface);
+  border: 2px solid #a7f3d0;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.12);
+  animation: finishSlideUp 260ms ease-out;
+}
+
+.number-finish-text {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #065f46;
+  text-align: center;
+}
+
+.number-finish-btns {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 

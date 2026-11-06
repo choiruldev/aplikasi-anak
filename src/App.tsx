@@ -3,6 +3,7 @@ import { BalloonCatch } from './activities/BalloonCatch';
 import { ColoringBook } from './activities/ColoringBook';
 import { GrossMotorPlay } from './activities/GrossMotorPlay';
 import { JigsawPuzzle } from './activities/JigsawPuzzle';
+import { NumberGarden } from './activities/NumberGarden';
 import { SensoryPlay } from './activities/SensoryPlay';
 import { ShapeSorter } from './activities/ShapeSorter';
 import { TraceCanvas } from './activities/TraceCanvas';
@@ -36,7 +37,7 @@ import {
   type DailyProgress
 } from './lib/storage';
 
-type ActivityKey = 'sensory' | 'shapes' | 'trace' | 'motor' | 'coloring' | 'puzzle' | 'balloon';
+type ActivityKey = 'sensory' | 'shapes' | 'trace' | 'motor' | 'coloring' | 'puzzle' | 'balloon' | 'numbers';
 
 interface ActivityMeta {
   key: ActivityKey;
@@ -50,6 +51,16 @@ interface ActivityMeta {
 }
 
 const ACTIVITIES: ActivityMeta[] = [
+  {
+    key: 'numbers',
+    title: 'Taman Angka 1 – 10',
+    subtitle: 'Kenal bentuk angka dan sentuh apel, bebek, serta mobil untuk berhitung.',
+    ageTag: '2 – 5 thn',
+    ageGroup: ['1-2.5', '2.5-4', '4-5'],
+    skillTag: 'Konsep Angka & Hitung',
+    stickerId: 'sticker-numbers',
+    surfaceTint: '#FFF8E6'
+  },
   {
     key: 'sensory',
     title: 'Kenal Suara & Warna',
@@ -294,11 +305,11 @@ export function App(): JSX.Element {
               playGentlePop();
               setStickerAlbumOpen(true);
             }}
-            aria-label={`Buka Buku Album Stiker, ${progress.stickers.length} dari 7 stiker terkumpul`}
+            aria-label={`Buka Buku Album Stiker, ${progress.stickers.length} dari 8 stiker terkumpul`}
             title="Buka Buku Album Stiker"
           >
             <IconStar size={20} filled />
-            <span>{progress.stickers.length} / 7 Stiker</span>
+            <span>{progress.stickers.length} / 8 Stiker</span>
           </button>
 
           <button
@@ -461,6 +472,11 @@ export function App(): JSX.Element {
                   }}
                 >
                   <div className="activity-card-art">
+                    {act.key === 'numbers' && (
+                      <div className="numbers-preview-badge" aria-hidden="true">
+                        <span className="numbers-preview-digit">123</span>
+                      </div>
+                    )}
                     {act.key === 'sensory' && <AnimalIllustration id="duck" size={96} />}
                     {act.key === 'shapes' && <ShapeGlyph shape="star" fill="#2B9361" size={88} />}
                     {act.key === 'trace' && (
@@ -489,6 +505,9 @@ export function App(): JSX.Element {
         </main>
       ) : (
         <main className="game-main">
+          {activeGame === 'numbers' && (
+            <NumberGarden onComplete={(s) => handleActivityComplete('numbers', s)} />
+          )}
           {activeGame === 'sensory' && (
             <SensoryPlay onComplete={(s) => handleActivityComplete('sensory', s)} />
           )}
