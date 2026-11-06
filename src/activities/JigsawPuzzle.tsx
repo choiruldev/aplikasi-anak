@@ -158,7 +158,7 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
   const [selectedPieceId, setSelectedPieceId] = useState<number | null>(null);
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const draggingIdRef = useRef<number | null>(null);
-  const [prompt, setPrompt] = useState('Susun empat keping gambar ke kotak yang cocok.');
+  const [prompt, setPrompt] = useState('Pasang potongan gambar ke tempat yang pas!');
   const svgRef = useRef<SVGSVGElement | null>(null);
 
   const picture = PICTURES[picIdx];
@@ -177,7 +177,6 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
 
   useEffect(() => {
     preloadVoices(['puzzle-intro', 'puzzle-snap', 'puzzle-done', 'puzzle-new']);
-    playVoice('puzzle-intro', 80);
     return () => stopVoice();
   }, []);
 
@@ -208,11 +207,11 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
         window.setTimeout(() => {
           playSuccessChime();
           onComplete('sticker-puzzle');
-          setPrompt('Hore! Gambar berhasil tersusun rapi!');
+          setPrompt('Hebat! Yeaaay! 🎉 Gambar tersusun rapi!');
           playVoice('puzzle-done', 350);
         }, 280);
       } else {
-        setPrompt(`Keping ${placedCount} terpasang! Lanjut keping berikutnya.`);
+        setPrompt(`Klek! Pas! Keping ke-${placedCount} terpasang.`);
         playVoice('puzzle-snap', 100);
       }
       return next;
@@ -294,7 +293,7 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
     setSelectedPieceId(null);
     draggingIdRef.current = null;
     setDraggingId(null);
-    setPrompt(`Gambar baru: ${PICTURES[nextIdx].title}. Ayo pasang kepingannya!`);
+    setPrompt(`Gambar baru: ${PICTURES[nextIdx].title}. Ayo kita susun!`);
     playVoice('puzzle-new');
   }
 

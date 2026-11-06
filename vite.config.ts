@@ -2,7 +2,11 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const repoName = process.env.GITHUB_REPOSITORY ? process.env.GITHUB_REPOSITORY.split('/')[1] : 'aplikasi-anak';
+const base = process.env.BASE_URL || (process.env.GITHUB_ACTIONS ? `/${repoName}/` : '/');
+
 export default defineConfig({
+  base,
   plugins: [
     react(),
     VitePWA({
@@ -14,7 +18,7 @@ export default defineConfig({
       },
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        id: '/',
+        id: base,
         name: 'KecilMain — Edukasi & Motorik Balita',
         short_name: 'KecilMain',
         description:
@@ -26,8 +30,8 @@ export default defineConfig({
         display: 'standalone',
         display_override: ['fullscreen', 'standalone'],
         orientation: 'any',
-        start_url: '/',
-        scope: '/',
+        start_url: base,
+        scope: base,
         categories: ['education', 'kids', 'games'],
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
@@ -39,7 +43,7 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,mp3}'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
-        navigateFallback: '/index.html',
+        navigateFallback: `${base}index.html`,
         cleanupOutdatedCaches: true,
         // Google Fonts are cross-origin, so cache them at runtime for offline play after the first visit
         runtimeCaching: [

@@ -4,29 +4,33 @@ Aplikasi web progresif (**PWA Offline-First**) berbahasa Indonesia untuk stimula
 
 ## Fitur Utama
 
-1. **Kenal Suara & Warna (1 – 2,5 Tahun · Bahasa & Sensori)**
-   - Mengenal 6 hewan beserta bunyi & fakta pendeknya.
+1. **Taman Huruf A – Z (2,5 – 5 Tahun · Bahasa & Literasi)**
+   - Mengenal 26 huruf alfabet Indonesia dengan kartu huruf ilustratif, suara pelafalan vokal manusia asli, efek bunyi satwa (bebek, kucing, domba, elang, harimau, dll.), dan kuis tebak suara huruf interaktif.
+2. **Taman Angka 1 – 10 (2 – 5 Tahun · Konsep Angka & Hitung)**
+   - Mengenal angka 1 sampai 10 dengan visual objek nyata (apel, bebek, mobil, dsb.) dan interaksi ketukan jari berhitung satu demi satu berurutan.
+3. **Kenal Suara & Warna (1 – 2,5 Tahun · Bahasa & Sensori)**
+   - Mengenal 6 hewan beserta bunyi aslinya.
    - **Gambang Warna (Xylophone)** Do–Re–Mi–Fa–Sol–La untuk kepekaan nada, warna, dan koordinasi ketukan jari.
-2. **Pasang Bentuk Kayu (2,5 – 4 Tahun · Motorik Halus & Kognitif)**
-   - *Drag-and-drop* berbasis *Pointer Events* yang mulus di layar sentuh maupun mouse/keyboard dengan *magnetic snap* ramah jari balita.
-3. **Jejak Jari: Garis, Huruf & Angka (3,5 – 5 Tahun · Pra-Tulis & Presisi)**
+4. **Pasang Bentuk Kayu (2,5 – 4 Tahun · Motorik Halus & Kognitif)**
+   - *Drag-and-drop* berbasis *Pointer Events* yang mulus di layar sentuh maupun mouse/keyboard dengan *magnetic snap* ramah jari balita dan penyebutan nama bentuk oleh suara anak asli.
+5. **Jejak Jari: Garis, Huruf & Angka (3,5 – 5 Tahun · Pra-Tulis & Presisi)**
    - Menebalkan jalur garis tegak, zig-zag, lingkaran, huruf (`A`, `I`, `U`), dan angka (`1`, `2`, `3`) secara berurutan di atas `<canvas>` beresolusi tinggi.
-4. **Ayo Gerak Aktif! (2 – 5 Tahun · Motorik Kasar)**
+6. **Ayo Gerak Aktif! (2 – 5 Tahun · Motorik Kasar)**
    - Tantangan gerak tubuh nyata di luar layar: *Lompat Kelinci*, *Pesawat Seimbang*, *Langkah Gajah*, *Petik Bintang*, dan *Patung Musik (Freeze Dance)*.
-5. **Buku Warna & Gambar Musik (2 – 4,5 Tahun · Kreativitas & Nada)**
+7. **Buku Warna & Gambar Musik (2 – 4,5 Tahun · Kreativitas & Nada)**
    - **Buku Mewarnai (*Tap-to-Fill*):** 4 template garis tegas ramah balita (*Apel Ceria*, *Ikan Berenang*, *Kupu-kupu*, *Bunga Matahari*) dengan 8 palet warna bersuara.
    - **Lukis Musik (Doodle Kandinsky):** Kanvas goresan jari di mana tinggi-rendahnya sentuhan jari menghasilkan alunan melodi harmonis.
-6. **Puzzle Keping Bergambar (2,5 – 5 Tahun · Visual & Spasial)**
+8. **Puzzle Keping Bergambar (2,5 – 5 Tahun · Visual & Spasial)**
    - Jigsaw puzzle 2x2 (4 keping) dengan gambar kartun menarik (*Kucing Oren*, *Gajah Biru*, *Semangka Manis*).
    - Dilengkapi papan panduan kayu, bayangan bantuan tipis, dan *magnetic snap* klik kayu yang memuaskan.
-7. **Tangkap Balon Ceria (1,5 – 5 Tahun · Motorik Kasar & Kamera Interaktif)**
+9. **Tangkap Balon Ceria (1,5 – 5 Tahun · Motorik Kasar & Kamera Interaktif)**
    - Balon warna-warni melayang lembut ke atas.
    - **Mode Kamera Gerak:** Mendeteksi lambaian tangan/tubuh di depan kamera webcam secara *real-time* 100% lokal di browser tanpa server (privasi terjaga).
    - **Mode Sentuh:** Fallback otomatis untuk sentuhan jari jika kamera tidak aktif.
-8. **Ruang Orang Tua & Batas Waktu Layar**
-   - Dilindungi hitungan khusus orang tua (`Parental Gate`).
-   - Pengatur batas waktu bermain harian (otomatis masuk layar tenang *Waktunya Istirahat Mata* saat durasi tercapai).
-   - Ringkasan statistik aktivitas bermain anak.
+10. **Ruang Orang Tua & Batas Waktu Layar**
+    - Dilindungi hitungan khusus orang tua (`Parental Gate`).
+    - Pengatur batas waktu bermain harian (otomatis masuk layar tenang *Waktunya Istirahat Mata* saat durasi tercapai).
+    - Ringkasan statistik aktivitas bermain anak.
 
 ## Panduan PWA & Pemasangan Offline
 

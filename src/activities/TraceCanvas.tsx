@@ -23,6 +23,7 @@ interface TraceGlyph {
   symbol: string;
   title: string;
   voiceId: VoiceClipId;
+  instruction: string;
   strokes: Point[][];
 }
 
@@ -32,6 +33,7 @@ const GLYPHS: TraceGlyph[] = [
     symbol: '|',
     title: 'Garis Tegak',
     voiceId: 'trace-line',
+    instruction: 'Ayo tarik garis lurus dari atas ke bawah ya!',
     strokes: [[{ x: 160, y: 56 }, { x: 160, y: 264 }]]
   },
   {
@@ -39,6 +41,7 @@ const GLYPHS: TraceGlyph[] = [
     symbol: 'Z',
     title: 'Jalur Zig-Zag',
     voiceId: 'trace-zigzag',
+    instruction: 'Ayo ikuti garis zig-zag naik turun seperti gunung!',
     strokes: [[{ x: 84, y: 68 }, { x: 236, y: 68 }, { x: 84, y: 252 }, { x: 236, y: 252 }]]
   },
   {
@@ -46,6 +49,7 @@ const GLYPHS: TraceGlyph[] = [
     symbol: 'O',
     title: 'Lingkaran',
     voiceId: 'trace-circle',
+    instruction: 'Putar jarimu melingkar bulat seperti kue donat!',
     strokes: [
       [
         { x: 160, y: 56 },
@@ -65,6 +69,7 @@ const GLYPHS: TraceGlyph[] = [
     symbol: 'A',
     title: 'Huruf A: Apel',
     voiceId: 'trace-A',
+    instruction: 'Tarik garis miring, garis miring lagi, lalu garis tengah... Jadi huruf A!',
     strokes: [
       [{ x: 160, y: 58 }, { x: 86, y: 258 }],
       [{ x: 160, y: 58 }, { x: 234, y: 258 }],
@@ -76,6 +81,7 @@ const GLYPHS: TraceGlyph[] = [
     symbol: 'I',
     title: 'Huruf I: Ikan',
     voiceId: 'trace-I',
+    instruction: 'Tarik garis lurus dari atas ke bawah... Jadi huruf I!',
     strokes: [
       [{ x: 118, y: 62 }, { x: 202, y: 62 }],
       [{ x: 160, y: 62 }, { x: 160, y: 258 }],
@@ -87,6 +93,7 @@ const GLYPHS: TraceGlyph[] = [
     symbol: 'U',
     title: 'Huruf U: Udang',
     voiceId: 'trace-U',
+    instruction: 'Melengkung ke bawah lalu naik lagi ke atas... Jadi huruf U!',
     strokes: [
       [
         { x: 92, y: 64 },
@@ -104,6 +111,7 @@ const GLYPHS: TraceGlyph[] = [
     symbol: '1',
     title: 'Angka 1: Satu',
     voiceId: 'trace-1',
+    instruction: 'Tarik garis lurus tegak... Angka satu!',
     strokes: [[{ x: 122, y: 96 }, { x: 166, y: 58 }, { x: 166, y: 260 }]]
   },
   {
@@ -111,6 +119,7 @@ const GLYPHS: TraceGlyph[] = [
     symbol: '2',
     title: 'Angka 2: Dua',
     voiceId: 'trace-2',
+    instruction: 'Lengkung kepala lalu garis datar di bawah... Angka dua!',
     strokes: [
       [
         { x: 96, y: 104 },
@@ -128,6 +137,7 @@ const GLYPHS: TraceGlyph[] = [
     symbol: '3',
     title: 'Angka 3: Tiga',
     voiceId: 'trace-3',
+    instruction: 'Lengkung atas dan lengkung bawah... Angka tiga!',
     strokes: [
       [
         { x: 102, y: 78 },
@@ -301,8 +311,8 @@ export function TraceCanvas({ onComplete }: { onComplete: (stickerId: string) =>
           <h1 id="trace-title" className="stage-title">{glyph.title}</h1>
           <p className="stage-subtitle">
             {isDone
-              ? 'Selesai! Pilih bentuk berikutnya di bawah.'
-              : 'Ikuti titik kuning menggunakan telunjukmu.'}
+              ? 'Hebat! Yeaaay! 🎉 Goresan selesai! Pilih bentuk berikutnya di bawah.'
+              : glyph.instruction}
           </p>
         </div>
         <div className="stage-actions">

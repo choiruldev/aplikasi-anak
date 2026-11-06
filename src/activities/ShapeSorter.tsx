@@ -92,7 +92,7 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const draggingIdRef = useRef<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [prompt, setPrompt] = useState('Geser keping bentuk ke lubang bayangan yang cocok.');
+  const [prompt, setPrompt] = useState('Cocokkan bentuk ke bayangan yang pas!');
   const [currentClip, setCurrentClip] = useState<VoiceClipId>('shapes-intro');
   const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -104,7 +104,6 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
       ...ALL_SHAPES.map((s) => s.okVoice),
       ...ALL_SHAPES.map((s) => s.hintVoice)
     ]);
-    playVoice('shapes-intro', 80);
     return () => stopVoice();
   }, []);
 
@@ -126,7 +125,7 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
       );
       const placedCount = updated.filter((p) => p.placedSlotId !== null).length;
       playStepNote(placedCount + 1);
-      const msg = `Hebat! ${slot.shape.label} ${slot.shape.colorName.toLowerCase()}.`;
+      const msg = `Hebat! Bentuk ${slot.shape.label} pas!`;
       setPrompt(msg);
 
       if (placedCount === updated.length) {
@@ -137,7 +136,7 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
         window.setTimeout(() => {
           playSuccessChime();
           onComplete('sticker-shapes');
-          setPrompt('Semua bentuk terpasang! Ketuk Papan Baru untuk lanjut.');
+          setPrompt('Hebat! Yeaaay! 🎉 Semua bentuk terpasang!');
           playVoice('shapes-done', 380);
         }, 1250);
       } else {
@@ -216,7 +215,7 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
       setSelectedId(null);
       finishPlacement(piece.id, slot);
     } else {
-      const hint = `Itu lubang ${slot.shape.label.toLowerCase()}. Cari bentuk yang sama ya.`;
+      const hint = `Ini bentuk ${slot.shape.label}. Cari keping ${slot.shape.label} ya!`;
       setPrompt(hint);
       setCurrentClip(slot.shape.hintVoice);
       playVoice(slot.shape.hintVoice);
@@ -230,7 +229,7 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
     setSelectedId(null);
     draggingIdRef.current = null;
     setDraggingId(null);
-    setPrompt('Papan baru siap! Ayo pasang keempat bentuknya.');
+    setPrompt('Pasang keempat bentuk ke bayangannya!');
     setCurrentClip('shapes-new-board');
     playVoice('shapes-new-board');
   }

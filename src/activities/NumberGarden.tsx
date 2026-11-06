@@ -284,7 +284,7 @@ export function NumberGarden({ onComplete }: { onComplete: (stickerId: string) =
   const [countedSet, setCountedSet] = useState<Set<number>>(() => new Set());
   const [completedSet, setCompletedSet] = useState<Set<number>>(() => new Set());
   const [rewarded, setRewarded] = useState(false);
-  const [prompt, setPrompt] = useState('Ketuk setiap gambar satu per satu untuk berhitung!');
+  const [prompt, setPrompt] = useState('Ayo belajar angka! Sentuh gambar untuk berhitung.');
 
   useEffect(() => {
     preloadVoices([
@@ -304,7 +304,7 @@ export function NumberGarden({ onComplete }: { onComplete: (stickerId: string) =
     setSelectedNum(num);
     setCountedSet(new Set());
     const nextCard = NUMBER_CARDS[num - 1];
-    setPrompt(`Angka ${nextCard.value}. Ada ${nextCard.value} ${nextCard.itemTitle}. Ayo ketuk satu-satu!`);
+    setPrompt(`${nextCard.word}! (${nextCard.value} ${nextCard.itemTitle})`);
     playVoice(nextCard.voiceId, 80);
   }
 
@@ -328,6 +328,9 @@ export function NumberGarden({ onComplete }: { onComplete: (stickerId: string) =
       playVoice(countVoice);
     }
 
+    const COUNT_WORDS = ['Satu', 'Dua', 'Tiga', 'Empat', 'Lima', 'Enam', 'Tujuh', 'Delapan', 'Sembilan', 'Sepuluh'];
+    const currentWord = COUNT_WORDS[nextCount - 1] || `${nextCount}`;
+
     if (nextSet.size >= card.value) {
       // Finished counting this card!
       setCompletedSet((prev) => {
@@ -335,7 +338,9 @@ export function NumberGarden({ onComplete }: { onComplete: (stickerId: string) =
         next.add(card.value);
         if (next.size >= 4 && !rewarded) {
           setRewarded(true);
+          setPrompt('Hebat! Yeaaay! 🎉 Kamu dapat stiker angka!');
           window.setTimeout(() => {
+            playVoice('numbers-done');
             onComplete('sticker-numbers');
           }, 800);
         }
@@ -344,13 +349,13 @@ export function NumberGarden({ onComplete }: { onComplete: (stickerId: string) =
 
       triggerHaptic('success');
       fireConfetti();
-      setPrompt(`Hebat! Ada ${card.value} ${card.itemTitle.toLowerCase()}!`);
+      setPrompt(`Hebat! ${card.word}! 🎉 (${card.value} ${card.itemTitle})`);
       window.setTimeout(() => {
         playSuccessChime();
         playVoice(card.voiceId, 320);
       }, 350);
     } else {
-      setPrompt(`Hitungan: ${nextCount}. Lanjut ketuk yang lain!`);
+      setPrompt(`${currentWord}! (${nextCount} dari ${card.value})`);
     }
   }
 

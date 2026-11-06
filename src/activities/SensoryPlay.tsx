@@ -53,7 +53,7 @@ const BARS: XylophoneBar[] = [
 export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) => void }): JSX.Element {
   const [tab, setTab] = useState<'animals' | 'xylophone'>('animals');
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [caption, setCaption] = useState('Sentuh gambar hewan untuk mendengar suaranya.');
+  const [caption, setCaption] = useState('Sentuh hewan lucu untuk mendengar suaranya!');
   const [currentClip, setCurrentClip] = useState<VoiceClipId>('sensory-intro');
   const [visited, setVisited] = useState<Set<string>>(() => new Set());
   const [rewarded, setRewarded] = useState(false);
@@ -66,7 +66,6 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
       ...ANIMALS.map((a) => a.voiceId),
       ...BARS.map((b) => b.voiceId)
     ]);
-    playVoice('sensory-intro', 80);
     return () => stopVoice();
   }, []);
 
@@ -78,6 +77,7 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
         setRewarded(true);
         triggerHaptic('success');
         fireConfetti();
+        setCaption('Hebat! Yeaaay! 🎉 Kamu dapat stiker baru!');
         window.setTimeout(() => {
           playSuccessChime();
           onComplete('sticker-sensory');
@@ -90,7 +90,7 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
   function handleAnimalTap(animal: AnimalCard): void {
     triggerHaptic('tap');
     setActiveId(animal.id);
-    setCaption(`${animal.name}. ${animal.soundWord} ${animal.fact}`);
+    setCaption(`${animal.soundWord} • ${animal.name}`);
     setCurrentClip(animal.voiceId);
     playAnimalMotif(animal.id);
     playVoice(animal.voiceId, 340);
@@ -100,7 +100,7 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
   function handleBarTap(bar: XylophoneBar): void {
     triggerHaptic('tap');
     setActiveId(bar.id);
-    setCaption(`${bar.colorName}, nada ${bar.noteLabel}. ${bar.objectExample}.`);
+    setCaption(`Nada ${bar.noteLabel} • Warna ${bar.colorName}`);
     setCurrentClip(bar.voiceId);
     playNote(bar.freq, 0.48, 0.26);
     playVoice(bar.voiceId, 260);

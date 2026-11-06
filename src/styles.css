@@ -278,6 +278,22 @@ input:focus-visible {
   letter-spacing: -1px;
 }
 
+.alphabet-preview-badge {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #7b1fa2;
+  background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+  border: 3px solid #ab47bc;
+  border-radius: 20px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 10px rgba(171, 71, 188, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: -1px;
+}
+
 .activity-card-body {
   flex: 1;
   min-width: 0;
@@ -2116,5 +2132,296 @@ input:focus-visible {
   gap: 12px;
   flex-wrap: wrap;
   justify-content: center;
+}
+
+/* --- Alphabet Garden (Taman Huruf A - Z) --- */
+.alphabet-ribbon {
+  display: flex;
+  gap: 8px;
+  padding: 6px 4px 14px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.alphabet-ribbon::-webkit-scrollbar {
+  display: none;
+}
+
+.alphabet-tab-btn {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2.5px solid var(--border);
+  border-bottom-width: 4.5px;
+  background-color: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: transform 140ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 150ms ease;
+}
+
+.alphabet-tab-btn:hover {
+  transform: translateY(-2px) scale(1.06);
+}
+
+.alphabet-tab-btn:active {
+  transform: translateY(2px) scale(0.95);
+}
+
+.alphabet-tab-btn.is-active {
+  background-color: #ffffff;
+  transform: translateY(-3px) scale(1.12);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+}
+
+.alphabet-tab-char {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--ink);
+}
+
+.alphabet-learned-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background-color: #2b9361;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alphabet-spotlight-card {
+  padding: 28px 20px;
+  border-radius: 28px;
+  border: 3px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  transition: background-color 300ms ease, border-color 300ms ease;
+  min-height: 420px;
+}
+
+.alphabet-big-letter-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 36px;
+  border-radius: 28px;
+  border: 3.5px solid rgba(0, 0, 0, 0.15);
+  border-bottom-width: 7px;
+  color: #ffffff;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.14);
+  cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.alphabet-big-letter-badge:hover {
+  transform: translateY(-4px) scale(1.05);
+}
+
+.alphabet-big-letter-badge:active {
+  transform: translateY(2px) scale(0.95);
+}
+
+.alphabet-letter-duo {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.letter-upper {
+  font-family: var(--font-display);
+  font-size: 4.8rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.letter-lower {
+  font-family: var(--font-display);
+  font-size: 3.4rem;
+  font-weight: 800;
+  line-height: 1;
+  opacity: 0.9;
+}
+
+.alphabet-tap-label {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin-top: 6px;
+  background-color: rgba(255, 255, 255, 0.25);
+  padding: 4px 12px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+}
+
+.alphabet-object-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 28px;
+  border-radius: 24px;
+  background-color: var(--surface);
+  border: 3px solid var(--border);
+  border-bottom-width: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  max-width: 440px;
+  width: 100%;
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.alphabet-object-card:hover {
+  transform: translateY(-3px) scale(1.02);
+}
+
+.alphabet-object-card:active {
+  transform: translateY(2px) scale(0.98);
+}
+
+.alphabet-emoji {
+  font-size: 3.8rem;
+  line-height: 1;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+.alphabet-word-group {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.alphabet-word-main {
+  font-family: var(--font-display);
+  font-size: 2.1rem;
+  font-weight: 900;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.alphabet-word-hint {
+  font-size: 0.95rem;
+  color: var(--ink-muted);
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.alphabet-nav-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+/* Quiz Mode */
+.alphabet-quiz-stage {
+  padding: 28px;
+  border-radius: 28px;
+  border: 3px solid #ab47bc;
+  background-color: #fbf5fc;
+  display: flex;
+  justify-content: center;
+  min-height: 420px;
+}
+
+.alphabet-quiz-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 18px;
+  max-width: 520px;
+  width: 100%;
+}
+
+.quiz-target-emoji {
+  font-size: 4.8rem;
+  line-height: 1;
+  animation: itemPopBounce 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.quiz-target-question {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.quiz-feedback-banner {
+  margin: 0;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background-color: #d1fae5;
+  color: #065f46;
+  font-weight: 800;
+  font-size: 1.1rem;
+  animation: finishSlideUp 200ms ease-out;
+}
+
+.quiz-choices-grid {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.quiz-choice-btn {
+  width: 96px;
+  height: 96px;
+  border-radius: 26px;
+  background-color: #ffffff;
+  border: 3.5px solid var(--border);
+  border-bottom-width: 6.5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.quiz-choice-btn:hover {
+  transform: translateY(-4px) scale(1.06);
+}
+
+.quiz-choice-btn:active {
+  transform: translateY(2px) scale(0.96);
+}
+
+.quiz-choice-letter {
+  font-family: var(--font-display);
+  font-size: 2.8rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.quiz-choice-lower {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ink-muted);
+}
+
+.quiz-repeat-voice {
+  margin-top: 8px;
 }
 

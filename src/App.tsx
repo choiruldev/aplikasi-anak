@@ -1,4 +1,5 @@
 import { useEffect, useState, type JSX } from 'react';
+import { AlphabetGarden } from './activities/AlphabetGarden';
 import { BalloonCatch } from './activities/BalloonCatch';
 import { ColoringBook } from './activities/ColoringBook';
 import { GrossMotorPlay } from './activities/GrossMotorPlay';
@@ -37,7 +38,7 @@ import {
   type DailyProgress
 } from './lib/storage';
 
-type ActivityKey = 'sensory' | 'shapes' | 'trace' | 'motor' | 'coloring' | 'puzzle' | 'balloon' | 'numbers';
+type ActivityKey = 'alphabet' | 'numbers' | 'sensory' | 'shapes' | 'trace' | 'motor' | 'coloring' | 'puzzle' | 'balloon';
 
 interface ActivityMeta {
   key: ActivityKey;
@@ -51,6 +52,16 @@ interface ActivityMeta {
 }
 
 const ACTIVITIES: ActivityMeta[] = [
+  {
+    key: 'alphabet',
+    title: 'Taman Huruf A – Z',
+    subtitle: 'Kenal huruf besar & kecil, ejaan kata Apel hingga Zebra, dan kuis tebak suara.',
+    ageTag: '2,5 – 5 thn',
+    ageGroup: ['2.5-4', '4-5'],
+    skillTag: 'Bahasa & Literasi',
+    stickerId: 'sticker-alphabet',
+    surfaceTint: '#F3EBF9'
+  },
   {
     key: 'numbers',
     title: 'Taman Angka 1 – 10',
@@ -305,11 +316,11 @@ export function App(): JSX.Element {
               playGentlePop();
               setStickerAlbumOpen(true);
             }}
-            aria-label={`Buka Buku Album Stiker, ${progress.stickers.length} dari 8 stiker terkumpul`}
+            aria-label={`Buka Buku Album Stiker, ${progress.stickers.length} dari 9 stiker terkumpul`}
             title="Buka Buku Album Stiker"
           >
             <IconStar size={20} filled />
-            <span>{progress.stickers.length} / 8 Stiker</span>
+            <span>{progress.stickers.length} / 9 Stiker</span>
           </button>
 
           <button
@@ -472,6 +483,11 @@ export function App(): JSX.Element {
                   }}
                 >
                   <div className="activity-card-art">
+                    {act.key === 'alphabet' && (
+                      <div className="alphabet-preview-badge" aria-hidden="true">
+                        <span className="alphabet-preview-text">Abc</span>
+                      </div>
+                    )}
                     {act.key === 'numbers' && (
                       <div className="numbers-preview-badge" aria-hidden="true">
                         <span className="numbers-preview-digit">123</span>
@@ -505,6 +521,9 @@ export function App(): JSX.Element {
         </main>
       ) : (
         <main className="game-main">
+          {activeGame === 'alphabet' && (
+            <AlphabetGarden onComplete={(s) => handleActivityComplete('alphabet', s)} />
+          )}
           {activeGame === 'numbers' && (
             <NumberGarden onComplete={(s) => handleActivityComplete('numbers', s)} />
           )}

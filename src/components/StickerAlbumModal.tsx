@@ -185,6 +185,34 @@ const STICKER_LIST: StickerItem[] = [
         />
       </svg>
     )
+  },
+  {
+    id: 'sticker-alphabet',
+    name: 'Piala Huruf Juara',
+    skill: 'Literasi Huruf & Fonik',
+    hint: 'Pelajari 8 huruf atau mainkan kuis di Taman Huruf',
+    bgColor: '#F2EAFD',
+    borderColor: '#8E24AA',
+    iconSvg: (
+      <svg width="68" height="68" viewBox="0 0 68 68" fill="none">
+        <circle cx="34" cy="34" r="30" fill="#EAD5FC" stroke="#8E24AA" strokeWidth="3" />
+        <text
+          x="34"
+          y="43"
+          textAnchor="middle"
+          fontSize="22"
+          fontWeight="900"
+          fill="#6A1B9A"
+          fontFamily="system-ui, sans-serif"
+        >
+          Abc
+        </text>
+        <polygon
+          points="20,18 24,12 28,18 34,16 32,22 36,26 30,27 28,32 24,28 18,30 20,24 16,20"
+          fill="#FFD166"
+        />
+      </svg>
+    )
   }
 ];
 

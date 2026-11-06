@@ -48,7 +48,7 @@ export function ColoringBook({ onComplete }: { onComplete: (stickerId: string) =
   const [templateIdx, setTemplateIdx] = useState(0);
   const [selectedColor, setSelectedColor] = useState<PaletteColor>(PALETTE[0]);
   const [filledParts, setFilledParts] = useState<Record<string, string>>({});
-  const [prompt, setPrompt] = useState('Pilih warna di bawah, lalu sentuh bagian gambar.');
+  const [prompt, setPrompt] = useState('Ayo belajar warna! Pilih warna di bawah.');
   const [currentVoice, setCurrentVoice] = useState<VoiceClipId>('coloring-intro');
 
   // Doodle canvas state
@@ -72,7 +72,7 @@ export function ColoringBook({ onComplete }: { onComplete: (stickerId: string) =
 
   function handleSelectColor(color: PaletteColor): void {
     setSelectedColor(color);
-    setPrompt(`Warna ${color.name} dipilih. Sentuh gambar untuk mewarnai!`);
+    setPrompt(`${color.name}!`);
     setCurrentVoice(color.voiceId);
     playVoice(color.voiceId);
   }
@@ -92,9 +92,9 @@ export function ColoringBook({ onComplete }: { onComplete: (stickerId: string) =
         window.setTimeout(() => {
           playSuccessChime();
           onComplete('sticker-coloring');
-          setPrompt('Wah, gambarmu sudah selesai diwarnai! Indah sekali.');
+          setPrompt('Hebat! Yeaaay! 🎉 Gambarmu selesai diwarnai!');
           playVoice('coloring-done', 350);
-        }, 320);
+        }, 250);
       }
       return next;
     });

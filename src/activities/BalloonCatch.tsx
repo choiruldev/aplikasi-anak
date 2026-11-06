@@ -49,7 +49,7 @@ export function BalloonCatch({ onComplete }: { onComplete: (stickerId: string) =
   const [balloons, setBalloons] = useState<Balloon[]>([]);
   const [particles, setParticles] = useState<Particle[]>([]);
   const [isDone, setIsDone] = useState(false);
-  const [prompt, setPrompt] = useState('Sentuh atau lambaikan tangan untuk pecahkan balon!');
+  const [prompt, setPrompt] = useState('Sentuh balon warna-warni untuk menangkapnya!');
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const motionCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -66,7 +66,6 @@ export function BalloonCatch({ onComplete }: { onComplete: (stickerId: string) =
       'balloon-pop-great',
       'balloon-done'
     ]);
-    playVoice('balloon-intro', 80);
     return () => {
       stopVoice();
       stopCamera();
@@ -92,10 +91,10 @@ export function BalloonCatch({ onComplete }: { onComplete: (stickerId: string) =
         await videoRef.current.play();
       }
       setUseCamera(true);
-      setPrompt('Kamera aktif! Lambaikan tanganmu untuk pecahkan balon.');
+      setPrompt('Asyik, kamera siap! Lambaikan tanganmu ke arah balon ya!');
       playVoice('balloon-camera-on');
     } catch {
-      setCameraError('Kamera tidak dapat diakses. Tetap bisa bermain dengan mode sentuh!');
+      setCameraError('Kamera tidak dapat diakses. Tenang, kita bisa main pakai sentuhan jari!');
       setUseCamera(false);
       playVoice('balloon-touch-mode');
     }
@@ -105,7 +104,7 @@ export function BalloonCatch({ onComplete }: { onComplete: (stickerId: string) =
     if (useCamera) {
       stopCamera();
       setUseCamera(false);
-      setPrompt('Mode sentuh aktif! Ketuk balon untuk memecahkannya.');
+      setPrompt('Yuk, sentuh balon-balonnya langsung pakai jarimu! Pop pop pop!');
       playVoice('balloon-touch-mode');
     } else {
       void startCamera();
@@ -172,9 +171,11 @@ export function BalloonCatch({ onComplete }: { onComplete: (stickerId: string) =
         window.setTimeout(() => {
           playSuccessChime();
           onComplete('sticker-balloon');
-          setPrompt('Luar biasa! Semua balon berhasil kamu tangkap!');
+          setPrompt('Hebat! Yeaaay! 🎉 Semua balon tertangkap!');
           playVoice('balloon-done', 350);
         }, 320);
+      } else {
+        setPrompt(`Pop! Kena! Balon ke-${next} meletus!`);
       }
       return next;
     });

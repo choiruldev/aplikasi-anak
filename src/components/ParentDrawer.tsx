@@ -217,14 +217,14 @@ export function ParentDrawer({
 
                 <div className="pillar-item">
                   <div className="pillar-top">
-                    <span className="pillar-title">👂 Sensori &amp; Bahasa</span>
-                    <span className="pillar-count">{progress.completedCounts['sensory'] ?? 0} sesi</span>
+                    <span className="pillar-title">👂 Bahasa &amp; Sensori</span>
+                    <span className="pillar-count">{(progress.completedCounts['alphabet'] ?? 0) + (progress.completedCounts['sensory'] ?? 0)} sesi</span>
                   </div>
                   <div className="pillar-bar-track">
                     <div
                       className="pillar-bar-fill fill-purple"
                       style={{
-                        width: `${Math.min(100, ((progress.completedCounts['sensory'] ?? 0) / 3) * 100)}%`
+                        width: `${Math.min(100, (((progress.completedCounts['alphabet'] ?? 0) + (progress.completedCounts['sensory'] ?? 0)) / 5) * 100)}%`
                       }}
                     />
                   </div>
@@ -235,6 +235,10 @@ export function ParentDrawer({
             <div className="field-group">
               <span className="field-label">Ringkasan Aktivitas Hari Ini</span>
               <div className="stats-grid">
+                <div className="stat-box">
+                  <span className="stat-val">{progress.completedCounts['alphabet'] ?? 0}</span>
+                  <span className="stat-lbl">Taman Huruf</span>
+                </div>
                 <div className="stat-box">
                   <span className="stat-val">{progress.completedCounts['numbers'] ?? 0}</span>
                   <span className="stat-lbl">Taman Angka</span>

@@ -27,7 +27,7 @@ const CARDS: GrossMotorCard[] = [
     id: 'bunny',
     voiceId: 'motor-bunny',
     title: 'Lompat Kelinci',
-    instruction: 'Ayo berdiri! Lompat dua kaki seperti kelinci lima kali.',
+    instruction: 'Lompat kelinci! Ayo lompat dua kaki seperti kelinci yang gembira!',
     mode: 'count',
     target: 5,
     unitLabel: 'lompatan'
@@ -36,7 +36,7 @@ const CARDS: GrossMotorCard[] = [
     id: 'plane',
     voiceId: 'motor-plane',
     title: 'Pesawat Seimbang',
-    instruction: 'Rentangkan dua tangan lebar-lebar! Jaga keseimbangan delapan detik.',
+    instruction: 'Pesawat terbang! Rentangkan kedua tanganmu lebar-lebar dan jaga keseimbangan!',
     mode: 'timer',
     target: 8,
     unitLabel: 'detik'
@@ -45,7 +45,7 @@ const CARDS: GrossMotorCard[] = [
     id: 'stomp',
     voiceId: 'motor-stomp',
     title: 'Langkah Gajah',
-    instruction: 'Hentakkan kaki kiri dan kanan pelan-pelan enam kali seperti gajah besar!',
+    instruction: 'Hentakan gajah! Hentakkan kaki kiri dan kanan pelan-pelan seperti gajah besar!',
     mode: 'count',
     target: 6,
     unitLabel: 'langkah'
@@ -54,7 +54,7 @@ const CARDS: GrossMotorCard[] = [
     id: 'reach',
     voiceId: 'motor-reach',
     title: 'Petik Bintang',
-    instruction: 'Berjinjit tinggi-tinggi dan raih bintang di langit lima kali!',
+    instruction: 'Petik bintang! Berjinjit tinggi-tinggi dan raih bintang di langit!',
     mode: 'count',
     target: 5,
     unitLabel: 'raihan'
@@ -63,7 +63,7 @@ const CARDS: GrossMotorCard[] = [
     id: 'freeze',
     voiceId: 'motor-freeze',
     title: 'Patung Musik',
-    instruction: 'Menari gembira saat musik bunyi! Kalau musik berhenti, diam jadi patung!',
+    instruction: 'Patung musik! Ayo menari gembira saat musik bunyi, kalau berhenti langsung diam membeku!',
     mode: 'freeze',
     target: 10,
     unitLabel: 'detik'
@@ -233,7 +233,9 @@ export function GrossMotorPlay({ onComplete }: { onComplete: (stickerId: string)
       <div className="stage-header">
         <div>
           <h1 id="motor-title" className="stage-title">Ayo Gerak: {card.title}</h1>
-          <p className="stage-subtitle">{card.instruction}</p>
+          <p className="stage-subtitle">
+            {finished ? 'Hebat! Yeaaay! 🎉 Tantangan selesai!' : card.instruction}
+          </p>
         </div>
         <button
           type="button"
