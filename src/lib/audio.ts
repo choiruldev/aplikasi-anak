@@ -510,3 +510,75 @@ export function playAnimalMotif(animalId: string): void {
       break;
   }
 }
+
+/**
+ * Springy boing sound for peek-a-boo animal pop-ups.
+ */
+export function playBoingSound(): void {
+  if (!soundOn) return;
+  const m = getMaster();
+  if (!m) return;
+  const { audio, out } = m;
+  const now = audio.currentTime;
+
+  const osc = audio.createOscillator();
+  const gain = audio.createGain();
+
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(220, now);
+  osc.frequency.exponentialRampToValueAtTime(620, now + 0.12);
+  osc.frequency.exponentialRampToValueAtTime(440, now + 0.28);
+
+  gain.gain.setValueAtTime(0.001, now);
+  gain.gain.linearRampToValueAtTime(0.25, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+
+  osc.connect(gain);
+  gain.connect(out);
+
+  osc.start(now);
+  osc.stop(now + 0.34);
+}
+
+/**
+ * Gentle rustling / shaking sound for bushes or hiding spot tap.
+ */
+export function playRustleSound(): void {
+  if (!soundOn) return;
+  const m = getMaster();
+  if (!m) return;
+  const { audio, out } = m;
+  const now = audio.currentTime;
+
+  // Gentle dual-tone organic rustle
+  const osc1 = audio.createOscillator();
+  const osc2 = audio.createOscillator();
+  const filter = audio.createBiquadFilter();
+  const gain = audio.createGain();
+
+  osc1.type = 'triangle';
+  osc1.frequency.setValueAtTime(320, now);
+  osc1.frequency.linearRampToValueAtTime(260, now + 0.12);
+
+  osc2.type = 'sine';
+  osc2.frequency.setValueAtTime(480, now);
+  osc2.frequency.linearRampToValueAtTime(360, now + 0.12);
+
+  filter.type = 'bandpass';
+  filter.frequency.setValueAtTime(800, now);
+  filter.Q.setValueAtTime(1.5, now);
+
+  gain.gain.setValueAtTime(0.001, now);
+  gain.gain.linearRampToValueAtTime(0.18, now + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+
+  osc1.connect(filter);
+  osc2.connect(filter);
+  filter.connect(gain);
+  gain.connect(out);
+
+  osc1.start(now);
+  osc2.start(now);
+  osc1.stop(now + 0.16);
+  osc2.stop(now + 0.16);
+}

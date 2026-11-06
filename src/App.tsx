@@ -1,10 +1,12 @@
 import { useEffect, useState, type JSX } from 'react';
 import { AlphabetGarden } from './activities/AlphabetGarden';
 import { BalloonCatch } from './activities/BalloonCatch';
+import { BubblePopper } from './activities/BubblePopper';
 import { ColoringBook } from './activities/ColoringBook';
 import { GrossMotorPlay } from './activities/GrossMotorPlay';
 import { JigsawPuzzle } from './activities/JigsawPuzzle';
 import { NumberGarden } from './activities/NumberGarden';
+import { PeekabooAnimals } from './activities/PeekabooAnimals';
 import { SensoryPlay } from './activities/SensoryPlay';
 import { ShapeSorter } from './activities/ShapeSorter';
 import { TraceCanvas } from './activities/TraceCanvas';
@@ -38,7 +40,18 @@ import {
   type DailyProgress
 } from './lib/storage';
 
-type ActivityKey = 'alphabet' | 'numbers' | 'sensory' | 'shapes' | 'trace' | 'motor' | 'coloring' | 'puzzle' | 'balloon';
+type ActivityKey =
+  | 'peekaboo'
+  | 'bubblepopper'
+  | 'alphabet'
+  | 'numbers'
+  | 'sensory'
+  | 'shapes'
+  | 'trace'
+  | 'motor'
+  | 'coloring'
+  | 'puzzle'
+  | 'balloon';
 
 interface ActivityMeta {
   key: ActivityKey;
@@ -52,6 +65,26 @@ interface ActivityMeta {
 }
 
 const ACTIVITIES: ActivityMeta[] = [
+  {
+    key: 'peekaboo',
+    title: 'Cilukba Hewan Lucu',
+    subtitle: 'Ketuk semak untuk mencari kucing, bebek, sapi, dan dengar suara riangnya!',
+    ageTag: '1 – 2,5 thn',
+    ageGroup: ['1-2.5'],
+    skillTag: 'Sebab-Akibat & Sensori',
+    stickerId: 'sticker-sensory',
+    surfaceTint: '#FFF0E6'
+  },
+  {
+    key: 'bubblepopper',
+    title: 'Pesta Gelembung Sabun',
+    subtitle: 'Ketuk & usap gelembung sabun berkilau untuk letupan nada ceria tanpa batas.',
+    ageTag: '1 – 2,5 thn',
+    ageGroup: ['1-2.5'],
+    skillTag: 'Motorik & Sensori Nada',
+    stickerId: 'sticker-balloon',
+    surfaceTint: '#E4F2FB'
+  },
   {
     key: 'alphabet',
     title: 'Taman Huruf A – Z',
@@ -468,6 +501,49 @@ export function App(): JSX.Element {
             </div>
           </section>
 
+          {(settings.ageFilter === 'all' || settings.ageFilter === '1-2.5') && (
+            <section className="toddler-zone-banner" aria-label="Zona Khusus Balita 1 sampai 2.5 tahun">
+              <div className="toddler-zone-header">
+                <div className="toddler-zone-badge">👶 Paling Disukai Batita (1–2,5 thn)</div>
+              </div>
+              <h2 className="toddler-zone-title">Zona Bermain Sensori & Sebab-Akibat</h2>
+              <p className="toddler-zone-desc">
+                Sentuh layar sesukamu tanpa aturan benar/salah! Kejutan cilukba hewan dan letupan gelembung sabun nada instan.
+              </p>
+              <div className="toddler-zone-actions">
+                <button
+                  type="button"
+                  className="toddler-zone-card-btn card-peekaboo"
+                  onClick={() => {
+                    playGentlePop();
+                    setActiveGame('peekaboo');
+                  }}
+                >
+                  <span className="toddler-card-icon" aria-hidden="true">🙈</span>
+                  <div>
+                    <span className="toddler-card-title">Cilukba Hewan</span>
+                    <span className="toddler-card-subtitle">Ketuk semak & temukan kejutan binatang lucu!</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className="toddler-zone-card-btn card-bubble"
+                  onClick={() => {
+                    playGentlePop();
+                    setActiveGame('bubblepopper');
+                  }}
+                >
+                  <span className="toddler-card-icon" aria-hidden="true">🫧</span>
+                  <div>
+                    <span className="toddler-card-title">Pesta Gelembung Sabun</span>
+                    <span className="toddler-card-subtitle">Usap & letupkan gelembung nada tanpa batas!</span>
+                  </div>
+                </button>
+              </div>
+            </section>
+          )}
+
           <section className="activity-grid" aria-label="Daftar aktivitas belajar dan motorik">
             {visibleActivities.map((act) => {
               const earned = progress.stickers.includes(act.stickerId);
@@ -483,6 +559,10 @@ export function App(): JSX.Element {
                   }}
                 >
                   <div className="activity-card-art">
+                    {act.key === 'peekaboo' && <AnimalIllustration id="cat" size={96} />}
+                    {act.key === 'bubblepopper' && (
+                      <div style={{ fontSize: '4.5rem', lineHeight: 1 }} aria-hidden="true">🫧</div>
+                    )}
                     {act.key === 'alphabet' && (
                       <div className="alphabet-preview-badge" aria-hidden="true">
                         <span className="alphabet-preview-text">Abc</span>
@@ -521,6 +601,12 @@ export function App(): JSX.Element {
         </main>
       ) : (
         <main className="game-main">
+          {activeGame === 'peekaboo' && (
+            <PeekabooAnimals onComplete={(s) => handleActivityComplete('peekaboo', s)} />
+          )}
+          {activeGame === 'bubblepopper' && (
+            <BubblePopper onComplete={(s) => handleActivityComplete('bubblepopper', s)} />
+          )}
           {activeGame === 'alphabet' && (
             <AlphabetGarden onComplete={(s) => handleActivityComplete('alphabet', s)} />
           )}

@@ -2425,3 +2425,437 @@ input:focus-visible {
   margin-top: 8px;
 }
 
+/* ==========================================================================
+   TODDLER ZONE (ZONA BATITA 1 - 2.5 TAHUN)
+   ========================================================================== */
+
+.toddler-zone-banner {
+  background: linear-gradient(135deg, #fff3e6 0%, #fff8e8 45%, #eff9f3 100%);
+  border: 3px solid #f2cfa9;
+  border-radius: 28px;
+  padding: 24px;
+  margin-bottom: 28px;
+  box-shadow: 0 8px 24px rgba(224, 107, 52, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.toddler-zone-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.toddler-zone-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 100px;
+  background-color: #e06b34;
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.toddler-zone-title {
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.15;
+}
+
+.toddler-zone-desc {
+  font-size: 0.95rem;
+  color: var(--ink-muted);
+  margin: 0 0 18px;
+  font-weight: 600;
+}
+
+.toddler-zone-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.toddler-zone-card-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 20px;
+  border: 3px solid transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 160ms ease;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.toddler-zone-card-btn:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+}
+
+.toddler-zone-card-btn:active {
+  transform: translateY(2px) scale(0.98);
+}
+
+.toddler-zone-card-btn.card-peekaboo {
+  background: #ffffff;
+  border-color: #ffd0a8;
+}
+
+.toddler-zone-card-btn.card-bubble {
+  background: #ffffff;
+  border-color: #bce3fb;
+}
+
+.toddler-card-icon {
+  font-size: 2.6rem;
+  line-height: 1;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+.toddler-card-title {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.15;
+  margin-bottom: 4px;
+}
+
+.toddler-card-subtitle {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  line-height: 1.25;
+}
+
+/* ==========================================================================
+   CILUKBA HEWAN (PEEKABOO ANIMALS)
+   ========================================================================== */
+
+.peekaboo-container {
+  min-height: 520px;
+  border-radius: 28px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  touch-action: manipulation;
+  transition: background-color 0.4s ease;
+  cursor: pointer;
+  border: 3px solid rgba(0, 0, 0, 0.06);
+  box-shadow: inset 0 2px 8px rgba(255, 255, 255, 0.6);
+  position: relative;
+  overflow: hidden;
+}
+
+.peekaboo-header {
+  text-align: center;
+  pointer-events: none;
+}
+
+.peekaboo-title {
+  font-family: var(--font-display);
+  font-size: 1.85rem;
+  font-weight: 800;
+  margin: 0 0 6px;
+  color: var(--ink);
+}
+
+.peekaboo-shout {
+  display: inline-block;
+  font-size: 2.2rem;
+  animation: mascotPopIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.peekaboo-badge {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 4px 16px;
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ink-muted);
+  border: 2px solid rgba(0, 0, 0, 0.06);
+}
+
+.peekaboo-stage {
+  position: relative;
+  width: 320px;
+  height: 310px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.peekaboo-animal-wrapper {
+  position: absolute;
+  bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+  z-index: 1;
+}
+
+.peekaboo-animal-wrapper.stage-hidden {
+  transform: translateY(140px) scale(0.65);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.peekaboo-animal-wrapper.stage-peeking {
+  transform: translateY(45px) scale(0.9);
+  opacity: 0.96;
+  animation: bunnyWobble 0.6s infinite alternate;
+}
+
+.peekaboo-animal-wrapper.stage-popped {
+  transform: translateY(-80px) scale(1.15);
+  opacity: 1;
+  animation: itemPopBounce 0.45s ease-out;
+}
+
+.peekaboo-animal-tag {
+  margin-top: 6px;
+  padding: 6px 20px;
+  border-radius: 100px;
+  color: #ffffff;
+  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+  letter-spacing: 0.02em;
+}
+
+.peekaboo-bush {
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  width: 100%;
+}
+
+.bush-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.peekaboo-bush.is-wiggling {
+  animation: wiggle-bush 0.35s ease-in-out infinite;
+}
+
+@keyframes wiggle-bush {
+  0% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-3deg) scale(1.03); }
+  50% { transform: rotate(3deg) scale(0.98); }
+  75% { transform: rotate(-2deg) scale(1.02); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+.leaf-particle {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 12px 2px 12px 2px;
+  pointer-events: none;
+  animation: leafFly 0.75s ease-out forwards;
+  z-index: 4;
+}
+
+@keyframes leafFly {
+  0% {
+    transform: translate(0, 0) scale(0.6);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc((var(--rnd, 0.5) - 0.5) * 120px), -80px) scale(1.1);
+    opacity: 0;
+  }
+}
+
+.peekaboo-footer {
+  margin-top: 16px;
+}
+
+.peekaboo-action-btn {
+  padding: 16px 36px;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #ffffff;
+  border: none;
+  border-radius: 100px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+
+.peekaboo-action-btn:hover {
+  transform: scale(1.05);
+}
+
+.peekaboo-action-btn:active {
+  transform: scale(0.95);
+}
+
+/* ==========================================================================
+   BUBBLE POPPER (PESTA GELEMBUNG SABUN)
+   ========================================================================== */
+
+.bubble-popper-container {
+  position: relative;
+  min-height: 540px;
+  height: 68vh;
+  background: linear-gradient(180deg, #e4f2fb 0%, #f6fafd 55%, #e1eff8 100%);
+  border-radius: 28px;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  cursor: pointer;
+  border: 3px solid rgba(188, 227, 251, 0.8);
+  box-shadow: inset 0 2px 12px rgba(255, 255, 255, 0.8);
+}
+
+.bubble-popper-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  pointer-events: none;
+  position: relative;
+  z-index: 10;
+}
+
+.bubble-popper-title {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0;
+}
+
+.bubble-popper-counter {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 6px 18px;
+  border-radius: 100px;
+  border: 2px solid #bce3fb;
+  color: #1a73e8;
+  box-shadow: 0 4px 12px rgba(26, 115, 232, 0.12);
+}
+
+.bubble-hint {
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  pointer-events: none;
+  position: relative;
+  z-index: 10;
+  padding: 0 16px;
+}
+
+.bubbles-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.soap-bubble {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  will-change: transform;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.05s linear;
+}
+
+.bubble-glint {
+  position: absolute;
+  top: 18%;
+  left: 22%;
+  width: 28%;
+  height: 20%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  transform: rotate(-35deg);
+}
+
+.bubble-item {
+  font-size: 1.6rem;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12));
+}
+
+.bubble-burst-wrapper {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.burst-ring {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 4px solid;
+  animation: burst-ring-expand 0.45s ease-out forwards;
+}
+
+@keyframes burst-ring-expand {
+  0% {
+    transform: scale(0.3);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.burst-item {
+  position: absolute;
+  font-size: 2.2rem;
+  animation: burst-item-float 0.65s ease-out forwards;
+}
+
+@keyframes burst-item-float {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-50px) scale(1.3);
+    opacity: 0;
+  }
+}
+
+
