@@ -107,11 +107,11 @@ const ACTIVITIES: ActivityMeta[] = [
   },
   {
     key: 'sensory',
-    title: 'Suara Hewan',
-    subtitle: 'Sentuh hewan lucu dan mainkan gambang warna Do-Re-Mi.',
+    title: 'Suara & Nada',
+    subtitle: 'Sentuh hewan lucu dan mainkan gambang nada Do-Re-Mi-Fa-Sol-La-Si-Do.',
     ageTag: '1 – 2,5 thn',
     ageGroup: ['1-2.5'],
-    skillTag: 'Bahasa & Sensori',
+    skillTag: 'Musik & Irama Nada',
     stickerId: 'sticker-sensory',
     surfaceTint: '#FCEEE6'
   },

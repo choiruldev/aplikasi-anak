@@ -1,4 +1,4 @@
-import { useEffect, useState, type JSX } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
 import { AnimalIllustration, IconSpeaker, TapHintFinger, VisualStarMeter, type AnimalId } from '../components/Art';
 import {
   playAnimalMotif,
@@ -31,23 +31,94 @@ const ANIMALS: AnimalCard[] = [
 
 interface XylophoneBar {
   id: string;
-  voiceId: VoiceClipId;
-  colorName: string;
   noteLabel: string;
+  solfegeNum: string;
+  voiceId: VoiceClipId;
   freq: number;
   fill: string;
   lip: string;
-  objectExample: string;
   heightPct: number;
 }
 
 const BARS: XylophoneBar[] = [
-  { id: 'do', voiceId: 'color-do', colorName: 'Merah', noteLabel: 'Do', freq: 261.63, fill: '#D94848', lip: '#A93232', objectExample: 'Merah seperti apel', heightPct: 100 },
-  { id: 're', voiceId: 'color-re', colorName: 'Jingga', noteLabel: 'Re', freq: 293.66, fill: '#E06B34', lip: '#B04E1F', objectExample: 'Jingga seperti jeruk', heightPct: 92 },
-  { id: 'mi', voiceId: 'color-mi', colorName: 'Kuning', noteLabel: 'Mi', freq: 329.63, fill: '#E89F1C', lip: '#B87B0E', objectExample: 'Kuning seperti pisang', heightPct: 84 },
-  { id: 'fa', voiceId: 'color-fa', colorName: 'Hijau', noteLabel: 'Fa', freq: 349.23, fill: '#2B9361', lip: '#1D6B45', objectExample: 'Hijau seperti daun', heightPct: 76 },
-  { id: 'sol', voiceId: 'color-sol', colorName: 'Biru', noteLabel: 'Sol', freq: 392.0, fill: '#2978B5', lip: '#1B5685', objectExample: 'Biru seperti laut', heightPct: 68 },
-  { id: 'la', voiceId: 'color-la', colorName: 'Toska', noteLabel: 'La', freq: 440.0, fill: '#1D9A9E', lip: '#136E71', objectExample: 'Toska seperti air kolam', heightPct: 60 }
+  { id: 'do', noteLabel: 'Do', solfegeNum: '1', voiceId: 'note-do', freq: 261.63, fill: '#E53935', lip: '#B71C1C', heightPct: 100 },
+  { id: 're', noteLabel: 'Re', solfegeNum: '2', voiceId: 'note-re', freq: 293.66, fill: '#FB8C00', lip: '#C66900', heightPct: 93 },
+  { id: 'mi', noteLabel: 'Mi', solfegeNum: '3', voiceId: 'note-mi', freq: 329.63, fill: '#FDD835', lip: '#C49B00', heightPct: 86 },
+  { id: 'fa', noteLabel: 'Fa', solfegeNum: '4', voiceId: 'note-fa', freq: 349.23, fill: '#43A047', lip: '#2E7D32', heightPct: 79 },
+  { id: 'sol', noteLabel: 'Sol', solfegeNum: '5', voiceId: 'note-sol', freq: 392.00, fill: '#00ACC1', lip: '#00838F', heightPct: 72 },
+  { id: 'la', noteLabel: 'La', solfegeNum: '6', voiceId: 'note-la', freq: 440.00, fill: '#1E88E5', lip: '#1565C0', heightPct: 65 },
+  { id: 'si', noteLabel: 'Si', solfegeNum: '7', voiceId: 'note-si', freq: 493.88, fill: '#8E24AA', lip: '#6A1B9A', heightPct: 58 },
+  { id: 'do-high', noteLabel: "Do'", solfegeNum: '1̇', voiceId: 'note-do-high', freq: 523.25, fill: '#E91E63', lip: '#AD1457', heightPct: 51 }
+];
+
+interface NurserySong {
+  id: string;
+  title: string;
+  emoji: string;
+  notes: { barId: string; freq: number; duration: number }[];
+}
+
+const NURSERY_SONGS: NurserySong[] = [
+  {
+    id: 'balonku',
+    title: 'Balonku',
+    emoji: '🎈',
+    notes: [
+      { barId: 'mi', freq: 329.63, duration: 300 },
+      { barId: 'mi', freq: 329.63, duration: 300 },
+      { barId: 'fa', freq: 349.23, duration: 300 },
+      { barId: 'sol', freq: 392.00, duration: 480 },
+      { barId: 'do-high', freq: 523.25, duration: 480 },
+      { barId: 'sol', freq: 392.00, duration: 320 },
+      { barId: 'mi', freq: 329.63, duration: 520 },
+      { barId: 'fa', freq: 349.23, duration: 300 },
+      { barId: 'sol', freq: 392.00, duration: 300 },
+      { barId: 'fa', freq: 349.23, duration: 300 },
+      { barId: 'mi', freq: 329.63, duration: 300 },
+      { barId: 're', freq: 293.66, duration: 300 },
+      { barId: 'do', freq: 261.63, duration: 600 }
+    ]
+  },
+  {
+    id: 'cicak',
+    title: 'Cicak',
+    emoji: '🦎',
+    notes: [
+      { barId: 'sol', freq: 392.00, duration: 300 },
+      { barId: 'mi', freq: 329.63, duration: 300 },
+      { barId: 'sol', freq: 392.00, duration: 300 },
+      { barId: 'mi', freq: 329.63, duration: 300 },
+      { barId: 'fa', freq: 349.23, duration: 300 },
+      { barId: 'sol', freq: 392.00, duration: 520 },
+      { barId: 'fa', freq: 349.23, duration: 300 },
+      { barId: 're', freq: 293.66, duration: 300 },
+      { barId: 'fa', freq: 349.23, duration: 300 },
+      { barId: 're', freq: 293.66, duration: 300 },
+      { barId: 'mi', freq: 329.63, duration: 300 },
+      { barId: 'fa', freq: 349.23, duration: 520 }
+    ]
+  },
+  {
+    id: 'bintang',
+    title: 'Bintang',
+    emoji: '⭐',
+    notes: [
+      { barId: 'do', freq: 261.63, duration: 300 },
+      { barId: 'do', freq: 261.63, duration: 300 },
+      { barId: 'sol', freq: 392.00, duration: 300 },
+      { barId: 'sol', freq: 392.00, duration: 300 },
+      { barId: 'la', freq: 440.00, duration: 300 },
+      { barId: 'la', freq: 440.00, duration: 300 },
+      { barId: 'sol', freq: 392.00, duration: 520 },
+      { barId: 'fa', freq: 349.23, duration: 300 },
+      { barId: 'fa', freq: 349.23, duration: 300 },
+      { barId: 'mi', freq: 329.63, duration: 300 },
+      { barId: 'mi', freq: 329.63, duration: 300 },
+      { barId: 're', freq: 293.66, duration: 300 },
+      { barId: 're', freq: 293.66, duration: 300 },
+      { barId: 'do', freq: 261.63, duration: 600 }
+    ]
+  }
 ];
 
 export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) => void }): JSX.Element {
@@ -57,6 +128,9 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
   const [currentClip, setCurrentClip] = useState<VoiceClipId>('sensory-intro');
   const [visited, setVisited] = useState<Set<string>>(() => new Set());
   const [rewarded, setRewarded] = useState(false);
+  const [playingSongId, setPlayingSongId] = useState<string | null>(null);
+
+  const songTimersRef = useRef<number[]>([]);
 
   useEffect(() => {
     preloadVoices([
@@ -66,8 +140,17 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
       ...ANIMALS.map((a) => a.voiceId),
       ...BARS.map((b) => b.voiceId)
     ]);
-    return () => stopVoice();
+    return () => {
+      stopVoice();
+      stopSong();
+    };
   }, []);
+
+  function stopSong(): void {
+    songTimersRef.current.forEach((t) => window.clearTimeout(t));
+    songTimersRef.current = [];
+    setPlayingSongId(null);
+  }
 
   function markVisited(key: string): void {
     setVisited((prev) => {
@@ -88,6 +171,7 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
   }
 
   function handleAnimalTap(animal: AnimalCard): void {
+    stopSong();
     triggerHaptic('tap');
     setActiveId(animal.id);
     setCaption(`${animal.soundWord} • ${animal.name}`);
@@ -98,13 +182,58 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
   }
 
   function handleBarTap(bar: XylophoneBar): void {
+    stopSong();
     triggerHaptic('tap');
     setActiveId(bar.id);
-    setCaption(`🎵 ${bar.noteLabel} • ${bar.colorName}`);
+    setCaption(`🎵 Nada ${bar.noteLabel} (${bar.solfegeNum})`);
     setCurrentClip(bar.voiceId);
-    playNote(bar.freq, 0.48, 0.26);
-    playVoice(bar.voiceId, 260);
+    playNote(bar.freq, 0.55, 0.32);
+    playVoice(bar.voiceId, 200);
     markVisited(`b:${bar.id}`);
+  }
+
+  function playNurseryMelody(song: NurserySong): void {
+    if (playingSongId === song.id) {
+      stopSong();
+      setCaption('Sentuh nada Do-Re-Mi! 🎶');
+      return;
+    }
+
+    stopSong();
+    setPlayingSongId(song.id);
+    setCaption(`🎵 Memutar Lagu: ${song.title} ${song.emoji}`);
+    markVisited(`song:${song.id}`);
+
+    let accumulatedDelay = 80;
+    const timers: number[] = [];
+
+    song.notes.forEach((note, index) => {
+      const isLast = index === song.notes.length - 1;
+
+      // Note strike timer
+      const strikeTimer = window.setTimeout(() => {
+        triggerHaptic('tap');
+        playNote(note.freq, 0.48, 0.28);
+        setActiveId(note.barId);
+      }, accumulatedDelay);
+      timers.push(strikeTimer);
+
+      // Note release timer
+      const releaseTimer = window.setTimeout(() => {
+        setActiveId((prev) => (prev === note.barId ? null : prev));
+        if (isLast) {
+          setPlayingSongId(null);
+          setCaption(`Horeee! Lagu ${song.title} selesai! 🎉`);
+          fireConfetti();
+          playSuccessChime();
+        }
+      }, accumulatedDelay + note.duration - 50);
+      timers.push(releaseTimer);
+
+      accumulatedDelay += note.duration;
+    });
+
+    songTimersRef.current = timers;
   }
 
   return (
@@ -112,7 +241,7 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
       <div className="stage-header">
         <div>
           <div className="stage-title-row">
-            <h1 id="sensory-title" className="stage-title">Suara &amp; Warna</h1>
+            <h1 id="sensory-title" className="stage-title">Suara &amp; Nada</h1>
             <VisualStarMeter count={Math.min(visited.size, 5)} total={5} />
           </div>
           <p className="stage-subtitle">{caption}</p>
@@ -128,13 +257,14 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
         </button>
       </div>
 
-      <div className="mode-switcher" role="tablist" aria-label="Pilih permainan sensori">
+      <div className="mode-switcher" role="tablist" aria-label="Pilih permainan suara dan nada">
         <button
           type="button"
           role="tab"
           aria-selected={tab === 'animals'}
           className={`mode-tab ${tab === 'animals' ? 'is-active' : ''}`}
           onClick={() => {
+            stopSong();
             setTab('animals');
             setCaption('Sentuh hewan lucu! 🐾');
             setCurrentClip('sensory-animals-tab');
@@ -149,13 +279,14 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
           aria-selected={tab === 'xylophone'}
           className={`mode-tab ${tab === 'xylophone' ? 'is-active' : ''}`}
           onClick={() => {
+            stopSong();
             setTab('xylophone');
-            setCaption('Sentuh bilah gambang! 🎶');
+            setCaption('Sentuh nada Do-Re-Mi! 🎶');
             setCurrentClip('sensory-xylo-tab');
             playVoice('sensory-xylo-tab');
           }}
         >
-          🎹 Gambang Warna
+          🎹 Gambang Nada
         </button>
       </div>
 
@@ -195,37 +326,68 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
           })}
         </div>
       ) : (
-        <div className="xylophone-frame" aria-label="Gambang enam warna">
-          {BARS.map((bar) => {
-            const isStruck = activeId === bar.id;
-            return (
-              <button
-                key={bar.id}
-                type="button"
-                className={`xylo-bar ${isStruck ? 'is-struck' : ''}`}
-                style={{
-                  backgroundColor: bar.fill,
-                  borderBottomColor: bar.lip,
-                  height: `${bar.heightPct}%`
-                }}
-                onPointerDown={() => handleBarTap(bar)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleBarTap(bar);
-                  }
-                }}
-              >
-                {isStruck && (
-                  <span className="xylo-sparkle-fx" aria-hidden="true">🎶</span>
-                )}
-                <span className="xylo-screw" aria-hidden="true" />
-                <span className="xylo-note">{bar.noteLabel}</span>
-                <span className="xylo-color">{bar.colorName}</span>
-                <span className="xylo-screw" aria-hidden="true" />
-              </button>
-            );
-          })}
+        <div className="xylophone-container">
+          {/* Nursery Melodies Quick Player for Toddlers */}
+          <div className="xylo-melodies-bar" aria-label="Pilihan melodi lagu anak">
+            <span className="xylo-melodies-label">Melodi Ceria:</span>
+            {NURSERY_SONGS.map((song) => {
+              const isPlaying = playingSongId === song.id;
+              return (
+                <button
+                  key={song.id}
+                  type="button"
+                  className={`melody-chip-btn ${isPlaying ? 'is-playing' : ''}`}
+                  onClick={() => playNurseryMelody(song)}
+                  aria-label={`${isPlaying ? 'Hentikan' : 'Mainkan'} lagu ${song.title}`}
+                >
+                  <span>{song.emoji}</span>
+                  <span>{song.title}</span>
+                  <span className="melody-chip-status">{isPlaying ? '⏹' : '▶'}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 8-Note Full Diatonic Glockenspiel / Xylophone */}
+          <div className="xylophone-frame" aria-label="Gambang nada delapan bilah do re mi fa sol la si do">
+            {BARS.map((bar, idx) => {
+              const isStruck = activeId === bar.id;
+              return (
+                <button
+                  key={bar.id}
+                  type="button"
+                  className={`xylo-bar ${isStruck ? 'is-struck' : ''}`}
+                  style={{
+                    backgroundColor: bar.fill,
+                    borderBottomColor: bar.lip,
+                    height: `${bar.heightPct}%`
+                  }}
+                  onPointerDown={() => handleBarTap(bar)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleBarTap(bar);
+                    }
+                  }}
+                  aria-label={`Nada ${bar.noteLabel} (${bar.solfegeNum})`}
+                >
+                  {isStruck && (
+                    <span className="xylo-sparkle-fx" aria-hidden="true">🎶</span>
+                  )}
+                  {/* Subtle initial hint on note Do if toddler hasn't touched any yet */}
+                  {visited.size === 0 && idx === 0 && (
+                    <div className="xylo-tap-guide">
+                      <TapHintFinger size={30} />
+                    </div>
+                  )}
+                  <span className="xylo-screw" aria-hidden="true" />
+                  <span className="xylo-number">{bar.solfegeNum}</span>
+                  <span className="xylo-note">{bar.noteLabel}</span>
+                  <span className="xylo-screw" aria-hidden="true" />
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </section>
