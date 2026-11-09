@@ -67,7 +67,7 @@ interface ActivityMeta {
 const ACTIVITIES: ActivityMeta[] = [
   {
     key: 'peekaboo',
-    title: 'Cilukba Hewan Lucu',
+    title: 'Cilukba Hewan',
     subtitle: 'Ketuk semak untuk mencari kucing, bebek, sapi, dan dengar suara riangnya!',
     ageTag: '1 – 2,5 thn',
     ageGroup: ['1-2.5'],
@@ -77,7 +77,7 @@ const ACTIVITIES: ActivityMeta[] = [
   },
   {
     key: 'bubblepopper',
-    title: 'Pesta Gelembung Sabun',
+    title: 'Pesta Gelembung',
     subtitle: 'Ketuk & usap gelembung sabun berkilau untuk letupan nada ceria tanpa batas.',
     ageTag: '1 – 2,5 thn',
     ageGroup: ['1-2.5'],
@@ -87,7 +87,7 @@ const ACTIVITIES: ActivityMeta[] = [
   },
   {
     key: 'alphabet',
-    title: 'Taman Huruf A – Z',
+    title: 'Taman Huruf',
     subtitle: 'Kenal huruf besar & kecil, ejaan kata Apel hingga Zebra, dan kuis tebak suara.',
     ageTag: '2,5 – 5 thn',
     ageGroup: ['2.5-4', '4-5'],
@@ -97,7 +97,7 @@ const ACTIVITIES: ActivityMeta[] = [
   },
   {
     key: 'numbers',
-    title: 'Taman Angka 1 – 10',
+    title: 'Taman Angka',
     subtitle: 'Kenal bentuk angka dan sentuh apel, bebek, serta mobil untuk berhitung.',
     ageTag: '2 – 5 thn',
     ageGroup: ['1-2.5', '2.5-4', '4-5'],
@@ -107,7 +107,7 @@ const ACTIVITIES: ActivityMeta[] = [
   },
   {
     key: 'sensory',
-    title: 'Kenal Suara & Warna',
+    title: 'Suara Hewan',
     subtitle: 'Sentuh hewan lucu dan mainkan gambang warna Do-Re-Mi.',
     ageTag: '1 – 2,5 thn',
     ageGroup: ['1-2.5'],
@@ -117,7 +117,7 @@ const ACTIVITIES: ActivityMeta[] = [
   },
   {
     key: 'shapes',
-    title: 'Pasang Bentuk Kayu',
+    title: 'Bentuk Kayu',
     subtitle: 'Geser kepingan bentuk ke lubang bayangan yang cocok.',
     ageTag: '2,5 – 4 thn',
     ageGroup: ['2.5-4'],
@@ -127,7 +127,7 @@ const ACTIVITIES: ActivityMeta[] = [
   },
   {
     key: 'trace',
-    title: 'Jejak Jari & Huruf',
+    title: 'Jejak Jari',
     subtitle: 'Tebalkan garis, huruf A-I-U, dan angka 1-2-3 dengan telunjuk.',
     ageTag: '3,5 – 5 thn',
     ageGroup: ['2.5-4', '4-5'],
@@ -137,7 +137,7 @@ const ACTIVITIES: ActivityMeta[] = [
   },
   {
     key: 'motor',
-    title: 'Ayo Gerak Aktif!',
+    title: 'Ayo Gerak!',
     subtitle: 'Lompat kelinci, pesawat seimbang, dan main patung musik.',
     ageTag: '2 – 5 thn',
     ageGroup: ['1-2.5', '2.5-4', '4-5'],
@@ -147,7 +147,7 @@ const ACTIVITIES: ActivityMeta[] = [
   },
   {
     key: 'coloring',
-    title: 'Buku Warna & Gambar Musik',
+    title: 'Buku Warna',
     subtitle: 'Warnai apel dan kupu-kupu lucu atau goreskan lukisan bunyi.',
     ageTag: '2 – 4,5 thn',
     ageGroup: ['1-2.5', '2.5-4'],
@@ -157,7 +157,7 @@ const ACTIVITIES: ActivityMeta[] = [
   },
   {
     key: 'puzzle',
-    title: 'Puzzle Keping Bergambar',
+    title: 'Puzzle Gambar',
     subtitle: 'Pasang 4 keping gambar kucing, gajah, dan semangka manis.',
     ageTag: '2,5 – 5 thn',
     ageGroup: ['2.5-4', '4-5'],
@@ -167,7 +167,7 @@ const ACTIVITIES: ActivityMeta[] = [
   },
   {
     key: 'balloon',
-    title: 'Tangkap Balon Ceria',
+    title: 'Tangkap Balon',
     subtitle: 'Lambaikan tangan di depan kamera atau ketuk layar untuk pecahkan balon.',
     ageTag: '1,5 – 5 thn',
     ageGroup: ['1-2.5', '2.5-4', '4-5'],
@@ -328,12 +328,12 @@ export function App(): JSX.Element {
               }}
             >
               <IconHome size={22} />
-              <span>Beranda</span>
+              <span>Menu</span>
             </button>
           ) : (
             <div className="brand-title-wrap">
-              <BrandMark size={40} />
-              <div>
+              <BrandMark size={36} />
+              <div className="brand-text-block">
                 <span className="brand-name">KecilMain</span>
                 <span className="brand-tagline">Belajar &amp; Gerak Balita</span>
               </div>
@@ -342,62 +342,79 @@ export function App(): JSX.Element {
         </div>
 
         <div className="topbar-right">
-          <button
-            type="button"
-            className="sticker-pill is-interactive"
-            onClick={() => {
-              playGentlePop();
-              setStickerAlbumOpen(true);
-            }}
-            aria-label={`Buka Buku Album Stiker, ${progress.stickers.length} dari 9 stiker terkumpul`}
-            title="Buka Buku Album Stiker"
-          >
-            <IconStar size={20} filled />
-            <span>{progress.stickers.length} / 9 Stiker</span>
-          </button>
+          {activeGame ? (
+            <div className="topbar-in-game-row">
+              <button
+                type="button"
+                className={`bgm-circle-btn ${settings.bgmEnabled ? 'is-active' : ''}`}
+                onClick={() => {
+                  playGentlePop();
+                  unlockAudio();
+                  const next = !settings.bgmEnabled;
+                  setSettings((prev) => ({ ...prev, bgmEnabled: next }));
+                }}
+                aria-label="Musik santai pengantar"
+                title={settings.bgmEnabled ? 'Matikan musik pengantar' : 'Nyalakan musik pengantar'}
+              >
+                <span>{settings.bgmEnabled ? '🎵' : '🔇'}</span>
+              </button>
 
-          <button
-            type="button"
-            className={`bgm-pill-btn ${settings.bgmEnabled ? 'is-active' : ''}`}
-            onClick={() => {
-              playGentlePop();
-              unlockAudio();
-              const next = !settings.bgmEnabled;
-              setSettings((prev) => ({ ...prev, bgmEnabled: next }));
-            }}
-            aria-label="Musik santai pengantar"
-            title={settings.bgmEnabled ? 'Matikan musik pengantar' : 'Nyalakan musik pengantar'}
-          >
-            <span>{settings.bgmEnabled ? '🎵 Musik On' : '🔇 Musik'}</span>
-          </button>
+              {remainingSec !== null && (
+                <div className="timer-pill" title="Sisa waktu bermain hari ini">
+                  <span>⏱️ {formatRemainingSeconds(remainingSec)}</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="topbar-home-row">
+              <button
+                type="button"
+                className="sticker-pill is-interactive"
+                onClick={() => {
+                  playGentlePop();
+                  setStickerAlbumOpen(true);
+                }}
+                aria-label={`Buka Buku Album Stiker, ${progress.stickers.length} dari 9 stiker terkumpul`}
+                title="Buka Buku Album Stiker"
+              >
+                <IconStar size={18} filled />
+                <span className="sticker-label-full">{progress.stickers.length} / 9 Stiker</span>
+                <span className="sticker-label-compact">{progress.stickers.length}</span>
+              </button>
 
-          {remainingSec !== null && (
-            <div className="timer-pill" title="Sisa waktu bermain hari ini">
-              <span>{formatRemainingSeconds(remainingSec)}</span>
+              <button
+                type="button"
+                className={`bgm-circle-btn ${settings.bgmEnabled ? 'is-active' : ''}`}
+                onClick={() => {
+                  playGentlePop();
+                  unlockAudio();
+                  const next = !settings.bgmEnabled;
+                  setSettings((prev) => ({ ...prev, bgmEnabled: next }));
+                }}
+                aria-label="Musik santai pengantar"
+                title={settings.bgmEnabled ? 'Matikan musik pengantar' : 'Nyalakan musik pengantar'}
+              >
+                <span>{settings.bgmEnabled ? '🎵' : '🔇'}</span>
+              </button>
+
+              {remainingSec !== null && (
+                <div className="timer-pill" title="Sisa waktu bermain hari ini">
+                  <span>⏱️ {formatRemainingSeconds(remainingSec)}</span>
+                </div>
+              )}
+
+              <button
+                type="button"
+                className="parent-circle-btn"
+                onClick={() => setParentOpen(true)}
+                aria-label="Pengaturan Orang Tua"
+                title="Pengaturan Orang Tua"
+              >
+                <IconLock size={18} />
+                <span className="parent-btn-text">Orang Tua</span>
+              </button>
             </div>
           )}
-
-          {!isStandalone && (
-            <button
-              type="button"
-              className="install-pill-btn"
-              onClick={handleTriggerInstall}
-              aria-label="Pasang Aplikasi ke Layar Utama"
-            >
-              <IconDownload size={16} />
-              <span>Pasang</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            className="parent-btn"
-            onClick={() => setParentOpen(true)}
-            aria-label="Pengaturan Orang Tua"
-          >
-            <IconLock size={18} />
-            <span>Orang Tua</span>
-          </button>
         </div>
       </header>
 
@@ -440,10 +457,8 @@ export function App(): JSX.Element {
               <div className="pwa-banner-left">
                 <span className="pwa-banner-emoji" aria-hidden="true">📲</span>
                 <div className="pwa-banner-text">
-                  <strong className="pwa-banner-title">Pasang KecilMain di Layar Utama HP</strong>
-                  <span className="pwa-banner-desc">
-                    Main lancar offline tanpa kuota &amp; layar penuh tanpa gangguan bilah browser.
-                  </span>
+                  <strong className="pwa-banner-title">Pasang di Layar HP</strong>
+                  <span className="pwa-banner-desc">Main lancar tanpa kuota</span>
                 </div>
               </div>
               <div className="pwa-banner-actions">
@@ -452,8 +467,8 @@ export function App(): JSX.Element {
                   className="pwa-banner-install-btn"
                   onClick={handleTriggerInstall}
                 >
-                  <IconDownload size={16} />
-                  <span>{installEvent ? 'Pasang Sekarang' : 'Cara Pasang'}</span>
+                  <IconDownload size={14} />
+                  <span>Pasang</span>
                 </button>
                 <button
                   type="button"
@@ -473,12 +488,12 @@ export function App(): JSX.Element {
           )}
 
           <section className="welcome-band" aria-labelledby="home-heading">
-            <div>
+            <div className="welcome-text-wrap">
               <h1 id="home-heading" className="home-heading">
-                Halo, {settings.childName}! Mau main apa hari ini?
+                Halo, {settings.childName}! 👋
               </h1>
               <p className="home-lead">
-                Pilih permainan suara, bentuk kayu, jejak huruf, atau tantangan gerak tubuh.
+                Ayo pilih mainan yang kamu suka:
               </p>
             </div>
 
@@ -504,12 +519,9 @@ export function App(): JSX.Element {
           {(settings.ageFilter === 'all' || settings.ageFilter === '1-2.5') && (
             <section className="toddler-zone-banner" aria-label="Zona Khusus Balita 1 sampai 2.5 tahun">
               <div className="toddler-zone-header">
-                <div className="toddler-zone-badge">👶 Paling Disukai Batita (1–2,5 thn)</div>
+                <span className="toddler-zone-badge">👶 Batita (1–2,5 Thn)</span>
+                <span className="toddler-zone-subbadge">Sentuh Bebas ✨</span>
               </div>
-              <h2 className="toddler-zone-title">Zona Bermain Sensori & Sebab-Akibat</h2>
-              <p className="toddler-zone-desc">
-                Sentuh layar sesukamu tanpa aturan benar/salah! Kejutan cilukba hewan dan letupan gelembung sabun nada instan.
-              </p>
               <div className="toddler-zone-actions">
                 <button
                   type="button"
@@ -520,9 +532,9 @@ export function App(): JSX.Element {
                   }}
                 >
                   <span className="toddler-card-icon" aria-hidden="true">🙈</span>
-                  <div>
-                    <span className="toddler-card-title">Cilukba Hewan</span>
-                    <span className="toddler-card-subtitle">Ketuk semak & temukan kejutan binatang lucu!</span>
+                  <div className="toddler-card-text">
+                    <span className="toddler-card-title">Cilukba</span>
+                    <span className="toddler-card-subtitle">Ketuk semak</span>
                   </div>
                 </button>
 
@@ -535,9 +547,9 @@ export function App(): JSX.Element {
                   }}
                 >
                   <span className="toddler-card-icon" aria-hidden="true">🫧</span>
-                  <div>
-                    <span className="toddler-card-title">Pesta Gelembung Sabun</span>
-                    <span className="toddler-card-subtitle">Usap & letupkan gelembung nada tanpa batas!</span>
+                  <div className="toddler-card-text">
+                    <span className="toddler-card-title">Gelembung</span>
+                    <span className="toddler-card-subtitle">Pecahkan nada</span>
                   </div>
                 </button>
               </div>
@@ -558,10 +570,19 @@ export function App(): JSX.Element {
                     setActiveGame(act.key);
                   }}
                 >
+                  <div className="activity-card-top-badges">
+                    <span className="meta-pill">{act.ageTag}</span>
+                    {earned && (
+                      <span className="card-earned-star" aria-label="Stiker diperoleh">
+                        <IconStar size={16} filled />
+                      </span>
+                    )}
+                  </div>
+
                   <div className="activity-card-art">
-                    {act.key === 'peekaboo' && <AnimalIllustration id="cat" size={96} />}
+                    {act.key === 'peekaboo' && <AnimalIllustration id="cat" size={76} />}
                     {act.key === 'bubblepopper' && (
-                      <div style={{ fontSize: '4.5rem', lineHeight: 1 }} aria-hidden="true">🫧</div>
+                      <div className="activity-art-emoji" aria-hidden="true">🫧</div>
                     )}
                     {act.key === 'alphabet' && (
                       <div className="alphabet-preview-badge" aria-hidden="true">
@@ -573,23 +594,18 @@ export function App(): JSX.Element {
                         <span className="numbers-preview-digit">123</span>
                       </div>
                     )}
-                    {act.key === 'sensory' && <AnimalIllustration id="duck" size={96} />}
-                    {act.key === 'shapes' && <ShapeGlyph shape="star" fill="#2B9361" size={88} />}
+                    {act.key === 'sensory' && <AnimalIllustration id="duck" size={76} />}
+                    {act.key === 'shapes' && <ShapeGlyph shape="star" fill="#2B9361" size={72} />}
                     {act.key === 'trace' && (
                       <div className="trace-preview-glyph" aria-hidden="true">Aa</div>
                     )}
                     {act.key === 'motor' && <ActionPoseIllustration pose="bunny" active={false} />}
-                    {act.key === 'coloring' && <IconPalette size={84} />}
-                    {act.key === 'puzzle' && <IconPuzzle size={84} />}
-                    {act.key === 'balloon' && <IconBalloon size={84} />}
+                    {act.key === 'coloring' && <IconPalette size={72} />}
+                    {act.key === 'puzzle' && <IconPuzzle size={72} />}
+                    {act.key === 'balloon' && <IconBalloon size={72} />}
                   </div>
 
                   <div className="activity-card-body">
-                    <div className="activity-meta-row">
-                      <span className="meta-pill">{act.ageTag}</span>
-                      <span className="meta-skill">{act.skillTag}</span>
-                      {earned && <IconStar size={20} filled />}
-                    </div>
                     <h2 className="activity-card-title">{act.title}</h2>
                     <p className="activity-card-desc">{act.subtitle}</p>
                   </div>
