@@ -1,5 +1,5 @@
 import { useEffect, useState, type JSX } from 'react';
-import { AnimalIllustration, IconSpeaker, type AnimalId } from '../components/Art';
+import { AnimalIllustration, IconSpeaker, TapHintFinger, VisualStarMeter, type AnimalId } from '../components/Art';
 import {
   playAnimalMotif,
   playNote,
@@ -53,7 +53,7 @@ const BARS: XylophoneBar[] = [
 export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) => void }): JSX.Element {
   const [tab, setTab] = useState<'animals' | 'xylophone'>('animals');
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [caption, setCaption] = useState('Sentuh hewan lucu untuk mendengar suaranya!');
+  const [caption, setCaption] = useState('Sentuh gambar hewan yuk! 🐾');
   const [currentClip, setCurrentClip] = useState<VoiceClipId>('sensory-intro');
   const [visited, setVisited] = useState<Set<string>>(() => new Set());
   const [rewarded, setRewarded] = useState(false);
@@ -77,7 +77,7 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
         setRewarded(true);
         triggerHaptic('success');
         fireConfetti();
-        setCaption('Hebat! Yeaaay! 🎉 Kamu dapat stiker baru!');
+        setCaption('Hebat! Yeaaay! 🎉');
         window.setTimeout(() => {
           playSuccessChime();
           onComplete('sticker-sensory');
@@ -100,7 +100,7 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
   function handleBarTap(bar: XylophoneBar): void {
     triggerHaptic('tap');
     setActiveId(bar.id);
-    setCaption(`Nada ${bar.noteLabel} • Warna ${bar.colorName}`);
+    setCaption(`🎵 ${bar.noteLabel} • ${bar.colorName}`);
     setCurrentClip(bar.voiceId);
     playNote(bar.freq, 0.48, 0.26);
     playVoice(bar.voiceId, 260);
@@ -111,7 +111,10 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
     <section className="activity-stage" aria-labelledby="sensory-title">
       <div className="stage-header">
         <div>
-          <h1 id="sensory-title" className="stage-title">Kenal Suara &amp; Warna</h1>
+          <div className="stage-title-row">
+            <h1 id="sensory-title" className="stage-title">Suara &amp; Warna</h1>
+            <VisualStarMeter count={Math.min(visited.size, 5)} total={5} />
+          </div>
           <p className="stage-subtitle">{caption}</p>
         </div>
         <button
@@ -133,12 +136,12 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
           className={`mode-tab ${tab === 'animals' ? 'is-active' : ''}`}
           onClick={() => {
             setTab('animals');
-            setCaption('Sentuh gambar hewan untuk mendengar suaranya.');
+            setCaption('Sentuh hewan lucu! 🐾');
             setCurrentClip('sensory-animals-tab');
             playVoice('sensory-animals-tab');
           }}
         >
-          Suara Hewan
+          🐾 Suara Hewan
         </button>
         <button
           type="button"
@@ -147,18 +150,18 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
           className={`mode-tab ${tab === 'xylophone' ? 'is-active' : ''}`}
           onClick={() => {
             setTab('xylophone');
-            setCaption('Ketuk bilah gambang untuk mengenal warna dan nada.');
+            setCaption('Sentuh bilah gambang! 🎶');
             setCurrentClip('sensory-xylo-tab');
             playVoice('sensory-xylo-tab');
           }}
         >
-          Gambang Warna
+          🎹 Gambang Warna
         </button>
       </div>
 
       {tab === 'animals' ? (
         <div className="animal-grid">
-          {ANIMALS.map((animal) => {
+          {ANIMALS.map((animal, idx) => {
             const isBouncing = activeId === animal.id;
             return (
               <button
@@ -169,7 +172,22 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
                 onClick={() => handleAnimalTap(animal)}
                 onAnimationEnd={() => setActiveId(null)}
               >
-                <AnimalIllustration id={animal.id} size={92} />
+                {/* Sound wave ripple on active tap */}
+                {isBouncing && (
+                  <>
+                    <span className="tile-sound-ripple" aria-hidden="true" />
+                    <span className="tile-note-particle" aria-hidden="true">🎵</span>
+                  </>
+                )}
+
+                {/* Initial guide finger for toddlers if no taps yet */}
+                {visited.size === 0 && idx === 0 && (
+                  <div className="tile-tap-guide">
+                    <TapHintFinger size={38} />
+                  </div>
+                )}
+
+                <AnimalIllustration id={animal.id} size={92} className="animal-svg-alive" />
                 <span className="animal-name">{animal.name}</span>
                 <span className="animal-sound">{animal.soundWord}</span>
               </button>
@@ -178,36 +196,38 @@ export function SensoryPlay({ onComplete }: { onComplete: (stickerId: string) =>
         </div>
       ) : (
         <div className="xylophone-frame" aria-label="Gambang enam warna">
-          {BARS.map((bar) => (
-            <button
-              key={bar.id}
-              type="button"
-              className={`xylo-bar ${activeId === bar.id ? 'is-struck' : ''}`}
-              style={{
-                backgroundColor: bar.fill,
-                borderBottomColor: bar.lip,
-                height: `${bar.heightPct}%`
-              }}
-              onPointerDown={() => handleBarTap(bar)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleBarTap(bar);
-                }
-              }}
-            >
-              <span className="xylo-screw" aria-hidden="true" />
-              <span className="xylo-note">{bar.noteLabel}</span>
-              <span className="xylo-color">{bar.colorName}</span>
-              <span className="xylo-screw" aria-hidden="true" />
-            </button>
-          ))}
+          {BARS.map((bar) => {
+            const isStruck = activeId === bar.id;
+            return (
+              <button
+                key={bar.id}
+                type="button"
+                className={`xylo-bar ${isStruck ? 'is-struck' : ''}`}
+                style={{
+                  backgroundColor: bar.fill,
+                  borderBottomColor: bar.lip,
+                  height: `${bar.heightPct}%`
+                }}
+                onPointerDown={() => handleBarTap(bar)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleBarTap(bar);
+                  }
+                }}
+              >
+                {isStruck && (
+                  <span className="xylo-sparkle-fx" aria-hidden="true">🎶</span>
+                )}
+                <span className="xylo-screw" aria-hidden="true" />
+                <span className="xylo-note">{bar.noteLabel}</span>
+                <span className="xylo-color">{bar.colorName}</span>
+                <span className="xylo-screw" aria-hidden="true" />
+              </button>
+            );
+          })}
         </div>
       )}
-
-      <div className="progress-strip" aria-live="polite">
-        <span>Eksplorasi: {Math.min(visited.size, 5)} / 5 untuk stiker bintang</span>
-      </div>
     </section>
   );
 }

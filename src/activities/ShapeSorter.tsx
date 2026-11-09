@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type JSX, type PointerEvent as ReactPointerEvent } from 'react';
-import { IconSpeaker, ShapeGlyph, type ShapeId } from '../components/Art';
+import { IconSpeaker, ShapeGlyph, VisualStarMeter, type ShapeId } from '../components/Art';
 import {
   playGentlePop,
   playStepNote,
@@ -240,8 +240,11 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
     <section className="activity-stage" aria-labelledby="sorter-title">
       <div className="stage-header">
         <div>
-          <h1 id="sorter-title" className="stage-title">Pasang Bentuk Kayu</h1>
-          <p className="stage-subtitle">{prompt}</p>
+          <div className="stage-title-row">
+            <h1 id="sorter-title" className="stage-title">Bentuk Kayu</h1>
+            <VisualStarMeter count={roundIdx} total={3} />
+          </div>
+          <p className="stage-subtitle">{allPlaced ? '🎉 Pas sekali!' : prompt}</p>
         </div>
         <div className="stage-actions">
           <button type="button" className="voice-btn" onClick={() => playVoice(currentClip)}>
@@ -249,7 +252,7 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
             <span>Dengar</span>
           </button>
           <button type="button" className="secondary-btn" onClick={nextRound}>
-            {allPlaced ? 'Papan Baru' : 'Acak Lagi'}
+            {allPlaced ? 'Lagi 🔄' : 'Acak 🎲'}
           </button>
         </div>
       </div>

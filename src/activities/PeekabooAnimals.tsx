@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type JSX } from 'react';
-import { AnimalIllustration, type AnimalId } from '../components/Art';
+import { AnimalIllustration, TapHintFinger, VisualStarMeter, type AnimalId } from '../components/Art';
 import {
   playAnimalMotif,
   playBoingSound,
@@ -141,41 +141,66 @@ export function PeekabooAnimals({
       tabIndex={0}
       aria-label="Cilukba Hewan"
     >
-      {/* Top Banner / Guidance */}
+      {/* Ambient floating flutter in background */}
+      <div className="peekaboo-ambient-item butterfly-left" aria-hidden="true">🦋</div>
+      <div className="peekaboo-ambient-item sparkle-right" aria-hidden="true">✨</div>
+
+      {/* Top HUD: Star coins & minimal joyful title */}
       <div className="peekaboo-header">
+        <div className="peekaboo-hud-row">
+          <VisualStarMeter count={Math.min(discoveredCount, 5)} total={5} />
+          {rewarded && <span className="peekaboo-trophy" aria-hidden="true">🏆</span>}
+        </div>
+
         <h2 className="peekaboo-title">
           {stage === 'popped' ? (
             <span className="peekaboo-shout" style={{ color: currentAnimal.accent }}>
-              CILUK... BAAA! 🎉 {currentAnimal.soundWord}
+              🎉 {currentAnimal.soundWord}
             </span>
           ) : stage === 'peeking' ? (
-            <span>Ciluk... Siapa ya? Ketuk lagi! 🙈</span>
+            <span className="peekaboo-subtle">🙈 Ciluk...</span>
           ) : (
-            <span>Ketuk semak untuk mencari hewan! 🌿</span>
+            <span className="peekaboo-subtle">🌿 Cilukba!</span>
           )}
         </h2>
-        <div className="peekaboo-badge">
-          ⭐ Ditemukan: {discoveredCount} {rewarded ? '• Dapat Stiker! 🏆' : ''}
-        </div>
       </div>
 
       {/* Center Stage: The Hiding Spot & Animal */}
       <div className="peekaboo-stage">
+        {/* Sound Waves Behind Popped Animal */}
+        {stage === 'popped' && (
+          <div className="peekaboo-sound-waves" aria-hidden="true">
+            <div className="sound-ring ring-1" style={{ borderColor: currentAnimal.accent }} />
+            <div className="sound-ring ring-2" style={{ borderColor: currentAnimal.accent }} />
+            <div className="sound-ring ring-3" style={{ borderColor: currentAnimal.accent }} />
+            <div className="floating-music-note note-1">🎵</div>
+            <div className="floating-music-note note-2">⭐</div>
+            <div className="floating-music-note note-3">🎶</div>
+          </div>
+        )}
+
         {/* The Animal */}
         <div
           className={`peekaboo-animal-wrapper stage-${stage}`}
           style={{ '--animal-color': currentAnimal.accent } as React.CSSProperties}
         >
-          <AnimalIllustration id={currentAnimal.id} size={180} />
+          <AnimalIllustration id={currentAnimal.id} size={180} className="animal-svg-alive" />
           {stage === 'popped' && (
             <div className="peekaboo-animal-tag" style={{ backgroundColor: currentAnimal.accent }}>
-              {currentAnimal.name}
+              <span className="tag-emoji">🐾</span> {currentAnimal.name}
             </div>
           )}
         </div>
 
         {/* Big Bush / Hiding Spot */}
         <div className={`peekaboo-bush ${stage === 'peeking' ? 'is-wiggling' : ''}`}>
+          {/* Peeking blinking eyes behind the bush when hidden */}
+          {stage === 'hidden' && (
+            <div className="bush-peek-eyes" aria-hidden="true">
+              👀
+            </div>
+          )}
+
           <svg viewBox="0 0 320 180" className="bush-svg" fill="none" aria-hidden="true">
             {/* Soft shadows */}
             <ellipse cx="160" cy="165" rx="140" ry="14" fill="#000000" fillOpacity="0.12" />
@@ -196,6 +221,13 @@ export function PeekabooAnimals({
             <circle cx="210" cy="90" r="9" fill="#FF4081" />
             <circle cx="210" cy="90" r="4.5" fill="#FFEB3B" />
           </svg>
+
+          {/* Visual Tap Pointer Hint for Toddlers */}
+          {stage === 'hidden' && (
+            <div className="bush-tap-hint">
+              <TapHintFinger size={44} />
+            </div>
+          )}
         </div>
 
         {/* Popping Leaf Particles */}
@@ -213,7 +245,7 @@ export function PeekabooAnimals({
         ))}
       </div>
 
-      {/* Bottom Action Prompt */}
+      {/* Bottom Action Prompt: Large tactile button */}
       <div className="peekaboo-footer">
         <button
           type="button"
@@ -224,7 +256,13 @@ export function PeekabooAnimals({
             handleInteraction();
           }}
         >
-          {stage === 'popped' ? 'Lagi! Ganti Hewan 🔄' : stage === 'peeking' ? 'Buka! 🎁' : 'Ketuk Semak! 🌿'}
+          {stage === 'popped' ? (
+            <span>Lagi! 🔄</span>
+          ) : stage === 'peeking' ? (
+            <span>Buka! 🎁</span>
+          ) : (
+            <span>Sentuh! 🌿</span>
+          )}
         </button>
       </div>
     </div>

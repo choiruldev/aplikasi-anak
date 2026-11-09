@@ -17,32 +17,46 @@ export function BrandMark({ size = 40 }: { size?: number }): JSX.Element {
   );
 }
 
-export function AnimalIllustration({ id, size = 88 }: { id: AnimalId; size?: number }): JSX.Element {
+export function AnimalIllustration({
+  id,
+  size = 88,
+  className = ''
+}: {
+  id: AnimalId;
+  size?: number;
+  className?: string;
+}): JSX.Element {
+  const combinedClass = `animal-svg animal-svg-${id} ${className}`.trim();
+
   switch (id) {
     case 'cat':
       return (
-        <svg width={size} height={size} viewBox="0 0 96 96" fill="none" aria-hidden="true">
-          <path d="M22 38L18 14L40 26Z" fill="#E06B34" />
-          <path d="M74 38L78 14L56 26Z" fill="#E06B34" />
-          <circle cx="48" cy="52" r="28" fill="#F08A4B" />
-          <circle cx="38" cy="48" r="4.5" fill="#182421" />
-          <circle cx="58" cy="48" r="4.5" fill="#182421" />
+        <svg className={combinedClass} width={size} height={size} viewBox="0 0 96 96" fill="none" aria-hidden="true">
+          <path className="animal-ear animal-ear-left" d="M22 38L18 14L40 26Z" fill="#E06B34" />
+          <path className="animal-ear animal-ear-right" d="M74 38L78 14L56 26Z" fill="#E06B34" />
+          <circle className="animal-face" cx="48" cy="52" r="28" fill="#F08A4B" />
+          <g className="animal-eyes">
+            <circle className="animal-eye animal-eye-left" cx="38" cy="48" r="4.5" fill="#182421" />
+            <circle className="animal-eye animal-eye-right" cx="58" cy="48" r="4.5" fill="#182421" />
+          </g>
           <path d="M44 56H52L48 61Z" fill="#D94848" />
           <path d="M48 61V66M48 66C44 69 40 68 38 66M48 66C52 69 56 68 58 66" stroke="#182421" strokeWidth="3" strokeLinecap="round" />
-          <path d="M16 52H28M16 58H28M68 52H80M68 58H80" stroke="#182421" strokeWidth="2.8" strokeLinecap="round" />
+          <path className="animal-whiskers" d="M16 52H28M16 58H28M68 52H80M68 58H80" stroke="#182421" strokeWidth="2.8" strokeLinecap="round" />
         </svg>
       );
     case 'cow':
       return (
-        <svg width={size} height={size} viewBox="0 0 96 96" fill="none" aria-hidden="true">
-          <ellipse cx="20" cy="36" rx="10" ry="6" fill="#182421" />
-          <ellipse cx="76" cy="36" rx="10" ry="6" fill="#182421" />
+        <svg className={combinedClass} width={size} height={size} viewBox="0 0 96 96" fill="none" aria-hidden="true">
+          <ellipse className="animal-ear animal-ear-left" cx="20" cy="36" rx="10" ry="6" fill="#182421" />
+          <ellipse className="animal-ear animal-ear-right" cx="76" cy="36" rx="10" ry="6" fill="#182421" />
           <path d="M30 24C28 16 34 14 36 22" stroke="#E89F1C" strokeWidth="5" strokeLinecap="round" />
           <path d="M66 24C68 16 62 14 60 22" stroke="#E89F1C" strokeWidth="5" strokeLinecap="round" />
-          <rect x="22" y="22" width="52" height="50" rx="22" fill="#FFFFFF" stroke="#182421" strokeWidth="3" />
+          <rect className="animal-face" x="22" y="22" width="52" height="50" rx="22" fill="#FFFFFF" stroke="#182421" strokeWidth="3" />
           <circle cx="34" cy="34" r="8" fill="#182421" />
-          <circle cx="37" cy="44" r="4" fill="#182421" />
-          <circle cx="59" cy="44" r="4" fill="#182421" />
+          <g className="animal-eyes">
+            <circle className="animal-eye animal-eye-left" cx="37" cy="44" r="4" fill="#182421" />
+            <circle className="animal-eye animal-eye-right" cx="59" cy="44" r="4" fill="#182421" />
+          </g>
           <rect x="26" y="52" width="44" height="24" rx="12" fill="#F4B6B0" />
           <circle cx="39" cy="63" r="3.5" fill="#182421" />
           <circle cx="57" cy="63" r="3.5" fill="#182421" />
@@ -50,53 +64,61 @@ export function AnimalIllustration({ id, size = 88 }: { id: AnimalId; size?: num
       );
     case 'duck':
       return (
-        <svg width={size} height={size} viewBox="0 0 96 96" fill="none" aria-hidden="true">
-          <circle cx="48" cy="44" r="24" fill="#E89F1C" />
-          <ellipse cx="48" cy="70" rx="28" ry="14" fill="#F2B830" />
-          <circle cx="39" cy="38" r="4.2" fill="#182421" />
-          <circle cx="57" cy="38" r="4.2" fill="#182421" />
-          <rect x="34" y="46" width="28" height="12" rx="6" fill="#E06B34" />
-          <path d="M40 20C44 13 52 13 54 20" stroke="#E89F1C" strokeWidth="5" strokeLinecap="round" />
+        <svg className={combinedClass} width={size} height={size} viewBox="0 0 96 96" fill="none" aria-hidden="true">
+          <circle className="animal-face" cx="48" cy="44" r="24" fill="#E89F1C" />
+          <ellipse className="animal-body" cx="48" cy="70" rx="28" ry="14" fill="#F2B830" />
+          <g className="animal-eyes">
+            <circle className="animal-eye animal-eye-left" cx="39" cy="38" r="4.2" fill="#182421" />
+            <circle className="animal-eye animal-eye-right" cx="57" cy="38" r="4.2" fill="#182421" />
+          </g>
+          <rect className="animal-beak" x="34" y="46" width="28" height="12" rx="6" fill="#E06B34" />
+          <path className="animal-crest" d="M40 20C44 13 52 13 54 20" stroke="#E89F1C" strokeWidth="5" strokeLinecap="round" />
         </svg>
       );
     case 'elephant':
       return (
-        <svg width={size} height={size} viewBox="0 0 96 96" fill="none" aria-hidden="true">
-          <circle cx="22" cy="48" r="18" fill="#5D8AA8" />
-          <circle cx="74" cy="48" r="18" fill="#5D8AA8" />
-          <circle cx="48" cy="46" r="24" fill="#76A5C4" />
-          <circle cx="39" cy="42" r="4" fill="#182421" />
-          <circle cx="57" cy="42" r="4" fill="#182421" />
-          <path d="M48 50V72C48 77 55 77 56 71" stroke="#5D8AA8" strokeWidth="10" strokeLinecap="round" />
+        <svg className={combinedClass} width={size} height={size} viewBox="0 0 96 96" fill="none" aria-hidden="true">
+          <circle className="animal-ear animal-ear-left" cx="22" cy="48" r="18" fill="#5D8AA8" />
+          <circle className="animal-ear animal-ear-right" cx="74" cy="48" r="18" fill="#5D8AA8" />
+          <circle className="animal-face" cx="48" cy="46" r="24" fill="#76A5C4" />
+          <g className="animal-eyes">
+            <circle className="animal-eye animal-eye-left" cx="39" cy="42" r="4" fill="#182421" />
+            <circle className="animal-eye animal-eye-right" cx="57" cy="42" r="4" fill="#182421" />
+          </g>
+          <path className="animal-trunk" d="M48 50V72C48 77 55 77 56 71" stroke="#5D8AA8" strokeWidth="10" strokeLinecap="round" />
         </svg>
       );
     case 'frog':
       return (
-        <svg width={size} height={size} viewBox="0 0 96 96" fill="none" aria-hidden="true">
+        <svg className={combinedClass} width={size} height={size} viewBox="0 0 96 96" fill="none" aria-hidden="true">
           <circle cx="33" cy="28" r="11" fill="#2B9361" />
           <circle cx="63" cy="28" r="11" fill="#2B9361" />
           <circle cx="33" cy="28" r="6" fill="#FFFFFF" />
           <circle cx="63" cy="28" r="6" fill="#FFFFFF" />
-          <circle cx="33" cy="28" r="3.2" fill="#182421" />
-          <circle cx="63" cy="28" r="3.2" fill="#182421" />
-          <ellipse cx="48" cy="54" rx="30" ry="22" fill="#37A972" />
-          <path d="M32 56C38 66 58 66 64 56" stroke="#182421" strokeWidth="3.5" strokeLinecap="round" />
+          <g className="animal-eyes">
+            <circle className="animal-eye animal-eye-left" cx="33" cy="28" r="3.2" fill="#182421" />
+            <circle className="animal-eye animal-eye-right" cx="63" cy="28" r="3.2" fill="#182421" />
+          </g>
+          <ellipse className="animal-face" cx="48" cy="54" rx="30" ry="22" fill="#37A972" />
+          <path className="animal-mouth" d="M32 56C38 66 58 66 64 56" stroke="#182421" strokeWidth="3.5" strokeLinecap="round" />
           <circle cx="28" cy="52" r="4.5" fill="#F08A4B" />
           <circle cx="68" cy="52" r="4.5" fill="#F08A4B" />
         </svg>
       );
     case 'bird':
       return (
-        <svg width={size} height={size} viewBox="0 0 96 96" fill="none" aria-hidden="true">
-          <circle cx="48" cy="48" r="26" fill="#2978B5" />
-          <path d="M24 50C16 44 16 58 26 60Z" fill="#1E5B8A" />
-          <path d="M72 50C80 44 80 58 70 60Z" fill="#1E5B8A" />
+        <svg className={combinedClass} width={size} height={size} viewBox="0 0 96 96" fill="none" aria-hidden="true">
+          <circle className="animal-face" cx="48" cy="48" r="26" fill="#2978B5" />
+          <path className="animal-wing animal-wing-left" d="M24 50C16 44 16 58 26 60Z" fill="#1E5B8A" />
+          <path className="animal-wing animal-wing-right" d="M72 50C80 44 80 58 70 60Z" fill="#1E5B8A" />
           <ellipse cx="48" cy="58" rx="16" ry="12" fill="#DCEAF5" />
           <circle cx="40" cy="40" r="4" fill="#FFFFFF" />
           <circle cx="56" cy="40" r="4" fill="#FFFFFF" />
-          <circle cx="40" cy="40" r="2.2" fill="#182421" />
-          <circle cx="56" cy="40" r="2.2" fill="#182421" />
-          <path d="M43 46H53L48 54Z" fill="#E89F1C" />
+          <g className="animal-eyes">
+            <circle className="animal-eye animal-eye-left" cx="40" cy="40" r="2.2" fill="#182421" />
+            <circle className="animal-eye animal-eye-right" cx="56" cy="40" r="2.2" fill="#182421" />
+          </g>
+          <path className="animal-beak" d="M43 46H53L48 54Z" fill="#E89F1C" />
         </svg>
       );
   }
@@ -379,6 +401,49 @@ export function IconCheck({ size = 20 }: { size?: number }): JSX.Element {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+export function TapHintFinger({
+  size = 48,
+  label
+}: {
+  size?: number;
+  label?: string;
+}): JSX.Element {
+  return (
+    <div className="tap-hint-wrapper" aria-hidden="true">
+      <div className="tap-beacon-ring ring-1" />
+      <div className="tap-beacon-ring ring-2" />
+      <div className="tap-finger-icon" style={{ fontSize: `${size}px` }}>
+        👆
+      </div>
+      {label && <span className="tap-hint-label">{label}</span>}
+    </div>
+  );
+}
+
+export function VisualStarMeter({
+  count,
+  total = 5
+}: {
+  count: number;
+  total?: number;
+}): JSX.Element {
+  return (
+    <div className="visual-star-meter" aria-label={`Bintang: ${count} dari ${total}`}>
+      {Array.from({ length: total }, (_, i) => {
+        const earned = i < count;
+        return (
+          <span
+            key={i}
+            className={`star-token ${earned ? 'is-earned' : 'is-empty'}`}
+          >
+            {earned ? '⭐' : '⚪'}
+          </span>
+        );
+      })}
+    </div>
   );
 }
 

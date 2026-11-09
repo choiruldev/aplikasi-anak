@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type JSX } from 'react';
-import { IconSpeaker } from '../components/Art';
+import { IconSpeaker, TapHintFinger, VisualStarMeter } from '../components/Art';
 import {
   playBubblePop,
   playGentlePop,
@@ -57,7 +57,7 @@ export function AlphabetGarden({ onComplete }: { onComplete: (stickerId: string)
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [learnedSet, setLearnedSet] = useState<Set<string>>(() => new Set());
   const [rewarded, setRewarded] = useState(false);
-  const [prompt, setPrompt] = useState('Ayo belajar huruf! Sentuh huruf yang kamu suka.');
+  const [prompt, setPrompt] = useState('Huruf A • Apel 🍎');
 
   // Quiz mode state
   const [quizScore, setQuizScore] = useState(0);
@@ -166,9 +166,12 @@ export function AlphabetGarden({ onComplete }: { onComplete: (stickerId: string)
     <section className="activity-stage" aria-labelledby="alphabet-title">
       <div className="stage-header">
         <div>
-          <h1 id="alphabet-title" className="stage-title">
-            Taman Huruf: {currentItem.letter} ({currentItem.word})
-          </h1>
+          <div className="stage-title-row">
+            <h1 id="alphabet-title" className="stage-title">
+              Huruf {currentItem.letter} • {currentItem.word}
+            </h1>
+            <VisualStarMeter count={Math.min(5, Math.floor(learnedSet.size / 5))} total={5} />
+          </div>
           <p className="stage-subtitle">{prompt}</p>
         </div>
         <div className="stage-actions">
@@ -194,11 +197,11 @@ export function AlphabetGarden({ onComplete }: { onComplete: (stickerId: string)
           onClick={() => {
             playGentlePop();
             setTab('learn');
-            setPrompt(`Huruf ${currentItem.letter}. ${currentItem.word}! Sentuh huruf atau gambar.`);
+            setPrompt(`${currentItem.letter} • ${currentItem.word}! 🌟`);
             playVoice(currentItem.voiceId);
           }}
         >
-          📖 Jelajah Huruf A – Z ({learnedSet.size}/26)
+          📖 Huruf A – Z
         </button>
         <button
           type="button"
@@ -211,7 +214,7 @@ export function AlphabetGarden({ onComplete }: { onComplete: (stickerId: string)
             setupNewQuiz();
           }}
         >
-          🎯 Tebak Huruf! (Skor: {quizScore})
+          🎯 Tebak Huruf ({quizScore})
         </button>
       </div>
 
@@ -264,11 +267,16 @@ export function AlphabetGarden({ onComplete }: { onComplete: (stickerId: string)
               }}
               aria-label={`Ketuk untuk dengar pelafalan huruf ${currentItem.letter}`}
             >
+              {learnedSet.size === 0 && (
+                <div className="alphabet-letter-guide">
+                  <TapHintFinger size={34} />
+                </div>
+              )}
               <div className="alphabet-letter-duo">
                 <span className="letter-upper">{currentItem.letter}</span>
                 <span className="letter-lower">{currentItem.letter.toLowerCase()}</span>
               </div>
-              <span className="alphabet-tap-label">Ketuk Suara 🔊</span>
+              <span className="alphabet-tap-label">🔊 Suara</span>
             </button>
 
             {/* Illustrated Object Card */}
@@ -282,10 +290,11 @@ export function AlphabetGarden({ onComplete }: { onComplete: (stickerId: string)
               }}
               aria-label={`Gambar ${currentItem.word}, ketuk untuk dengar suara`}
             >
-              <span className="alphabet-emoji" aria-hidden="true">{currentItem.emoji}</span>
+              <span className="alphabet-emoji bouncing-toddler-emoji" aria-hidden="true">
+                {currentItem.emoji}
+              </span>
               <div className="alphabet-word-group">
                 <span className="alphabet-word-main">{currentItem.word}</span>
-                <span className="alphabet-word-hint">{currentItem.hint}</span>
               </div>
             </button>
 
@@ -297,7 +306,7 @@ export function AlphabetGarden({ onComplete }: { onComplete: (stickerId: string)
                 disabled={selectedIdx === 0}
                 onClick={() => handleSelectLetter(Math.max(0, selectedIdx - 1))}
               >
-                ⬅ Huruf Sebelumnya
+                ⬅
               </button>
               <button
                 type="button"
@@ -311,8 +320,8 @@ export function AlphabetGarden({ onComplete }: { onComplete: (stickerId: string)
                 }}
               >
                 {selectedIdx < ALPHABET_LIST.length - 1
-                  ? `Lanjut Huruf ${ALPHABET_LIST[selectedIdx + 1].letter} ➡`
-                  : 'Ulang dari Huruf A 🔄'}
+                  ? `Lanjut ${ALPHABET_LIST[selectedIdx + 1].letter} ➡`
+                  : 'Ulang A 🔄'}
               </button>
             </div>
           </div>

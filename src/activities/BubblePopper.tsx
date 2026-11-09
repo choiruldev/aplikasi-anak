@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type JSX, type PointerEvent as ReactPointerEvent } from 'react';
+import { TapHintFinger, VisualStarMeter } from '../components/Art';
 import { playBubblePop, playSuccessChime } from '../lib/audio';
 import { fireConfetti, triggerHaptic } from '../lib/confetti';
 import { getBubblePopFrequency, isPointerInsideBubble } from '../lib/toddler';
@@ -23,6 +24,12 @@ interface BurstEffect {
   color: string;
 }
 
+interface TouchRipple {
+  id: number;
+  x: number;
+  y: number;
+}
+
 const SURPRISE_ITEMS = ['⭐️', '🌸', '🍓', '🎵', '🎈', '🐥', '🍬', '🚗', '🐱', '🍎'];
 
 export function BubblePopper({
@@ -38,6 +45,7 @@ export function BubblePopper({
 
   const [popDisplay, setPopDisplay] = useState(0);
   const [bursts, setBursts] = useState<BurstEffect[]>([]);
+  const [ripples, setRipples] = useState<TouchRipple[]>([]);
   const [bubblesRender, setBubblesRender] = useState<LiveBubble[]>([]);
 
   // Spawn initial bubbles
@@ -119,9 +127,18 @@ export function BubblePopper({
       const popped = bubblesRef.current[hitIndex];
       popBubble(popped, hitIndex);
     } else {
-      // Spawn new bubble right at touch point!
+      // Spawn new bubble right at touch point + water ripple effect!
       spawnBubbleAt(px, py);
+      spawnRippleAt(px, py);
     }
+  }
+
+  function spawnRippleAt(x: number, y: number): void {
+    const ripId = Date.now() + Math.random();
+    setRipples((prev) => [...prev, { id: ripId, x, y }]);
+    window.setTimeout(() => {
+      setRipples((prev) => prev.filter((r) => r.id !== ripId));
+    }, 600);
   }
 
   function popBubble(bubble: LiveBubble, index: number): void {
@@ -198,19 +215,17 @@ export function BubblePopper({
     >
       {/* Top HUD */}
       <div className="bubble-popper-header">
-        <h2 className="bubble-popper-title">🫧 Pesta Gelembung Sabun</h2>
-        <div className="bubble-popper-counter">
-          🫧 {popDisplay} Pecah! {rewardedRef.current ? '🎉 Juara!' : ''}
+        <div className="bubble-hud-left">
+          <VisualStarMeter count={Math.min(5, Math.floor(popDisplay / 3))} total={5} />
         </div>
-      </div>
-
-      <div className="bubble-hint">
-        Ketuk atau usap gelembung sebanyak-banyaknya! Sentuh ruang kosong untuk meniup gelembung baru ✨
+        <div className="bubble-popper-counter">
+          🫧 {popDisplay} {rewardedRef.current ? '🏆' : ''}
+        </div>
       </div>
 
       {/* Floating Bubbles */}
       <div className="bubbles-stage">
-        {bubblesRender.map((b) => {
+        {bubblesRender.map((b, idx) => {
           const wobbleX = Math.sin(b.wobbleOffset) * 12;
           return (
             <div
@@ -228,6 +243,13 @@ export function BubblePopper({
               <div className="bubble-glint" />
               {/* Surprise Item Floating Inside */}
               <div className="bubble-item">{b.item}</div>
+
+              {/* Gentle visual guide on first bubble if toddler hasn't popped any */}
+              {popDisplay === 0 && idx === 0 && (
+                <div className="bubble-tap-finger">
+                  <TapHintFinger size={38} />
+                </div>
+              )}
             </div>
           );
         })}
@@ -244,7 +266,18 @@ export function BubblePopper({
           >
             <div className="burst-ring" style={{ borderColor: burst.color }} />
             <div className="burst-item">{burst.item}</div>
+            <div className="burst-sparkle sparkle-1">✨</div>
+            <div className="burst-sparkle sparkle-2">✨</div>
           </div>
+        ))}
+
+        {/* Empty Screen Touch Ripples */}
+        {ripples.map((rip) => (
+          <div
+            key={rip.id}
+            className="water-touch-ripple"
+            style={{ left: `${rip.x}px`, top: `${rip.y}px` }}
+          />
         ))}
       </div>
     </div>

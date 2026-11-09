@@ -1,5 +1,5 @@
 import { useEffect, useState, type JSX } from 'react';
-import { IconSpeaker } from '../components/Art';
+import { IconSpeaker, TapHintFinger, VisualStarMeter } from '../components/Art';
 import {
   playBubblePop,
   playGentlePop,
@@ -284,7 +284,7 @@ export function NumberGarden({ onComplete }: { onComplete: (stickerId: string) =
   const [countedSet, setCountedSet] = useState<Set<number>>(() => new Set());
   const [completedSet, setCompletedSet] = useState<Set<number>>(() => new Set());
   const [rewarded, setRewarded] = useState(false);
-  const [prompt, setPrompt] = useState('Ayo belajar angka! Sentuh gambar untuk berhitung.');
+  const [prompt, setPrompt] = useState('Sentuh gambar yuk! 🍎');
 
   useEffect(() => {
     preloadVoices([
@@ -365,8 +365,11 @@ export function NumberGarden({ onComplete }: { onComplete: (stickerId: string) =
     <section className="activity-stage" aria-labelledby="numbers-title">
       <div className="stage-header">
         <div>
-          <h1 id="numbers-title" className="stage-title">Taman Angka: {card.word} ({card.value})</h1>
-          <p className="stage-subtitle">{prompt}</p>
+          <div className="stage-title-row">
+            <h1 id="numbers-title" className="stage-title">Angka {card.value} • {card.word}</h1>
+            <VisualStarMeter count={completedSet.size} total={4} />
+          </div>
+          <p className="stage-subtitle">{isCurrentCardFinished ? '🎉 Selesai!' : prompt}</p>
         </div>
         <button
           type="button"
@@ -424,7 +427,13 @@ export function NumberGarden({ onComplete }: { onComplete: (stickerId: string) =
           </div>
 
           <div className="number-counter-badge">
-            <span>Tersentuh: <strong>{countedSet.size}</strong> dari {card.value}</span>
+            <div className="number-dots-row" aria-label={`${countedSet.size} dari ${card.value}`}>
+              {Array.from({ length: card.value }, (_, i) => (
+                <span key={i} className={`count-dot ${countedSet.has(i) ? 'is-filled' : ''}`}>
+                  {countedSet.has(i) ? '⭐' : '⚪'}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -436,10 +445,15 @@ export function NumberGarden({ onComplete }: { onComplete: (stickerId: string) =
               <button
                 key={i}
                 type="button"
-                className={`number-item-btn ${isCounted ? 'is-active' : ''}`}
+                className={`number-item-btn ${isCounted ? 'is-active' : 'is-uncounted'}`}
                 onClick={() => handleTapItem(i)}
                 aria-label={`${card.itemTitle} ke-${i + 1} ${isCounted ? 'sudah dihitung' : 'ketuk untuk menghitung'}`}
               >
+                {countedSet.size === 0 && i === 0 && (
+                  <div className="number-item-guide">
+                    <TapHintFinger size={34} />
+                  </div>
+                )}
                 <ItemIllustration type={card.type} active={isCounted} />
                 <span className={`number-item-order ${isCounted ? 'is-visible' : ''}`}>
                   {isCounted ? i + 1 : '👆'}
