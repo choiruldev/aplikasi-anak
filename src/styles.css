@@ -776,23 +776,40 @@ input:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: transform 100ms ease;
+  transition: transform 100ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 120ms ease;
+  animation: tile-gentle-breathe 4.2s ease-in-out infinite;
+  touch-action: manipulation;
+  will-change: transform;
+}
+
+.animal-tile:nth-child(2) { animation-delay: 0.7s; }
+.animal-tile:nth-child(3) { animation-delay: 1.4s; }
+.animal-tile:nth-child(4) { animation-delay: 2.1s; }
+.animal-tile:nth-child(5) { animation-delay: 2.8s; }
+.animal-tile:nth-child(6) { animation-delay: 3.5s; }
+
+@keyframes tile-gentle-breathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3.5px); }
 }
 
 .animal-tile:active {
-  transform: translateY(3px);
+  transform: translateY(3px) scale(0.97);
 }
 
 .animal-tile.is-bouncing {
-  animation: pop-hop 360ms ease;
+  animation: pop-hop 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes pop-hop {
   0% {
     transform: scale(1);
   }
-  45% {
-    transform: scale(1.07) translateY(-6px);
+  35% {
+    transform: scale(1.12, 0.92) translateY(-10px);
+  }
+  65% {
+    transform: scale(0.96, 1.04) translateY(-2px);
   }
   100% {
     transform: scale(1);
@@ -905,9 +922,16 @@ input:focus-visible {
 
 .xylo-bar:active,
 .xylo-bar.is-struck {
-  transform: translateY(6px) scale(0.97);
-  filter: brightness(1.18);
-  box-shadow: 0 0 18px rgba(255, 255, 255, 0.9);
+  animation: xylo-strike 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: brightness(1.22);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.95);
+}
+
+@keyframes xylo-strike {
+  0% { transform: scale(1) translateY(0); }
+  35% { transform: scale(0.95, 0.96) translateY(7px); }
+  70% { transform: scale(1.02, 1.01) translateY(-2px); }
+  100% { transform: scale(1) translateY(0); }
 }
 
 .xylo-screw {
@@ -2899,7 +2923,7 @@ input:focus-visible {
 
 .toddler-zone-actions {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
 }
 
@@ -2917,6 +2941,17 @@ input:focus-visible {
   cursor: pointer;
   transition: transform 120ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 120ms ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  animation: card-gentle-breathe 4s ease-in-out infinite;
+  touch-action: manipulation;
+  will-change: transform;
+}
+
+.toddler-zone-card-btn:nth-child(2) { animation-delay: 0.8s; }
+.toddler-zone-card-btn:nth-child(3) { animation-delay: 1.6s; }
+
+@keyframes card-gentle-breathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
 }
 
 .toddler-zone-card-btn:active {
@@ -2930,6 +2965,10 @@ input:focus-visible {
 
 .toddler-zone-card-btn.card-bubble {
   border-color: #bce3fb;
+}
+
+.toddler-zone-card-btn.card-colors {
+  border-color: #f8bbd0;
 }
 
 .toddler-card-icon {
@@ -3069,7 +3108,8 @@ input:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+  will-change: transform, opacity;
   z-index: 1;
 }
 
@@ -3080,15 +3120,41 @@ input:focus-visible {
 }
 
 .peekaboo-animal-wrapper.stage-peeking {
-  transform: translateY(45px) scale(0.9);
-  opacity: 0.96;
-  animation: bunnyWobble 0.6s infinite alternate;
+  transform: translateY(45px) scale(0.92);
+  opacity: 1;
 }
 
 .peekaboo-animal-wrapper.stage-popped {
   transform: translateY(-45px) scale(1.08);
   opacity: 1;
-  animation: itemPopBounce 0.45s ease-out;
+}
+
+.peekaboo-animal-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform-origin: center bottom;
+  will-change: transform;
+}
+
+.stage-peeking .peekaboo-animal-inner {
+  animation: peeking-sway 1.3s ease-in-out infinite alternate;
+}
+
+.stage-popped .peekaboo-animal-inner {
+  animation: animal-spring-boing 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes peeking-sway {
+  0% { transform: rotate(-3deg); }
+  100% { transform: rotate(3deg); }
+}
+
+@keyframes animal-spring-boing {
+  0% { transform: scale(0.85, 1.2); }
+  40% { transform: scale(1.15, 0.9); }
+  70% { transform: scale(0.96, 1.04); }
+  100% { transform: scale(1, 1); }
 }
 
 .peekaboo-animal-tag {
@@ -3108,8 +3174,10 @@ input:focus-visible {
   position: relative;
   z-index: 2;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
   width: 100%;
+  transform-origin: center bottom;
+  will-change: transform;
 }
 
 .bush-svg {
@@ -3118,14 +3186,27 @@ input:focus-visible {
   display: block;
 }
 
+.peekaboo-bush.is-idle {
+  animation: bush-idle-breathe 2.8s ease-in-out infinite;
+}
+
 .peekaboo-bush.is-wiggling {
   animation: wiggle-bush 0.35s ease-in-out infinite;
 }
 
+.peekaboo-bush.is-popped {
+  transform: scale(1.04, 0.96);
+}
+
+@keyframes bush-idle-breathe {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.025, 0.985) translateY(-3px); }
+}
+
 @keyframes wiggle-bush {
   0% { transform: rotate(0deg) scale(1); }
-  25% { transform: rotate(-3deg) scale(1.03); }
-  50% { transform: rotate(3deg) scale(0.98); }
+  25% { transform: rotate(-3.5deg) scale(1.04, 0.97); }
+  50% { transform: rotate(3.5deg) scale(0.97, 1.03); }
   75% { transform: rotate(-2deg) scale(1.02); }
   100% { transform: rotate(0deg) scale(1); }
 }
@@ -3767,5 +3848,221 @@ input:focus-visible {
   50% { transform: scale(0.95, 1.05) translateY(-8px) rotate(0deg); }
   75% { transform: scale(1.06, 0.94) rotate(6deg); }
 }
+
+/* ==========================================================================
+   COLOR GARDEN (TAMAN WARNA BATITA 0-2.5 TAHUN)
+   ========================================================================== */
+
+.color-garden-stage {
+  min-height: 480px;
+  height: calc(100dvh - 110px);
+  max-height: 720px;
+  border-radius: 26px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 14px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: background-color 0.35s ease;
+  user-select: none;
+  cursor: pointer;
+  border: 3px solid rgba(0, 0, 0, 0.06);
+  box-shadow: inset 0 2px 14px rgba(255, 255, 255, 0.85);
+}
+
+.color-garden-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.color-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-radius: 100px;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 800;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+  transition: background-color 0.25s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  letter-spacing: 0.04em;
+  animation: badge-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes badge-pop {
+  0% { transform: scale(0.85); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.color-featured-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: auto 0;
+  cursor: pointer;
+}
+
+.color-featured-balloon {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s ease;
+  animation: balloon-float 3.4s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.color-featured-balloon:active {
+  transform: scale(0.92);
+}
+
+@keyframes balloon-float {
+  0% { transform: translateY(0) scale(1) rotate(0deg); }
+  50% { transform: translateY(-8px) scale(1.04, 0.96) rotate(-2deg); }
+  100% { transform: translateY(-14px) scale(0.98, 1.02) rotate(2deg); }
+}
+
+.color-balloon-shine {
+  position: absolute;
+  top: 14px;
+  left: 20px;
+  width: 38px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.65);
+  transform: rotate(-35deg);
+  pointer-events: none;
+}
+
+.color-mascot-emoji {
+  font-size: 4.6rem;
+  line-height: 1;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.18));
+  animation: mascot-wiggle 2.2s ease-in-out infinite alternate;
+  display: block;
+}
+
+@keyframes mascot-wiggle {
+  0% { transform: rotate(-4deg) scale(0.97); }
+  100% { transform: rotate(4deg) scale(1.03); }
+}
+
+.color-featured-label {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9);
+}
+
+.color-pots-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .color-pots-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+}
+
+.color-pot-btn {
+  min-height: 80px;
+  padding: 10px 4px;
+  border-radius: 20px;
+  border: 3px solid transparent;
+  border-bottom-width: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #ffffff;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+  touch-action: manipulation;
+  will-change: transform;
+  animation: pot-breathe 4s ease-in-out infinite;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+}
+
+.color-pot-btn:nth-child(2) { animation-delay: 0.6s; }
+.color-pot-btn:nth-child(3) { animation-delay: 1.2s; }
+.color-pot-btn:nth-child(4) { animation-delay: 1.8s; }
+.color-pot-btn:nth-child(5) { animation-delay: 2.4s; }
+.color-pot-btn:nth-child(6) { animation-delay: 3.0s; }
+
+@keyframes pot-breathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.color-pot-btn:active,
+.color-pot-btn.is-struck {
+  animation: pot-spring-squash 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: brightness(1.15);
+}
+
+.color-pot-btn.is-selected {
+  outline: 4px solid #ffffff;
+  outline-offset: -2px;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.9), 0 6px 18px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes pot-spring-squash {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.16, 0.84) translateY(4px); }
+  70% { transform: scale(0.94, 1.06) translateY(-3px); }
+  100% { transform: scale(1); }
+}
+
+.color-pot-glint {
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  width: 22px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  transform: rotate(-25deg);
+  pointer-events: none;
+}
+
+.color-pot-emoji {
+  font-size: 1.85rem;
+  line-height: 1;
+}
+
+.color-pot-name {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.color-pot-tap-guide {
+  position: absolute;
+  top: -20px;
+  right: -8px;
+  pointer-events: none;
+  z-index: 10;
+}
+
 
 

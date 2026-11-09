@@ -213,6 +213,23 @@ const STICKER_LIST: StickerItem[] = [
         />
       </svg>
     )
+  },
+  {
+    id: 'sticker-colors',
+    name: 'Pelangi Ceria Batita',
+    skill: 'Pengenalan Warna',
+    hint: 'Sentuh 5 warna ceria di Taman Warna',
+    bgColor: '#FFF0F5',
+    borderColor: '#FF4081',
+    iconSvg: (
+      <svg width="44" height="44" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="20" fill="#FF80AB" />
+        <circle cx="16" cy="18" r="7" fill="#FF5252" />
+        <circle cx="32" cy="18" r="7" fill="#FFD740" />
+        <circle cx="24" cy="30" r="7" fill="#40C4FF" />
+        <circle cx="24" cy="22" r="5" fill="#69F0AE" />
+      </svg>
+    )
   }
 ];
 

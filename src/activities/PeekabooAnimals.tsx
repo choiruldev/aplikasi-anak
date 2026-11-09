@@ -135,10 +135,12 @@ export function PeekabooAnimals({
   return (
     <div
       className="peekaboo-container"
-      style={{ backgroundColor: currentAnimal.bgTint }}
-      onClick={handleInteraction}
-      role="button"
-      tabIndex={0}
+      style={{ backgroundColor: currentAnimal.bgTint, touchAction: 'manipulation' }}
+      onPointerDown={(e) => {
+        if ((e.target as HTMLElement).closest('.peekaboo-action-btn')) return;
+        handleInteraction();
+      }}
+      role="region"
       aria-label="Cilukba Hewan"
     >
       {/* Ambient floating flutter in background */}
@@ -184,16 +186,18 @@ export function PeekabooAnimals({
           className={`peekaboo-animal-wrapper stage-${stage}`}
           style={{ '--animal-color': currentAnimal.accent } as React.CSSProperties}
         >
-          <AnimalIllustration id={currentAnimal.id} size={180} className="animal-svg-alive" />
-          {stage === 'popped' && (
-            <div className="peekaboo-animal-tag" style={{ backgroundColor: currentAnimal.accent }}>
-              <span className="tag-emoji">🐾</span> {currentAnimal.name}
-            </div>
-          )}
+          <div className="peekaboo-animal-inner">
+            <AnimalIllustration id={currentAnimal.id} size={180} className="animal-svg-alive" />
+            {stage === 'popped' && (
+              <div className="peekaboo-animal-tag" style={{ backgroundColor: currentAnimal.accent }}>
+                <span className="tag-emoji">🐾</span> {currentAnimal.name}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Big Bush / Hiding Spot */}
-        <div className={`peekaboo-bush ${stage === 'peeking' ? 'is-wiggling' : ''}`}>
+        <div className={`peekaboo-bush ${stage === 'peeking' ? 'is-wiggling' : stage === 'hidden' ? 'is-idle' : 'is-popped'}`}>
           {/* Peeking blinking eyes behind the bush when hidden */}
           {stage === 'hidden' && (
             <div className="bush-peek-eyes" aria-hidden="true">
@@ -250,10 +254,13 @@ export function PeekabooAnimals({
         <button
           type="button"
           className="peekaboo-action-btn"
-          style={{ backgroundColor: currentAnimal.accent }}
-          onClick={(e) => {
+          style={{ backgroundColor: currentAnimal.accent, touchAction: 'manipulation' }}
+          onPointerDown={(e) => {
             e.stopPropagation();
             handleInteraction();
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
           }}
         >
           {stage === 'popped' ? (

@@ -47,3 +47,10 @@ export function getNextAnimalIndex(currentIndex: number, totalAnimals: number): 
   if (totalAnimals <= 1) return 0;
   return (currentIndex + 1) % totalAnimals;
 }
+
+/**
+ * Checks if toddler has explored enough unique colors to earn the discovery badge.
+ */
+export function isColorDiscoveryComplete(discoveredCount: number, target = 5): boolean {
+  return discoveredCount >= target;
+}

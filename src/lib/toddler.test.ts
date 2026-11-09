@@ -4,6 +4,7 @@ import {
   BUBBLE_MELODY_NOTES,
   getBubblePopFrequency,
   getNextAnimalIndex,
+  isColorDiscoveryComplete,
   isPointerInsideBubble
 } from './toddler.ts';
 
@@ -36,5 +37,13 @@ test('getNextAnimalIndex', async (t) => {
     assert.equal(getNextAnimalIndex(0, 6), 1);
     assert.equal(getNextAnimalIndex(5, 6), 0);
     assert.equal(getNextAnimalIndex(0, 1), 0);
+  });
+});
+
+test('isColorDiscoveryComplete', async (t) => {
+  await t.test('verifies milestone threshold correctly', () => {
+    assert.equal(isColorDiscoveryComplete(4, 5), false);
+    assert.equal(isColorDiscoveryComplete(5, 5), true);
+    assert.equal(isColorDiscoveryComplete(6, 5), true);
   });
 });

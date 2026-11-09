@@ -1,7 +1,8 @@
-import { useEffect, useState, type JSX } from 'react';
+import { useCallback, useEffect, useState, type JSX } from 'react';
 import { AlphabetGarden } from './activities/AlphabetGarden';
 import { BalloonCatch } from './activities/BalloonCatch';
 import { BubblePopper } from './activities/BubblePopper';
+import { ColorGarden } from './activities/ColorGarden';
 import { ColoringBook } from './activities/ColoringBook';
 import { GrossMotorPlay } from './activities/GrossMotorPlay';
 import { JigsawPuzzle } from './activities/JigsawPuzzle';
@@ -43,6 +44,7 @@ import {
 type ActivityKey =
   | 'peekaboo'
   | 'bubblepopper'
+  | 'colors'
   | 'alphabet'
   | 'numbers'
   | 'sensory'
@@ -84,6 +86,16 @@ const ACTIVITIES: ActivityMeta[] = [
     skillTag: 'Motorik & Sensori Nada',
     stickerId: 'sticker-balloon',
     surfaceTint: '#E4F2FB'
+  },
+  {
+    key: 'colors',
+    title: 'Taman Warna',
+    subtitle: 'Sentuh balon warna, cipratan cat riang, dan kenal 6 warna ceria.',
+    ageTag: '1 – 2,5 thn',
+    ageGroup: ['1-2.5'],
+    skillTag: 'Pengenalan Warna',
+    stickerId: 'sticker-colors',
+    surfaceTint: '#FFF0F5'
   },
   {
     key: 'alphabet',
@@ -280,7 +292,7 @@ export function App(): JSX.Element {
     return () => window.clearInterval(id);
   }, [isTimeUp, parentOpen]);
 
-  function handleActivityComplete(activityKey: ActivityKey, stickerId: string): void {
+  const handleActivityComplete = useCallback((activityKey: ActivityKey, stickerId: string): void => {
     setProgress((prev) => {
       const hasSticker = prev.stickers.includes(stickerId);
       const nextStickers = hasSticker ? prev.stickers : [...prev.stickers, stickerId];
@@ -297,7 +309,7 @@ export function App(): JSX.Element {
         }
       };
     });
-  }
+  }, []);
 
   const remainingSec =
     settings.dailyLimitMinutes > 0
@@ -552,6 +564,21 @@ export function App(): JSX.Element {
                     <span className="toddler-card-subtitle">Pecahkan nada</span>
                   </div>
                 </button>
+
+                <button
+                  type="button"
+                  className="toddler-zone-card-btn card-colors"
+                  onClick={() => {
+                    playGentlePop();
+                    setActiveGame('colors');
+                  }}
+                >
+                  <span className="toddler-card-icon" aria-hidden="true">🎨</span>
+                  <div className="toddler-card-text">
+                    <span className="toddler-card-title">Warna</span>
+                    <span className="toddler-card-subtitle">Balon & cipratan</span>
+                  </div>
+                </button>
               </div>
             </section>
           )}
@@ -583,6 +610,9 @@ export function App(): JSX.Element {
                     {act.key === 'peekaboo' && <AnimalIllustration id="cat" size={76} />}
                     {act.key === 'bubblepopper' && (
                       <div className="activity-art-emoji" aria-hidden="true">🫧</div>
+                    )}
+                    {act.key === 'colors' && (
+                      <div className="activity-art-emoji" aria-hidden="true">🎨</div>
                     )}
                     {act.key === 'alphabet' && (
                       <div className="alphabet-preview-badge" aria-hidden="true">
@@ -622,6 +652,9 @@ export function App(): JSX.Element {
           )}
           {activeGame === 'bubblepopper' && (
             <BubblePopper onComplete={(s) => handleActivityComplete('bubblepopper', s)} />
+          )}
+          {activeGame === 'colors' && (
+            <ColorGarden onComplete={(s) => handleActivityComplete('colors', s)} />
           )}
           {activeGame === 'alphabet' && (
             <AlphabetGarden onComplete={(s) => handleActivityComplete('alphabet', s)} />
