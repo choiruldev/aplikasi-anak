@@ -197,14 +197,7 @@ export function PeekabooAnimals({
         </div>
 
         {/* Big Bush / Hiding Spot */}
-        <div className={`peekaboo-bush ${stage === 'peeking' ? 'is-wiggling' : stage === 'hidden' ? 'is-idle' : 'is-popped'}`}>
-          {/* Peeking blinking eyes behind the bush when hidden */}
-          {stage === 'hidden' && (
-            <div className="bush-peek-eyes" aria-hidden="true">
-              👀
-            </div>
-          )}
-
+        <div className={`peekaboo-bush ${stage === 'peeking' ? 'is-peeking' : stage === 'popped' ? 'is-popped' : 'is-hidden'}`}>
           <svg viewBox="0 0 320 180" className="bush-svg" fill="none" aria-hidden="true">
             {/* Soft shadows */}
             <ellipse cx="160" cy="165" rx="140" ry="14" fill="#000000" fillOpacity="0.12" />
