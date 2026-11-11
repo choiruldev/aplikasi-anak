@@ -777,20 +777,7 @@ input:focus-visible {
   justify-content: center;
   gap: 6px;
   transition: transform 100ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 120ms ease;
-  animation: tile-gentle-breathe 4.2s ease-in-out infinite;
   touch-action: manipulation;
-  will-change: transform;
-}
-
-.animal-tile:nth-child(2) { animation-delay: 0.7s; }
-.animal-tile:nth-child(3) { animation-delay: 1.4s; }
-.animal-tile:nth-child(4) { animation-delay: 2.1s; }
-.animal-tile:nth-child(5) { animation-delay: 2.8s; }
-.animal-tile:nth-child(6) { animation-delay: 3.5s; }
-
-@keyframes tile-gentle-breathe {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3.5px); }
 }
 
 .animal-tile:active {
@@ -877,17 +864,12 @@ input:focus-visible {
   background-color: #e8f5e9;
   border-color: #2e7d32;
   color: #1b5e20;
-  animation: chip-glow 1s infinite alternate;
+  box-shadow: 0 2px 8px rgba(46, 125, 50, 0.25);
 }
 
 .melody-chip-status {
   font-size: 0.75rem;
   opacity: 0.8;
-}
-
-@keyframes chip-glow {
-  0% { box-shadow: 0 0 4px rgba(46, 125, 50, 0.3); }
-  100% { box-shadow: 0 0 14px rgba(46, 125, 50, 0.7); }
 }
 
 .xylophone-frame {
@@ -2940,17 +2922,7 @@ input:focus-visible {
   cursor: pointer;
   transition: transform 120ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 120ms ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  animation: card-gentle-breathe 4s ease-in-out infinite;
   touch-action: manipulation;
-  will-change: transform;
-}
-
-.toddler-zone-card-btn:nth-child(2) { animation-delay: 0.8s; }
-.toddler-zone-card-btn:nth-child(3) { animation-delay: 1.6s; }
-
-@keyframes card-gentle-breathe {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
 }
 
 .toddler-zone-card-btn:active {
@@ -3119,12 +3091,12 @@ input:focus-visible {
 }
 
 .peekaboo-animal-wrapper.stage-peeking {
-  transform: translateY(-35px) scale(0.92);
+  transform: translateY(-28px) scale(0.92);
   opacity: 1;
 }
 
 .peekaboo-animal-wrapper.stage-popped {
-  transform: translateY(-80px) scale(1.08);
+  transform: translateY(-44px) scale(1.02);
   opacity: 1;
 }
 
@@ -3136,17 +3108,8 @@ input:focus-visible {
   will-change: transform;
 }
 
-.stage-peeking .peekaboo-animal-inner {
-  animation: peeking-gentle-breathe 2.4s ease-in-out infinite alternate;
-}
-
 .stage-popped .peekaboo-animal-inner {
   animation: animal-spring-boing 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes peeking-gentle-breathe {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
 }
 
 @keyframes animal-spring-boing {
@@ -3441,25 +3404,14 @@ input:focus-visible {
 .tap-finger-icon {
   line-height: 1;
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.2));
-  animation: tap-bounce 1.4s infinite alternate ease-in-out;
 }
 
 .tap-beacon-ring {
   display: none;
 }
 
-@keyframes tap-bounce {
-  0% {
-    transform: translateY(0);
-  }
-  100% {
-    transform: translateY(-6px);
-  }
-}
-
 /* Lively Animal Animations */
 .animal-svg-alive {
-  animation: animal-breathe 3.6s infinite ease-in-out;
   transform-origin: center bottom;
 }
 
@@ -3476,15 +3428,6 @@ input:focus-visible {
   transform-origin: 58px 48px;
 }
 
-@keyframes animal-breathe {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.025, 0.985) translateY(-2px);
-  }
-}
-
 @keyframes animal-blink {
   0%, 94%, 100% {
     transform: scaleY(1);
@@ -3492,38 +3435,6 @@ input:focus-visible {
   96%, 98% {
     transform: scaleY(0.1);
   }
-}
-
-/* Peekaboo Activity Motion */
-.peekaboo-ambient-item {
-  position: absolute;
-  font-size: 1.8rem;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.65;
-}
-
-.peekaboo-ambient-item.butterfly-left {
-  top: 15%;
-  left: 8%;
-  animation: butterfly-drift 8s infinite alternate ease-in-out;
-}
-
-.peekaboo-ambient-item.sparkle-right {
-  top: 22%;
-  right: 10%;
-  animation: sparkle-float 5s infinite alternate ease-in-out;
-}
-
-@keyframes butterfly-drift {
-  0% { transform: translate(0, 0); }
-  50% { transform: translate(25px, -15px); }
-  100% { transform: translate(12px, 15px); }
-}
-
-@keyframes sparkle-float {
-  0%, 100% { transform: scale(0.85); opacity: 0.4; }
-  50% { transform: scale(1.15); opacity: 0.85; }
 }
 
 .peekaboo-hud-row {
@@ -3546,73 +3457,6 @@ input:focus-visible {
   transform: translateX(-50%);
   z-index: 10;
   pointer-events: none;
-}
-
-.peekaboo-sound-waves {
-  position: absolute;
-  bottom: 60px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 220px;
-  height: 220px;
-  pointer-events: none;
-  z-index: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sound-ring {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  border: 4px solid;
-  opacity: 0;
-  animation: sound-ripple 1.5s infinite cubic-bezier(0.1, 0.8, 0.3, 1);
-}
-
-.sound-ring.ring-2 {
-  animation-delay: 0.4s;
-}
-
-.sound-ring.ring-3 {
-  animation-delay: 0.8s;
-}
-
-@keyframes sound-ripple {
-  0% { transform: scale(0.4); opacity: 0.85; }
-  100% { transform: scale(1.8); opacity: 0; }
-}
-
-.floating-music-note {
-  position: absolute;
-  font-size: 1.8rem;
-  animation: note-float 1.8s infinite ease-out;
-}
-
-.floating-music-note.note-1 {
-  left: 10%;
-  top: 10%;
-  animation-delay: 0.1s;
-}
-
-.floating-music-note.note-2 {
-  right: 12%;
-  top: 15%;
-  animation-delay: 0.4s;
-}
-
-.floating-music-note.note-3 {
-  left: 30%;
-  bottom: 20%;
-  animation-delay: 0.7s;
-}
-
-@keyframes note-float {
-  0% { transform: translateY(0) scale(0.6) rotate(-15deg); opacity: 0; }
-  30% { opacity: 1; transform: translateY(-20px) scale(1.1) rotate(5deg); }
-  100% { transform: translateY(-70px) scale(1.3) rotate(20deg); opacity: 0; }
 }
 
 /* SensoryPlay Tiles */
@@ -3716,15 +3560,6 @@ input:focus-visible {
   animation: star-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.number-item-btn.is-uncounted {
-  animation: item-gentle-bob 3s infinite alternate ease-in-out;
-}
-
-@keyframes item-gentle-bob {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-4px); }
-}
-
 .number-item-guide {
   position: absolute;
   top: -18px;
@@ -3743,13 +3578,6 @@ input:focus-visible {
 
 .bouncing-toddler-emoji {
   display: inline-block;
-  animation: toddler-emoji-wobble 2.6s infinite ease-in-out;
-  transform-origin: center bottom;
-}
-
-@keyframes toddler-emoji-wobble {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
 }
 
 /* ==========================================================================
@@ -3822,17 +3650,10 @@ input:focus-visible {
   position: relative;
   cursor: pointer;
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s ease;
-  animation: balloon-float 3.4s ease-in-out infinite alternate;
-  will-change: transform;
 }
 
 .color-featured-balloon:active {
   transform: scale(0.92);
-}
-
-@keyframes balloon-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
 }
 
 .color-balloon-shine {
@@ -3892,20 +3713,7 @@ input:focus-visible {
   position: relative;
   transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
   touch-action: manipulation;
-  will-change: transform;
-  animation: pot-breathe 4s ease-in-out infinite;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
-}
-
-.color-pot-btn:nth-child(2) { animation-delay: 0.6s; }
-.color-pot-btn:nth-child(3) { animation-delay: 1.2s; }
-.color-pot-btn:nth-child(4) { animation-delay: 1.8s; }
-.color-pot-btn:nth-child(5) { animation-delay: 2.4s; }
-.color-pot-btn:nth-child(6) { animation-delay: 3.0s; }
-
-@keyframes pot-breathe {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
 }
 
 .color-pot-btn:active,

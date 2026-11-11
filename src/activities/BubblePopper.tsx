@@ -143,8 +143,7 @@ export function BubblePopper({
         hintUpdateTimer = 0;
         const target = bubbles[0];
         if (target) {
-          const wobbleX = Math.sin(target.wobbleOffset) * 12;
-          setHintPos({ x: target.x + wobbleX, y: target.y });
+          setHintPos({ x: target.x, y: target.y });
         }
       }
 
@@ -199,8 +198,7 @@ export function BubblePopper({
       // Render bubbles
       for (let i = 0; i < bubbles.length; i++) {
         const b = bubbles[i];
-        const wobbleX = Math.sin(b.wobbleOffset) * 12;
-        const cx = b.x + wobbleX;
+        const cx = b.x;
         const cy = b.y;
         const r = b.radius;
 
@@ -308,8 +306,7 @@ export function BubblePopper({
 
     for (let i = bubbles.length - 1; i >= 0; i--) {
       const b = bubbles[i];
-      const wobbleX = Math.sin(b.wobbleOffset) * 12;
-      if (isPointerInsideBubble(px, py, b.x + wobbleX, b.y, b.radius, 22)) {
+      if (isPointerInsideBubble(px, py, b.x, b.y, b.radius, 22)) {
         hitIndex = i;
         break;
       }

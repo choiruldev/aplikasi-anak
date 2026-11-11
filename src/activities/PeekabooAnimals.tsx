@@ -143,10 +143,6 @@ export function PeekabooAnimals({
       role="region"
       aria-label="Cilukba Hewan"
     >
-      {/* Ambient floating flutter in background */}
-      <div className="peekaboo-ambient-item butterfly-left" aria-hidden="true">🦋</div>
-      <div className="peekaboo-ambient-item sparkle-right" aria-hidden="true">✨</div>
-
       {/* Top HUD: Star coins & minimal joyful title */}
       <div className="peekaboo-header">
         <div className="peekaboo-hud-row">
@@ -169,25 +165,13 @@ export function PeekabooAnimals({
 
       {/* Center Stage: The Hiding Spot & Animal */}
       <div className="peekaboo-stage">
-        {/* Sound Waves Behind Popped Animal */}
-        {stage === 'popped' && (
-          <div className="peekaboo-sound-waves" aria-hidden="true">
-            <div className="sound-ring ring-1" style={{ borderColor: currentAnimal.accent }} />
-            <div className="sound-ring ring-2" style={{ borderColor: currentAnimal.accent }} />
-            <div className="sound-ring ring-3" style={{ borderColor: currentAnimal.accent }} />
-            <div className="floating-music-note note-1">🎵</div>
-            <div className="floating-music-note note-2">⭐</div>
-            <div className="floating-music-note note-3">🎶</div>
-          </div>
-        )}
-
         {/* The Animal */}
         <div
           className={`peekaboo-animal-wrapper stage-${stage}`}
           style={{ '--animal-color': currentAnimal.accent } as React.CSSProperties}
         >
           <div className="peekaboo-animal-inner">
-            <AnimalIllustration id={currentAnimal.id} size={180} className="animal-svg-alive" />
+            <AnimalIllustration id={currentAnimal.id} size={150} className="animal-svg-alive" />
             {stage === 'popped' && (
               <div className="peekaboo-animal-tag" style={{ backgroundColor: currentAnimal.accent }}>
                 <span className="tag-emoji">🐾</span> {currentAnimal.name}
