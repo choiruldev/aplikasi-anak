@@ -1,4 +1,4 @@
-name: Deploy KecilMain to GitHub Pages
+name: Deploy Cilukba to GitHub Pages
 
 on:
   push:

@@ -389,7 +389,7 @@ export function App(): JSX.Element {
         <div className="brand-title-wrap">
           <BrandMark size={38} />
           <div className="brand-text-block">
-            <span className="brand-name">KecilMain</span>
+            <span className="brand-name">Cilukba</span>
             <span className="brand-tagline">Tumbuh Kembang & Simulasi 0–5 Thn</span>
           </div>
         </div>

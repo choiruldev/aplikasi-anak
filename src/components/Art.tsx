@@ -1,18 +1,64 @@
-import type { JSX } from 'react';
+import { useId, type JSX } from 'react';
 
 export type AnimalId = 'cat' | 'cow' | 'duck' | 'elephant' | 'frog' | 'bird';
 export type ShapeId = 'circle' | 'square' | 'triangle' | 'star' | 'diamond' | 'heart';
 export type ActionPoseId = 'bunny' | 'plane' | 'stomp' | 'reach' | 'freeze';
 
 export function BrandMark({ size = 40 }: { size?: number }): JSX.Element {
+  const uid = useId();
+  const frameId = `cilukba-frame-${uid}`;
+  const medallionId = `cilukba-medallion-${uid}`;
+
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" aria-hidden="true">
-      <rect width="64" height="64" rx="16" fill="#1F7A5C" />
-      <circle cx="22" cy="23" r="9" fill="#E89F1C" />
-      <rect x="34" y="14" width="17" height="17" rx="4" fill="#D94848" />
-      <path d="M22 36L32 52H12L22 36Z" fill="#F5F7F2" />
-      <circle cx="42.5" cy="44" r="8" fill="#2978B5" />
-      <circle cx="42.5" cy="44" r="3" fill="#F5F7F2" />
+    <svg width={size} height={size} viewBox="0 0 128 128" fill="none" aria-hidden="true">
+      <defs>
+        <clipPath id={frameId}>
+          <rect width="128" height="128" rx="30" />
+        </clipPath>
+        <clipPath id={medallionId}>
+          <circle cx="64" cy="64" r="53" />
+        </clipPath>
+      </defs>
+      <g clipPath={`url(#${frameId})`}>
+        <rect width="128" height="128" fill="#2B6E4F" />
+        <g clipPath={`url(#${medallionId})`}>
+          <circle cx="64" cy="64" r="53" fill="#35825E" />
+          <path d="M64 42V28" stroke="#96E8B3" strokeWidth="5" strokeLinecap="round" />
+          <path d="M64 31C55 31 48 25 48 18C57 18 63 24 64 31Z" fill="#96E8B3" />
+          <path d="M64 28C73 28 80 23 80 16C72 16 65 21 64 28Z" fill="#6FD497" />
+          <circle cx="36" cy="52" r="10.5" fill="#FFF9F0" />
+          <circle cx="36" cy="52" r="5.2" fill="#FFB899" />
+          <circle cx="92" cy="52" r="10.5" fill="#FFF9F0" />
+          <circle cx="92" cy="52" r="5.2" fill="#FFB899" />
+          <circle cx="64" cy="70" r="34" fill="#FFFDF7" />
+          <ellipse cx="64" cy="110" rx="34" ry="20" fill="#52A87E" />
+          <circle cx="50" cy="65" r="5.8" fill="#182421" />
+          <circle cx="48" cy="63" r="2" fill="#FFFFFF" />
+          <circle cx="78" cy="65" r="5.8" fill="#182421" />
+          <circle cx="76" cy="63" r="2" fill="#FFFFFF" />
+          <ellipse cx="42" cy="75" rx="6" ry="3.5" fill="#FF9E83" opacity="0.88" />
+          <ellipse cx="86" cy="75" rx="6" ry="3.5" fill="#FF9E83" opacity="0.88" />
+          <path d="M56 75.5Q64 84 72 75.5" stroke="#182421" strokeWidth="4.4" strokeLinecap="round" />
+          <g transform="rotate(18 34 97)">
+            <path
+              d="M22 87C22 79.5 27.5 74.5 34 74.5C39.5 74.5 43.5 78 45 83C48 83 50.5 85.5 50.5 88.5C50.5 91.5 48 94 45 94V118H22V87Z"
+              fill="#F7B731"
+              stroke="#2B6E4F"
+              strokeWidth="3.5"
+              strokeLinejoin="round"
+            />
+          </g>
+          <g transform="rotate(-18 94 97)">
+            <path
+              d="M106 87C106 79.5 100.5 74.5 94 74.5C88.5 74.5 84.5 78 83 83C80 83 77.5 85.5 77.5 88.5C77.5 91.5 80 94 83 94V118H106V87Z"
+              fill="#F7B731"
+              stroke="#2B6E4F"
+              strokeWidth="3.5"
+              strokeLinejoin="round"
+            />
+          </g>
+        </g>
+      </g>
     </svg>
   );
 }

@@ -1,8 +1,15 @@
-# KecilMain — PWA Edukasi & Motorik Balita (1–5 Tahun)
+# Cilukba — Stimulasi & Simulasi Tumbuh Kembang Anak (0–5 Tahun)
 
-Aplikasi web progresif (**PWA Offline-First**) berbahasa Indonesia untuk stimulasi edukasi, motorik halus, dan motorik kasar anak usia balita (1–5 tahun). Bebas iklan, tanpa pelacakan, dan bisa langsung dipasang di layar utama HP/tablet.
+Aplikasi web progresif (**PWA Offline-First**) berbahasa Indonesia untuk orang tua: misi stimulasi harian, alat bantu bayi 0–12 bulan, 12 simulasi interaktif terarah 1–5 tahun, catatan milestone & pertumbuhan, serta tips pengasuhan singkat. Bebas iklan, tanpa pelacakan, dan bisa langsung dipasang di layar utama HP/tablet.
 
-## Fitur Utama
+## Fitur Utama (Platform 0–5 Tahun)
+
+- **Stimulasi:** misi harian per fase usia (`0–3 bln` s.d. `3–5 thn`) dengan langkah praktis dan tautan langsung ke simulasi.
+- **Simulasi:** 3 alat bantu bayi (Kartu Kontras, Timer Tummy Time, Pengantar Tidur & Kerincingan — bebas batas timer) + 12 simulasi tumbuh kembang 1–5 tahun di bawah ini.
+- **Catatan:** 30 milestone per fase, log berat & tinggi, catatan momen harian, dan salin ringkasan.
+- **Tips:** 18 kartu tips (Newborn, Nutrisi & MPASI, Screen Time, Emosi & Tantrum, Tanda Waspada) yang bisa disimpan.
+
+## Simulasi Interaktif 1–5 Tahun
 
 1. **Taman Huruf A – Z (2,5 – 5 Tahun · Bahasa & Literasi)**
    - Mengenal 26 huruf alfabet Indonesia dengan kartu huruf ilustratif, suara pelafalan vokal manusia asli, efek bunyi satwa (bebek, kucing, domba, elang, harimau, dll.), dan kuis tebak suara huruf interaktif.
@@ -34,7 +41,7 @@ Aplikasi web progresif (**PWA Offline-First**) berbahasa Indonesia untuk stimula
 
 ## Panduan PWA & Pemasangan Offline
 
-KecilMain dibangun dengan standar **Progressive Web App (PWA) Offline-First** menggunakan `vite-plugin-pwa` dan Workbox:
+Cilukba dibangun dengan standar **Progressive Web App (PWA) Offline-First** menggunakan `vite-plugin-pwa` dan Workbox:
 - **Ikon Lengkap:** Menyediakan ikon standar `192x192`, `512x512`, maskable `maskable-512x512.png` (aman tanpa pemotongan sudut di Android), serta `apple-touch-icon.png` (180x180).
 - **Service Worker Precaching:** Seluruh bundel JS, CSS, HTML, SVG, serta berkas audio MP3 (total 95 aset) otomatis dicache di muka sehingga aplikasi dapat dibuka dan dimainkan secara penuh saat perangkat tidak memiliki koneksi internet (airplane mode / tanpa kuota).
 - **Google Fonts Caching:** Font `Fredoka` dan `Plus Jakarta Sans` disimpan secara runtime cache (*CacheFirst*) agar tipografi tetap rapi saat offline.

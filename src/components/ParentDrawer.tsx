@@ -304,7 +304,7 @@ export function ParentDrawer({
             <section className="drawer-section">
               <h3>Simpan di Layar Utama (Offline PWA)</h3>
               <p className="muted-copy">
-                Pasang KecilMain seperti aplikasi agar tetap terbuka cepat meski tanpa kuota internet.
+                Pasang Cilukba seperti aplikasi agar tetap terbuka cepat meski tanpa kuota internet.
               </p>
               <button type="button" className="btn-outline" onClick={onOpenInstallGuide}>
                 Lihat Panduan Pasang di HP

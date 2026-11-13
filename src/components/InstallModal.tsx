@@ -33,7 +33,7 @@ export function InstallModal({
             <BrandMark size={36} />
             <div>
               <h2 id="install-modal-title" className="modal-title">
-                Pasang KecilMain di HP
+                Pasang Cilukba di HP
               </h2>
               <span className="install-modal-badge">PWA Siap Offline</span>
             </div>
@@ -75,7 +75,7 @@ export function InstallModal({
         {installEvent ? (
           <div className="install-one-click-box">
             <p className="install-one-click-text">
-              Perangkat Anda siap memasang KecilMain langsung dalam satu ketukan!
+              Perangkat Anda siap memasang Cilukba langsung dalam satu ketukan!
             </p>
             <button
               type="button"

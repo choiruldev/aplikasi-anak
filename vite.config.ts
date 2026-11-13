@@ -19,14 +19,14 @@ export default defineConfig({
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         id: base,
-        name: 'KecilMain — Stimulasi & Tumbuh Kembang 0–5 Thn',
-        short_name: 'KecilMain',
+        name: 'Cilukba — Stimulasi & Tumbuh Kembang 0–5 Thn',
+        short_name: 'Cilukba',
         description:
           'Platform pendamping stimulasi perkembangan, alat bantu bayi, game simulasi terarah, catatan milestone, dan tips orang tua anak usia 0–5 tahun. Bebas iklan & bisa offline.',
         lang: 'id',
         dir: 'ltr',
-        theme_color: '#F5F7F2',
-        background_color: '#F5F7F2',
+        theme_color: '#2B6E4F',
+        background_color: '#FAFAF8',
         display: 'standalone',
         display_override: ['fullscreen', 'standalone'],
         orientation: 'any',

@@ -1,8 +1,65 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
-  <rect width="128" height="128" rx="28" fill="#1F7A5C"/>
-  <circle cx="44" cy="46" r="18" fill="#E89F1C"/>
-  <rect x="68" y="28" width="34" height="34" rx="8" fill="#D94848"/>
-  <path d="M44 72L64 104H24L44 72Z" fill="#F5F7F2"/>
-  <circle cx="85" cy="88" r="16" fill="#2978B5"/>
-  <circle cx="85" cy="88" r="6" fill="#F5F7F2"/>
+  <defs>
+    <clipPath id="cilukba-frame">
+      <rect width="128" height="128" rx="30"/>
+    </clipPath>
+    <clipPath id="cilukba-medallion">
+      <circle cx="64" cy="64" r="53"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#cilukba-frame)">
+    <rect width="128" height="128" fill="#2B6E4F"/>
+
+    <g clip-path="url(#cilukba-medallion)">
+      <circle cx="64" cy="64" r="53" fill="#35825E"/>
+
+      <!-- Tumbuh sprout -->
+      <path d="M64 42V28" stroke="#96E8B3" stroke-width="5" stroke-linecap="round"/>
+      <path d="M64 31C55 31 48 25 48 18C57 18 63 24 64 31Z" fill="#96E8B3"/>
+      <path d="M64 28C73 28 80 23 80 16C72 16 65 21 64 28Z" fill="#6FD497"/>
+
+      <!-- Cute buddy ears -->
+      <circle cx="36" cy="52" r="10.5" fill="#FFF9F0"/>
+      <circle cx="36" cy="52" r="5.2" fill="#FFB899"/>
+      <circle cx="92" cy="52" r="10.5" fill="#FFF9F0"/>
+      <circle cx="92" cy="52" r="5.2" fill="#FFB899"/>
+
+      <!-- Main peeking head -->
+      <circle cx="64" cy="70" r="34" fill="#FFFDF7"/>
+
+      <!-- Cozy shoulder peek -->
+      <ellipse cx="64" cy="110" rx="34" ry="20" fill="#52A87E"/>
+
+      <!-- Expressive bright eyes -->
+      <circle cx="50" cy="65" r="5.8" fill="#182421"/>
+      <circle cx="48" cy="63" r="2" fill="#FFFFFF"/>
+      <circle cx="78" cy="65" r="5.8" fill="#182421"/>
+      <circle cx="76" cy="63" r="2" fill="#FFFFFF"/>
+
+      <!-- Rosy cheeks & happy smile -->
+      <ellipse cx="42" cy="75" rx="6" ry="3.5" fill="#FF9E83" opacity="0.88"/>
+      <ellipse cx="86" cy="75" rx="6" ry="3.5" fill="#FF9E83" opacity="0.88"/>
+      <path d="M56 75.5Q64 84 72 75.5" stroke="#182421" stroke-width="4.4" stroke-linecap="round"/>
+
+      <!-- Playful Cilukba hands angled inward -->
+      <g transform="rotate(18 34 97)">
+        <path
+          d="M22 87C22 79.5 27.5 74.5 34 74.5C39.5 74.5 43.5 78 45 83C48 83 50.5 85.5 50.5 88.5C50.5 91.5 48 94 45 94V118H22V87Z"
+          fill="#F7B731"
+          stroke="#2B6E4F"
+          stroke-width="3.5"
+          stroke-linejoin="round"
+        />
+      </g>
+      <g transform="rotate(-18 94 97)">
+        <path
+          d="M106 87C106 79.5 100.5 74.5 94 74.5C88.5 74.5 84.5 78 83 83C80 83 77.5 85.5 77.5 88.5C77.5 91.5 80 94 83 94V118H106V87Z"
+          fill="#F7B731"
+          stroke="#2B6E4F"
+          stroke-width="3.5"
+          stroke-linejoin="round"
+        />
+      </g>
+    </g>
+  </g>
 </svg>
