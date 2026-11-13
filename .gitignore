@@ -3,5 +3,7 @@ dist
 dev-dist
 .DS_Store
 .taste-skill
+.worktrees
+.superpowers
 *.local
 *.tsbuildinfo
