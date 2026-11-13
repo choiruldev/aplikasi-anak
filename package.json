@@ -2,7 +2,7 @@
   "name": "kecilmain-pwa",
   "private": true,
   "version": "1.0.0",
-  "description": "PWA Pembelajaran Edukasi & Motorik Anak Balita (1-5 Tahun) - Offline-First & Bebas Iklan",
+  "description": "Platform Stimulasi & Simulasi Tumbuh Kembang Anak (0-5 Tahun) - Offline-First & Bebas Iklan",
   "type": "module",
   "scripts": {
     "dev": "vite",

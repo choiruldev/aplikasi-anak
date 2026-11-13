@@ -19,10 +19,10 @@ export default defineConfig({
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         id: base,
-        name: 'KecilMain — Edukasi & Motorik Balita',
+        name: 'KecilMain — Stimulasi & Tumbuh Kembang 0–5 Thn',
         short_name: 'KecilMain',
         description:
-          'Aplikasi belajar warna, bentuk, huruf, berhitung, serta motorik halus & kasar untuk balita 1–5 tahun. Bebas iklan & bisa offline.',
+          'Platform pendamping stimulasi perkembangan, alat bantu bayi, game simulasi terarah, catatan milestone, dan tips orang tua anak usia 0–5 tahun. Bebas iklan & bisa offline.',
         lang: 'id',
         dir: 'ltr',
         theme_color: '#F5F7F2',

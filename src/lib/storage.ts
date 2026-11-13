@@ -4,9 +4,6 @@ import {
   isValidIsoDate
 } from './development.ts';
 
-// Kept during Task 1-5 transition until App.tsx refactor in Task 6
-export type AgeFilter = 'all' | '1-2.5' | '2.5-4' | '4-5';
-
 export interface AppSettings {
   childName: string;
   birthDate?: string;

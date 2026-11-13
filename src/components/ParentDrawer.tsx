@@ -1,6 +1,8 @@
-import { useMemo, useState, type JSX } from 'react';
-import type { AppSettings, DailyProgress } from '../lib/storage';
-import { IconCheck, IconDownload } from './Art';
+import { useState, type JSX } from 'react';
+import { AGE_PHASES } from '../data/stimulationData.ts';
+import { computeAgeInfo, type AgeBand } from '../lib/development.ts';
+import type { AppSettings } from '../lib/storage.ts';
+import { todayKey } from '../lib/storage.ts';
 
 export interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -8,318 +10,303 @@ export interface BeforeInstallPromptEvent extends Event {
 }
 
 interface ParentDrawerProps {
-  settings: AppSettings;
-  progress: DailyProgress;
-  installEvent: BeforeInstallPromptEvent | null;
-  isStandalone?: boolean;
-  isIos?: boolean;
-  onUpdateSettings: (next: AppSettings) => void;
-  onResetTodayTimer: () => void;
-  onTriggerInstall: () => void;
-  onOpenInstallGuide?: () => void;
+  open: boolean;
   onClose: () => void;
+  settings: AppSettings;
+  onUpdateSettings: (next: AppSettings) => void;
+  playedSeconds: number;
+  isGameTimeUp: boolean;
+  onResetTimer: () => void;
+  installEvent: BeforeInstallPromptEvent | null;
+  isIos: boolean;
+  onOpenInstallGuide: () => void;
 }
 
 const LIMIT_OPTIONS = [
-  { label: '10 mnt', value: 10 },
-  { label: '15 mnt', value: 15 },
-  { label: '20 mnt', value: 20 },
-  { label: '30 mnt', value: 30 },
-  { label: 'Bebas', value: 0 }
+  { value: 0, label: 'Tanpa Batas' },
+  { value: 10, label: '10 mnt' },
+  { value: 15, label: '15 mnt' },
+  { value: 20, label: '20 mnt' },
+  { value: 30, label: '30 mnt' }
 ];
 
+function makeMathChallenge() {
+  const a = 3 + Math.floor(Math.random() * 6);
+  const b = 2 + Math.floor(Math.random() * 7);
+  return { a, b, answer: a + b };
+}
+
 export function ParentDrawer({
+  open,
+  onClose,
   settings,
-  progress,
-  installEvent,
-  isStandalone,
-  isIos,
   onUpdateSettings,
-  onResetTodayTimer,
-  onTriggerInstall,
-  onOpenInstallGuide,
-  onClose
-}: ParentDrawerProps): JSX.Element {
-  const challenge = useMemo(() => {
-    const a = 6 + Math.floor(Math.random() * 4);
-    const b = 5 + Math.floor(Math.random() * 4);
-    const answer = a + b;
-    const choices = [answer - 2, answer, answer + 3].sort((x, y) => x - y);
-    return { a, b, answer, choices };
-  }, []);
+  playedSeconds,
+  isGameTimeUp,
+  onResetTimer,
+  installEvent,
+  isIos,
+  onOpenInstallGuide
+}: ParentDrawerProps): JSX.Element | null {
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
+  const [challenge, setChallenge] = useState(makeMathChallenge);
+  const [answerInput, setAnswerInput] = useState('');
+  const [resetError, setResetError] = useState(false);
 
-  const [unlocked, setUnlocked] = useState(false);
-  const [wrongMsg, setWrongMsg] = useState(false);
+  if (!open) return null;
 
-  const playedMinutes = Math.floor(progress.playedSeconds / 60);
+  const computedAge = computeAgeInfo(settings.birthDate);
+  const playedMinutes = Math.floor(playedSeconds / 60);
+  const playedRemSeconds = playedSeconds % 60;
+
+  const handleClose = () => {
+    setConfirmResetOpen(false);
+    setAnswerInput('');
+    setResetError(false);
+    onClose();
+  };
+
+  const handleRequestReset = () => {
+    if (isGameTimeUp) {
+      setChallenge(makeMathChallenge());
+      setAnswerInput('');
+      setResetError(false);
+      setConfirmResetOpen(true);
+    } else {
+      onResetTimer();
+    }
+  };
+
+  const handleVerifyReset = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (Number(answerInput.trim()) === challenge.answer) {
+      setConfirmResetOpen(false);
+      setAnswerInput('');
+      setResetError(false);
+      onResetTimer();
+      return;
+    }
+    setResetError(true);
+  };
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="parent-modal-title">
-      <div className="modal-sheet">
-        <div className="modal-top">
-          <h2 id="parent-modal-title" className="modal-title">
-            {unlocked ? 'Ruang Orang Tua' : 'Kunci Orang Tua'}
-          </h2>
-          <button type="button" className="secondary-btn" onClick={onClose}>
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Profil Anak & Pengaturan Orang Tua"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
+    >
+      <div className="drawer-sheet">
+        <div className="drawer-head">
+          <div>
+            <span className="eyebrow">Profil & Preferensi</span>
+            <h2>Data Anak & Pengaturan</h2>
+          </div>
+          <button type="button" className="btn-outline small" onClick={handleClose}>
             Tutup
           </button>
         </div>
 
-        {!unlocked ? (
-          <div className="gate-box">
-            <p className="gate-desc">
-              Jawab hitungan singkat ini untuk membuka pengaturan batas waktu dan suara:
-            </p>
-            <p className="gate-equation">
-              {challenge.a} + {challenge.b} = ?
-            </p>
-            <div className="gate-choices">
-              {challenge.choices.map((val) => (
-                <button
-                  key={val}
-                  type="button"
-                  className="gate-choice-btn"
-                  onClick={() => {
-                    if (val === challenge.answer) {
-                      setUnlocked(true);
-                      setWrongMsg(false);
-                    } else {
-                      setWrongMsg(true);
-                    }
-                  }}
-                >
-                  {val}
-                </button>
-              ))}
-            </div>
-            {wrongMsg && <p className="gate-hint">Belum tepat, silakan coba angka lainnya.</p>}
-          </div>
-        ) : (
-          <div className="parent-controls">
-            <div className="field-group">
-              <label htmlFor="child-name-input" className="field-label">
-                Nama Panggilan Anak
-              </label>
+        <div className="drawer-body">
+          <section className="drawer-section">
+            <h3>Profil Si Kecil</h3>
+            <label className="field-label">
+              Nama panggilan anak
               <input
-                id="child-name-input"
                 type="text"
                 maxLength={20}
                 value={settings.childName}
-                onChange={(e) => onUpdateSettings({ ...settings, childName: e.target.value })}
-                className="text-input"
+                onChange={(e) =>
+                  onUpdateSettings({
+                    ...settings,
+                    childName: e.target.value || 'Adik'
+                  })
+                }
+                placeholder="misal Kenzo"
               />
-            </div>
+            </label>
 
-            <div className="field-group">
-              <span className="field-label">Batas Waktu Layar Harian</span>
-              <div className="limit-pills">
-                {LIMIT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    className={`mode-tab ${settings.dailyLimitMinutes === opt.value ? 'is-active' : ''}`}
-                    onClick={() => onUpdateSettings({ ...settings, dailyLimitMinutes: opt.value })}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              <div className="usage-row">
-                <span>Durasi bermain hari ini: <strong>{playedMinutes} menit</strong></span>
-                {progress.playedSeconds > 0 && (
-                  <button type="button" className="link-btn" onClick={onResetTodayTimer}>
-                    Ulangi Timer Hari Ini
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="field-group">
-              <span className="field-label">Suara &amp; Musik</span>
-              <div className="toggle-row">
+            <div className="drawer-row-top">
+              <label className="field-label">
+                Tanggal lahir (opsional)
+                <input
+                  type="date"
+                  max={todayKey()}
+                  value={settings.birthDate ?? ''}
+                  onChange={(e) =>
+                    onUpdateSettings({
+                      ...settings,
+                      birthDate: e.target.value || undefined
+                    })
+                  }
+                />
+              </label>
+              {settings.birthDate && (
                 <button
                   type="button"
-                  className={`mode-tab ${settings.soundEnabled ? 'is-active' : ''}`}
-                  onClick={() =>
-                    onUpdateSettings({ ...settings, soundEnabled: !settings.soundEnabled })
-                  }
+                  className="text-action-btn"
+                  onClick={() => onUpdateSettings({ ...settings, birthDate: undefined })}
                 >
-                  Efek Bunyi: {settings.soundEnabled ? 'Aktif' : 'Mati'}
+                  Hapus tgl lahir
                 </button>
-                <button
-                  type="button"
-                  className={`mode-tab ${settings.voiceEnabled ? 'is-active' : ''}`}
-                  onClick={() =>
-                    onUpdateSettings({ ...settings, voiceEnabled: !settings.voiceEnabled })
-                  }
-                >
-                  Suara Pemandu: {settings.voiceEnabled ? 'Aktif' : 'Mati'}
-                </button>
-                <button
-                  type="button"
-                  className={`mode-tab ${settings.bgmEnabled ? 'is-active' : ''}`}
-                  onClick={() =>
-                    onUpdateSettings({ ...settings, bgmEnabled: !settings.bgmEnabled })
-                  }
-                >
-                  🎵 Musik Pengantar: {settings.bgmEnabled ? 'Aktif' : 'Mati'}
-                </button>
-              </div>
-            </div>
-
-            <div className="field-group">
-              <span className="field-label">Pilar Tumbuh Kembang Hari Ini</span>
-              <div className="development-pillars-grid">
-                <div className="pillar-item">
-                  <div className="pillar-top">
-                    <span className="pillar-title">🧠 Kognitif &amp; Angka</span>
-                    <span className="pillar-count">{(progress.completedCounts['numbers'] ?? 0) + (progress.completedCounts['shapes'] ?? 0) + (progress.completedCounts['puzzle'] ?? 0)} sesi</span>
-                  </div>
-                  <div className="pillar-bar-track">
-                    <div
-                      className="pillar-bar-fill fill-blue"
-                      style={{
-                        width: `${Math.min(100, (((progress.completedCounts['numbers'] ?? 0) + (progress.completedCounts['shapes'] ?? 0) + (progress.completedCounts['puzzle'] ?? 0)) / 5) * 100)}%`
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="pillar-item">
-                  <div className="pillar-top">
-                    <span className="pillar-title">🖐️ Motorik Halus &amp; Menulis</span>
-                    <span className="pillar-count">{(progress.completedCounts['trace'] ?? 0) + (progress.completedCounts['coloring'] ?? 0)} sesi</span>
-                  </div>
-                  <div className="pillar-bar-track">
-                    <div
-                      className="pillar-bar-fill fill-green"
-                      style={{
-                        width: `${Math.min(100, (((progress.completedCounts['trace'] ?? 0) + (progress.completedCounts['coloring'] ?? 0)) / 4) * 100)}%`
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="pillar-item">
-                  <div className="pillar-top">
-                    <span className="pillar-title">🏃 Motorik Kasar &amp; Refleks</span>
-                    <span className="pillar-count">{(progress.completedCounts['motor'] ?? 0) + (progress.completedCounts['balloon'] ?? 0)} sesi</span>
-                  </div>
-                  <div className="pillar-bar-track">
-                    <div
-                      className="pillar-bar-fill fill-orange"
-                      style={{
-                        width: `${Math.min(100, (((progress.completedCounts['motor'] ?? 0) + (progress.completedCounts['balloon'] ?? 0)) / 4) * 100)}%`
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="pillar-item">
-                  <div className="pillar-top">
-                    <span className="pillar-title">👂 Bahasa &amp; Sensori</span>
-                    <span className="pillar-count">{(progress.completedCounts['alphabet'] ?? 0) + (progress.completedCounts['sensory'] ?? 0)} sesi</span>
-                  </div>
-                  <div className="pillar-bar-track">
-                    <div
-                      className="pillar-bar-fill fill-purple"
-                      style={{
-                        width: `${Math.min(100, (((progress.completedCounts['alphabet'] ?? 0) + (progress.completedCounts['sensory'] ?? 0)) / 5) * 100)}%`
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="field-group">
-              <span className="field-label">Ringkasan Aktivitas Hari Ini</span>
-              <div className="stats-grid">
-                <div className="stat-box">
-                  <span className="stat-val">{progress.completedCounts['alphabet'] ?? 0}</span>
-                  <span className="stat-lbl">Taman Huruf</span>
-                </div>
-                <div className="stat-box">
-                  <span className="stat-val">{progress.completedCounts['numbers'] ?? 0}</span>
-                  <span className="stat-lbl">Taman Angka</span>
-                </div>
-                <div className="stat-box">
-                  <span className="stat-val">{progress.completedCounts['sensory'] ?? 0}</span>
-                  <span className="stat-lbl">Suara &amp; Warna</span>
-                </div>
-                <div className="stat-box">
-                  <span className="stat-val">{progress.completedCounts['shapes'] ?? 0}</span>
-                  <span className="stat-lbl">Pasang Bentuk</span>
-                </div>
-                <div className="stat-box">
-                  <span className="stat-val">{progress.completedCounts['trace'] ?? 0}</span>
-                  <span className="stat-lbl">Jejak Jari</span>
-                </div>
-                <div className="stat-box">
-                  <span className="stat-val">{progress.completedCounts['motor'] ?? 0}</span>
-                  <span className="stat-lbl">Ayo Gerak</span>
-                </div>
-                <div className="stat-box">
-                  <span className="stat-val">{progress.completedCounts['coloring'] ?? 0}</span>
-                  <span className="stat-lbl">Buku Warna</span>
-                </div>
-                <div className="stat-box">
-                  <span className="stat-val">{progress.completedCounts['puzzle'] ?? 0}</span>
-                  <span className="stat-lbl">Puzzle Keping</span>
-                </div>
-                <div className="stat-box">
-                  <span className="stat-val">{progress.completedCounts['balloon'] ?? 0}</span>
-                  <span className="stat-lbl">Tangkap Balon</span>
-                </div>
-              </div>
-            </div>
-
-            <div className={`field-group install-box ${isStandalone ? 'is-installed' : ''}`}>
-              <span className="field-label">Status Aplikasi PWA Offline</span>
-              {isStandalone ? (
-                <div className="installed-badge-box">
-                  <div className="installed-pill">
-                    <IconCheck size={18} />
-                    <span>Aplikasi Terpasang (Mode Layar Penuh Aktif)</span>
-                  </div>
-                  <p className="install-note">
-                    KecilMain berjalan mandiri langsung dari HP Anda, siap dimainkan kapan pun tanpa koneksi internet.
-                  </p>
-                </div>
-              ) : installEvent ? (
-                <div className="install-action-wrap">
-                  <button type="button" className="primary-action-btn" onClick={onTriggerInstall}>
-                    <IconDownload size={20} />
-                    <span>Pasang KecilMain di Layar Utama</span>
-                  </button>
-                  <p className="install-note">
-                    Pasang sekali agar anak bisa bermain offline tanpa kuota dan tanpa gangguan tombol browser.
-                  </p>
-                </div>
-              ) : (
-                <div className="install-action-wrap">
-                  <p className="install-note">
-                    {isIos
-                      ? 'Di iPhone/iPad (Safari): ketuk tombol Bagikan (Share) di Safari lalu pilih "Tambah ke Layar Utama".'
-                      : 'KecilMain dapat dipasang ke layar utama HP Anda agar bisa dimainkan secara offline.'}
-                  </p>
-                  {onOpenInstallGuide && (
-                    <button
-                      type="button"
-                      className="secondary-btn"
-                      onClick={() => {
-                        onClose();
-                        onOpenInstallGuide();
-                      }}
-                    >
-                      Buka Panduan Pasang Lengkap
-                    </button>
-                  )}
-                </div>
               )}
             </div>
-          </div>
-        )}
+
+            {computedAge ? (
+              <p className="computed-age-note">
+                Usia otomatis terbaca: <strong>{computedAge.label}</strong> (Fase{' '}
+                {AGE_PHASES.find((p) => p.id === computedAge.band)?.shortLabel})
+              </p>
+            ) : (
+              <div className="field-label">
+                <span>Pilih fase usia manual</span>
+                <div className="chip-row">
+                  {AGE_PHASES.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className={`pill-btn small ${settings.ageBand === p.id ? 'is-active' : ''}`}
+                      onClick={() =>
+                        onUpdateSettings({ ...settings, ageBand: p.id as AgeBand })
+                      }
+                    >
+                      {p.shortLabel}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section className="drawer-section">
+            <h3>Batas Waktu Simulasi (1–5 Tahun)</h3>
+            <p className="muted-copy">
+              Berlaku khusus untuk simulasi interaktif 1–5 tahun. Tab Stimulasi, Catatan, Tips, dan Alat Bayi 0–12 bln selalu terbuka.
+            </p>
+            <div className="chip-row">
+              {LIMIT_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`pill-btn small ${settings.dailyLimitMinutes === opt.value ? 'is-active' : ''}`}
+                  onClick={() =>
+                    onUpdateSettings({ ...settings, dailyLimitMinutes: opt.value })
+                  }
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="timer-usage-box">
+              <span className="tabular">
+                Terpakai hari ini: <strong>{playedMinutes} mnt {playedRemSeconds} dtk</strong>
+              </span>
+              <button type="button" className="btn-outline small" onClick={handleRequestReset}>
+                Reset Timer Hari Ini
+              </button>
+            </div>
+
+            {confirmResetOpen && (
+              <form className="inline-gate" onSubmit={handleVerifyReset}>
+                <label className="field-label">
+                  Verifikasi Orang Tua: berapa {challenge.a} + {challenge.b} ?
+                  <div className="inline-gate-row">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={answerInput}
+                      onChange={(e) => {
+                        setAnswerInput(e.target.value);
+                        setResetError(false);
+                      }}
+                      autoFocus
+                      required
+                    />
+                    <button type="submit" className="btn-primary-calm small">
+                      Reset
+                    </button>
+                  </div>
+                </label>
+                {resetError && <p className="gate-error">Jawaban belum tepat.</p>}
+              </form>
+            )}
+
+            <label className="toggle-row">
+              <div>
+                <strong>Kunci anak saat keluar simulasi</strong>
+                <span>Minta soal hitung sederhana sebelum keluar dari game 1–5 thn</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.childLockExit}
+                onChange={(e) =>
+                  onUpdateSettings({ ...settings, childLockExit: e.target.checked })
+                }
+              />
+            </label>
+          </section>
+
+          <section className="drawer-section">
+            <h3>Audio & Musik</h3>
+            <label className="toggle-row">
+              <div>
+                <strong>Efek suara lembut</strong>
+                <span>Bunyi klik & notifikasi pelan saat bermain</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.soundEnabled}
+                onChange={(e) =>
+                  onUpdateSettings({ ...settings, soundEnabled: e.target.checked })
+                }
+              />
+            </label>
+
+            <label className="toggle-row">
+              <div>
+                <strong>Panduan suara bahasa Indonesia</strong>
+                <span>Pelafalan huruf, warna, angka, dan suara hewan</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.voiceEnabled}
+                onChange={(e) =>
+                  onUpdateSettings({ ...settings, voiceEnabled: e.target.checked })
+                }
+              />
+            </label>
+
+            <label className="toggle-row">
+              <div>
+                <strong>Musik latar kalem saat simulasi</strong>
+                <span>Melodi lullaby pelan yang bisa dinyalakan/matikan</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.bgmEnabled}
+                onChange={(e) =>
+                  onUpdateSettings({ ...settings, bgmEnabled: e.target.checked })
+                }
+              />
+            </label>
+          </section>
+
+          {(installEvent || isIos) && (
+            <section className="drawer-section">
+              <h3>Simpan di Layar Utama (Offline PWA)</h3>
+              <p className="muted-copy">
+                Pasang KecilMain seperti aplikasi agar tetap terbuka cepat meski tanpa kuota internet.
+              </p>
+              <button type="button" className="btn-outline" onClick={onOpenInstallGuide}>
+                Lihat Panduan Pasang di HP
+              </button>
+            </section>
+          )}
+        </div>
       </div>
     </div>
   );

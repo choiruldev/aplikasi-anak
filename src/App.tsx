@@ -1,726 +1,497 @@
 import { useCallback, useEffect, useState, type JSX } from 'react';
-import { AlphabetGarden } from './activities/AlphabetGarden';
-import { BalloonCatch } from './activities/BalloonCatch';
-import { BubblePopper } from './activities/BubblePopper';
-import { ColorGarden } from './activities/ColorGarden';
-import { ColoringBook } from './activities/ColoringBook';
-import { GrossMotorPlay } from './activities/GrossMotorPlay';
-import { JigsawPuzzle } from './activities/JigsawPuzzle';
-import { NumberGarden } from './activities/NumberGarden';
-import { PeekabooAnimals } from './activities/PeekabooAnimals';
-import { SensoryPlay } from './activities/SensoryPlay';
-import { ShapeSorter } from './activities/ShapeSorter';
-import { TraceCanvas } from './activities/TraceCanvas';
+import { AlphabetGarden } from './activities/AlphabetGarden.tsx';
+import { BabySoother } from './activities/BabySoother.tsx';
+import { BalloonCatch } from './activities/BalloonCatch.tsx';
+import { BubblePopper } from './activities/BubblePopper.tsx';
+import { ColorGarden } from './activities/ColorGarden.tsx';
+import { ColoringBook } from './activities/ColoringBook.tsx';
+import { GrossMotorPlay } from './activities/GrossMotorPlay.tsx';
+import { HighContrastCards } from './activities/HighContrastCards.tsx';
+import { JigsawPuzzle } from './activities/JigsawPuzzle.tsx';
+import { NumberGarden } from './activities/NumberGarden.tsx';
+import { PeekabooAnimals } from './activities/PeekabooAnimals.tsx';
+import { SensoryPlay } from './activities/SensoryPlay.tsx';
+import { ShapeSorter } from './activities/ShapeSorter.tsx';
+import { TraceCanvas } from './activities/TraceCanvas.tsx';
+import { TummyTimeGuide } from './activities/TummyTimeGuide.tsx';
+import { BrandMark } from './components/Art.tsx';
+import { ChildFocusShell } from './components/ChildFocusShell.tsx';
+import { InstallModal } from './components/InstallModal.tsx';
 import {
-  ActionPoseIllustration,
-  AnimalIllustration,
-  BrandMark,
-  IconBalloon,
-  IconDownload,
-  IconHome,
-  IconLock,
-  IconPalette,
-  IconPuzzle,
-  IconStar,
-  ShapeGlyph
-} from './components/Art';
-import { InstallModal } from './components/InstallModal';
-import { MascotGuide } from './components/MascotGuide';
-import { ParentDrawer, type BeforeInstallPromptEvent } from './components/ParentDrawer';
-import { StickerAlbumModal } from './components/StickerAlbumModal';
-import { playGentlePop, setAudioPreferences, stopVoice, unlockAudio } from './lib/audio';
-import { startLullabyBgm, stopLullabyBgm } from './lib/bgm';
-import { formatRemainingSeconds } from './lib/geometry';
+  ParentDrawer,
+  type BeforeInstallPromptEvent
+} from './components/ParentDrawer.tsx';
+import { StickerAlbumModal } from './components/StickerAlbumModal.tsx';
+import {
+  AGE_PHASES,
+  SIMULATION_MODULES,
+  STIMULATION_MISSIONS,
+  type SimulationKey
+} from './data/stimulationData.ts';
+import { setAudioPreferences, stopVoice, unlockAudio } from './lib/audio.ts';
+import { isLullabyPlaying, startLullabyBgm, stopLullabyBgm } from './lib/bgm.ts';
+import {
+  computeAgeInfo,
+  isModuleLockedByLimit,
+  shouldCountScreenTime,
+  type AgeBand
+} from './lib/development.ts';
+import {
+  addDailyNote,
+  addGrowthLog,
+  deleteDailyNote,
+  deleteGrowthLog,
+  loadJournal,
+  saveJournal,
+  toggleMilestone,
+  toggleSavedTip,
+  type JournalData,
+  type NoteMood
+} from './lib/journalStorage.ts';
 import {
   loadProgress,
   loadSettings,
   saveProgress,
   saveSettings,
-  type AgeFilter,
   type AppSettings,
   type DailyProgress
-} from './lib/storage';
+} from './lib/storage.ts';
+import { CatatanTab } from './tabs/CatatanTab.tsx';
+import { SimulasiTab } from './tabs/SimulasiTab.tsx';
+import { StimulasiTab } from './tabs/StimulasiTab.tsx';
+import { TipsTab } from './tabs/TipsTab.tsx';
 
-type ActivityKey =
-  | 'peekaboo'
-  | 'bubblepopper'
-  | 'colors'
-  | 'alphabet'
-  | 'numbers'
-  | 'sensory'
-  | 'shapes'
-  | 'trace'
-  | 'motor'
-  | 'coloring'
-  | 'puzzle'
-  | 'balloon';
+type MainTab = 'stimulasi' | 'simulasi' | 'catatan' | 'tips';
 
-interface ActivityMeta {
-  key: ActivityKey;
-  title: string;
-  subtitle: string;
-  ageTag: string;
-  ageGroup: Exclude<AgeFilter, 'all'>[];
-  skillTag: string;
-  stickerId: string;
-  surfaceTint: string;
-}
+const TAB_ITEMS: Array<{ id: MainTab; label: string; shortDesc: string }> = [
+  { id: 'stimulasi', label: 'Stimulasi', shortDesc: 'Misi harian' },
+  { id: 'simulasi', label: 'Simulasi', shortDesc: '15 modul' },
+  { id: 'catatan', label: 'Catatan', shortDesc: 'Jurnal anak' },
+  { id: 'tips', label: 'Tips', shortDesc: 'Info Gen Z' }
+];
 
-const ACTIVITIES: ActivityMeta[] = [
-  {
-    key: 'peekaboo',
-    title: 'Cilukba Hewan',
-    subtitle: 'Ketuk semak untuk mencari kucing, bebek, sapi, dan dengar suara riangnya!',
-    ageTag: '1 – 2,5 thn',
-    ageGroup: ['1-2.5'],
-    skillTag: 'Sebab-Akibat & Sensori',
-    stickerId: 'sticker-sensory',
-    surfaceTint: '#FFF0E6'
-  },
-  {
-    key: 'bubblepopper',
-    title: 'Pesta Gelembung',
-    subtitle: 'Ketuk & usap gelembung sabun berkilau untuk letupan nada ceria tanpa batas.',
-    ageTag: '1 – 2,5 thn',
-    ageGroup: ['1-2.5'],
-    skillTag: 'Motorik & Sensori Nada',
-    stickerId: 'sticker-balloon',
-    surfaceTint: '#E4F2FB'
-  },
-  {
-    key: 'colors',
-    title: 'Taman Warna',
-    subtitle: 'Sentuh balon warna, cipratan cat riang, dan kenal 6 warna ceria.',
-    ageTag: '1 – 2,5 thn',
-    ageGroup: ['1-2.5'],
-    skillTag: 'Pengenalan Warna',
-    stickerId: 'sticker-colors',
-    surfaceTint: '#FFF0F5'
-  },
-  {
-    key: 'alphabet',
-    title: 'Taman Huruf',
-    subtitle: 'Kenal huruf besar & kecil, ejaan kata Apel hingga Zebra, dan kuis tebak suara.',
-    ageTag: '2,5 – 5 thn',
-    ageGroup: ['2.5-4', '4-5'],
-    skillTag: 'Bahasa & Literasi',
-    stickerId: 'sticker-alphabet',
-    surfaceTint: '#F3EBF9'
-  },
-  {
-    key: 'numbers',
-    title: 'Taman Angka',
-    subtitle: 'Kenal bentuk angka dan sentuh apel, bebek, serta mobil untuk berhitung.',
-    ageTag: '2 – 5 thn',
-    ageGroup: ['1-2.5', '2.5-4', '4-5'],
-    skillTag: 'Konsep Angka & Hitung',
-    stickerId: 'sticker-numbers',
-    surfaceTint: '#FFF8E6'
-  },
-  {
-    key: 'sensory',
-    title: 'Suara & Nada',
-    subtitle: 'Sentuh hewan lucu dan mainkan gambang nada Do-Re-Mi-Fa-Sol-La-Si-Do.',
-    ageTag: '1 – 2,5 thn',
-    ageGroup: ['1-2.5'],
-    skillTag: 'Musik & Irama Nada',
-    stickerId: 'sticker-sensory',
-    surfaceTint: '#FCEEE6'
-  },
-  {
-    key: 'shapes',
-    title: 'Bentuk Kayu',
-    subtitle: 'Geser kepingan bentuk ke lubang bayangan yang cocok.',
-    ageTag: '2,5 – 4 thn',
-    ageGroup: ['2.5-4'],
-    skillTag: 'Motorik Halus',
-    stickerId: 'sticker-shapes',
-    surfaceTint: '#E6F0EC'
-  },
-  {
-    key: 'trace',
-    title: 'Jejak Jari',
-    subtitle: 'Tebalkan garis, huruf A-I-U, dan angka 1-2-3 dengan telunjuk.',
-    ageTag: '3,5 – 5 thn',
-    ageGroup: ['2.5-4', '4-5'],
-    skillTag: 'Pra-Tulis & Presisi',
-    stickerId: 'sticker-trace',
-    surfaceTint: '#FBF1D8'
-  },
-  {
-    key: 'motor',
-    title: 'Ayo Gerak!',
-    subtitle: 'Lompat kelinci, pesawat seimbang, dan main patung musik.',
-    ageTag: '2 – 5 thn',
-    ageGroup: ['1-2.5', '2.5-4', '4-5'],
-    skillTag: 'Motorik Kasar',
-    stickerId: 'sticker-motor',
-    surfaceTint: '#E3EEF7'
-  },
-  {
-    key: 'coloring',
-    title: 'Buku Warna',
-    subtitle: 'Warnai apel dan kupu-kupu lucu atau goreskan lukisan bunyi.',
-    ageTag: '2 – 4,5 thn',
-    ageGroup: ['1-2.5', '2.5-4'],
-    skillTag: 'Kreativitas & Nada',
-    stickerId: 'sticker-coloring',
-    surfaceTint: '#FBF0E4'
-  },
-  {
-    key: 'puzzle',
-    title: 'Puzzle Gambar',
-    subtitle: 'Pasang 4 keping gambar kucing, gajah, dan semangka manis.',
-    ageTag: '2,5 – 5 thn',
-    ageGroup: ['2.5-4', '4-5'],
-    skillTag: 'Visual & Spasial',
-    stickerId: 'sticker-puzzle',
-    surfaceTint: '#E8F3EB'
-  },
-  {
-    key: 'balloon',
-    title: 'Tangkap Balon',
-    subtitle: 'Lambaikan tangan di depan kamera atau ketuk layar untuk pecahkan balon.',
-    ageTag: '1,5 – 5 thn',
-    ageGroup: ['1-2.5', '2.5-4', '4-5'],
-    skillTag: 'Motorik Kasar & Kamera',
-    stickerId: 'sticker-balloon',
-    surfaceTint: '#EAEBFA'
+function renderNavIcon(id: MainTab): JSX.Element {
+  switch (id) {
+    case 'stimulasi':
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 20V10" />
+          <path d="M12 14c-3.5 0-6-2.2-6-6 3.5 0 6 2.2 6 6Z" />
+          <path d="M12 11c3.5 0 6-2.2 6-6-3.5 0-6 2.2-6 6Z" />
+        </svg>
+      );
+    case 'simulasi':
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <polygon points="6 4 20 12 6 20 6 4" />
+        </svg>
+      );
+    case 'catatan':
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        </svg>
+      );
+    case 'tips':
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 16v-4" />
+          <path d="M12 8h.01" />
+        </svg>
+      );
   }
-];
-
-const AGE_FILTERS: { id: AgeFilter; label: string }[] = [
-  { id: 'all', label: 'Semua Usia (1–5 thn)' },
-  { id: '1-2.5', label: '1 – 2,5 thn' },
-  { id: '2.5-4', label: '2,5 – 4 thn' },
-  { id: '4-5', label: '4 – 5 thn' }
-];
-
-function checkIsStandalone(): boolean {
-  if (typeof window === 'undefined') return false;
-  const isStandaloneMedia = window.matchMedia?.('(display-mode: standalone)')?.matches;
-  const isIosStandalone = (window.navigator as unknown as { standalone?: boolean })?.standalone === true;
-  return Boolean(isStandaloneMedia || isIosStandalone);
 }
 
 export function App(): JSX.Element {
   const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
   const [progress, setProgress] = useState<DailyProgress>(() => loadProgress());
-  const [activeGame, setActiveGame] = useState<ActivityKey | null>(null);
+  const [journal, setJournal] = useState<JournalData>(() => loadJournal());
+
+  const [activeTab, setActiveTab] = useState<MainTab>('stimulasi');
+  const [activeSimulation, setActiveSimulation] = useState<SimulationKey | null>(null);
+  const [manualBandOverride, setManualBandOverride] = useState<AgeBand | null>(null);
+
   const [parentOpen, setParentOpen] = useState(false);
-  const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
-  const [bannerSticker, setBannerSticker] = useState<string | null>(null);
-  const [isStandalone, setIsStandalone] = useState<boolean>(() => checkIsStandalone());
-  const [isIos, setIsIos] = useState(false);
-  const [bannerDismissed, setBannerDismissed] = useState(false);
   const [installModalOpen, setInstallModalOpen] = useState(false);
-  const [stickerAlbumOpen, setStickerAlbumOpen] = useState(false);
+  const [albumOpen, setAlbumOpen] = useState(false);
+
+  const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isIos, setIsIos] = useState(false);
+
+  const ageInfo = computeAgeInfo(settings.birthDate);
+  const activeBand: AgeBand = manualBandOverride ?? ageInfo?.band ?? settings.ageBand;
+  const activePhase = AGE_PHASES.find((p) => p.id === activeBand) ?? AGE_PHASES[3];
+
+  const isGameTimeUp =
+    settings.dailyLimitMinutes > 0 &&
+    progress.playedSeconds >= settings.dailyLimitMinutes * 60;
+  const remainingSeconds =
+    settings.dailyLimitMinutes > 0
+      ? Math.max(0, settings.dailyLimitMinutes * 60 - progress.playedSeconds)
+      : 0;
+
+  const activeSimMeta = activeSimulation
+    ? SIMULATION_MODULES.find((m) => m.key === activeSimulation) ?? null
+    : null;
 
   useEffect(() => {
-    setAudioPreferences(settings.soundEnabled, settings.voiceEnabled);
     saveSettings(settings);
-    if (settings.bgmEnabled) {
-      startLullabyBgm();
-    } else {
-      stopLullabyBgm();
-    }
+    setAudioPreferences(settings.soundEnabled, settings.voiceEnabled);
   }, [settings]);
-
-  useEffect(() => {
-    return () => stopLullabyBgm();
-  }, []);
 
   useEffect(() => {
     saveProgress(progress);
   }, [progress]);
 
-  // Detect standalone / PWA mode and iOS device
   useEffect(() => {
-    setIsStandalone(checkIsStandalone());
+    saveJournal(journal);
+  }, [journal]);
 
-    const ua = window.navigator.userAgent.toLowerCase();
-    const iosDevice =
-      /iphone|ipad|ipod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    setIsIos(iosDevice);
-
-    try {
-      if (sessionStorage.getItem('pwa_banner_dismissed') === '1') {
-        setBannerDismissed(true);
-      }
-    } catch {}
-
-    const mql = window.matchMedia('(display-mode: standalone)');
-    const onChange = (e: MediaQueryListEvent) => setIsStandalone(e.matches);
-    mql.addEventListener('change', onChange);
-    return () => mql.removeEventListener('change', onChange);
-  }, []);
-
-  // Capture Android/Desktop PWA install prompt
+  // Ambient BGM plays only when enabled and inside a non-soother simulation
   useEffect(() => {
-    function onBeforeInstall(e: Event): void {
+    if (
+      settings.bgmEnabled &&
+      activeSimulation !== null &&
+      activeSimulation !== 'baby-soother'
+    ) {
+      if (!isLullabyPlaying()) startLullabyBgm();
+    } else if (activeSimulation !== 'baby-soother') {
+      if (isLullabyPlaying()) stopLullabyBgm();
+    }
+  }, [settings.bgmEnabled, activeSimulation]);
+
+  // Screen-time counter ticks strictly for 1-5y toddler simulation games
+  useEffect(() => {
+    if (!activeSimMeta) return;
+    const modalOpen = parentOpen || installModalOpen || albumOpen;
+    if (!shouldCountScreenTime(activeSimMeta.isBabyTool, isGameTimeUp, modalOpen)) {
+      return;
+    }
+
+    const timerId = window.setInterval(() => {
+      setProgress((prev) => ({
+        ...prev,
+        playedSeconds: prev.playedSeconds + 1
+      }));
+    }, 1000);
+    return () => window.clearInterval(timerId);
+  }, [activeSimMeta, isGameTimeUp, parentOpen, installModalOpen, albumOpen]);
+
+  // PWA install event detection
+  useEffect(() => {
+    const ua = window.navigator.userAgent;
+    const isIosDevice = /iPad|iPhone|iPod/.test(ua) && !('MSStream' in window);
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+    setIsIos(isIosDevice && !isStandalone);
+
+    const onBeforeInstall = (e: Event) => {
       e.preventDefault();
       setInstallEvent(e as BeforeInstallPromptEvent);
-    }
+    };
     window.addEventListener('beforeinstallprompt', onBeforeInstall);
     return () => window.removeEventListener('beforeinstallprompt', onBeforeInstall);
   }, []);
 
-  function handleTriggerInstall(): void {
-    if (installEvent) {
-      void installEvent.prompt().then(() => {
-        return installEvent.userChoice.then((choice) => {
-          if (choice.outcome === 'accepted') {
-            setInstallEvent(null);
-          }
-        });
-      });
-    } else {
-      setInstallModalOpen(true);
+  const handleUpdateSettings = (next: AppSettings) => {
+    setSettings(next);
+    // Reset preview phase override if user explicitly changed birthDate or manual band
+    if (next.birthDate !== settings.birthDate || next.ageBand !== settings.ageBand) {
+      setManualBandOverride(null);
     }
-  }
+  };
 
-  // Screen-time ticker when page is visible and parent modal isn't open
-  const isTimeUp =
-    settings.dailyLimitMinutes > 0 && progress.playedSeconds >= settings.dailyLimitMinutes * 60;
+  const handleSelectBand = (band: AgeBand) => {
+    setManualBandOverride(band);
+    if (!settings.birthDate) {
+      setSettings((prev) => ({ ...prev, ageBand: band }));
+    }
+  };
 
-  useEffect(() => {
-    if (isTimeUp || parentOpen) return;
-    const id = window.setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
-      setProgress((prev) => ({ ...prev, playedSeconds: prev.playedSeconds + 1 }));
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [isTimeUp, parentOpen]);
-
-  const handleActivityComplete = useCallback((activityKey: ActivityKey, stickerId: string): void => {
+  const handleToggleMission = (missionId: string) => {
     setProgress((prev) => {
-      const hasSticker = prev.stickers.includes(stickerId);
-      const nextStickers = hasSticker ? prev.stickers : [...prev.stickers, stickerId];
-      if (!hasSticker) {
-        setBannerSticker(stickerId);
-        window.setTimeout(() => setBannerSticker(null), 3200);
-      }
+      const exists = prev.completedMissions.includes(missionId);
+      return {
+        ...prev,
+        completedMissions: exists
+          ? prev.completedMissions.filter((id) => id !== missionId)
+          : [...prev.completedMissions, missionId]
+      };
+    });
+  };
+
+  const handleLaunchSimulation = (key: SimulationKey) => {
+    const mod = SIMULATION_MODULES.find((m) => m.key === key);
+    if (!mod) return;
+    unlockAudio();
+    if (isModuleLockedByLimit(mod.isBabyTool, isGameTimeUp)) {
+      setParentOpen(true);
+      return;
+    }
+    setActiveSimulation(key);
+  };
+
+  const handleExitSimulation = () => {
+    stopVoice();
+    if (isLullabyPlaying()) stopLullabyBgm();
+    setActiveSimulation(null);
+  };
+
+  const handleActivityComplete = useCallback((key: SimulationKey, stickerId?: string) => {
+    setProgress((prev) => {
+      const nextStickers =
+        stickerId && !prev.stickers.includes(stickerId)
+          ? [...prev.stickers, stickerId]
+          : prev.stickers;
+
+      const linkedMissionIds = STIMULATION_MISSIONS.filter(
+        (m) => m.linkedSimulation === key
+      ).map((m) => m.id);
+      const nextMissions = Array.from(new Set([...prev.completedMissions, ...linkedMissionIds]));
+
       return {
         ...prev,
         stickers: nextStickers,
         completedCounts: {
           ...prev.completedCounts,
-          [activityKey]: (prev.completedCounts[activityKey] ?? 0) + 1
-        }
+          [key]: (prev.completedCounts[key] ?? 0) + 1
+        },
+        completedMissions: nextMissions
       };
     });
   }, []);
 
-  const remainingSec =
-    settings.dailyLimitMinutes > 0
-      ? Math.max(0, settings.dailyLimitMinutes * 60 - progress.playedSeconds)
-      : null;
+  const handleResetTimer = () => {
+    setProgress((prev) => ({ ...prev, playedSeconds: 0 }));
+  };
 
-  const visibleActivities =
-    settings.ageFilter === 'all'
-      ? ACTIVITIES
-      : ACTIVITIES.filter((a) => a.ageGroup.includes(settings.ageFilter as Exclude<AgeFilter, 'all'>));
+  const handleToggleMilestone = (milestoneId: string) => {
+    setJournal((prev) => toggleMilestone(prev, milestoneId));
+  };
+
+  const handleAddGrowth = (input: {
+    date: string;
+    weightKg?: number;
+    heightCm?: number;
+    note?: string;
+  }) => {
+    setJournal((prev) => addGrowthLog(prev, input));
+  };
+
+  const handleDeleteGrowth = (id: string) => {
+    setJournal((prev) => deleteGrowthLog(prev, id));
+  };
+
+  const handleAddNote = (input: { date: string; mood: NoteMood; text: string }) => {
+    setJournal((prev) => addDailyNote(prev, input));
+  };
+
+  const handleDeleteNote = (id: string) => {
+    setJournal((prev) => deleteDailyNote(prev, id));
+  };
+
+  const handleToggleSaveTip = (tipId: string) => {
+    setJournal((prev) => toggleSavedTip(prev, tipId));
+  };
+
+  const renderSimulationModule = (key: SimulationKey): JSX.Element => {
+    switch (key) {
+      case 'high-contrast':
+        return <HighContrastCards onComplete={() => handleActivityComplete('high-contrast')} />;
+      case 'tummy-time':
+        return <TummyTimeGuide onComplete={() => handleActivityComplete('tummy-time')} />;
+      case 'baby-soother':
+        return <BabySoother onComplete={() => handleActivityComplete('baby-soother')} />;
+      case 'peekaboo':
+        return <PeekabooAnimals onComplete={(s) => handleActivityComplete('peekaboo', s)} />;
+      case 'bubblepopper':
+        return <BubblePopper onComplete={(s) => handleActivityComplete('bubblepopper', s)} />;
+      case 'colors':
+        return <ColorGarden onComplete={(s) => handleActivityComplete('colors', s)} />;
+      case 'sensory':
+        return <SensoryPlay onComplete={(s) => handleActivityComplete('sensory', s)} />;
+      case 'numbers':
+        return <NumberGarden onComplete={(s) => handleActivityComplete('numbers', s)} />;
+      case 'alphabet':
+        return <AlphabetGarden onComplete={(s) => handleActivityComplete('alphabet', s)} />;
+      case 'shapes':
+        return <ShapeSorter onComplete={(s) => handleActivityComplete('shapes', s)} />;
+      case 'motor':
+        return <GrossMotorPlay onComplete={(s) => handleActivityComplete('motor', s)} />;
+      case 'trace':
+        return <TraceCanvas onComplete={(s) => handleActivityComplete('trace', s)} />;
+      case 'coloring':
+        return <ColoringBook onComplete={(s) => handleActivityComplete('coloring', s)} />;
+      case 'puzzle':
+        return <JigsawPuzzle onComplete={(s) => handleActivityComplete('puzzle', s)} />;
+      case 'balloon':
+        return <BalloonCatch onComplete={(s) => handleActivityComplete('balloon', s)} />;
+    }
+  };
+
+  if (activeSimulation && activeSimMeta) {
+    return (
+      <ChildFocusShell
+        moduleMeta={activeSimMeta}
+        isTimeUp={isGameTimeUp}
+        remainingSec={remainingSeconds}
+        dailyLimitMinutes={settings.dailyLimitMinutes}
+        bgmEnabled={settings.bgmEnabled}
+        childLockExit={settings.childLockExit}
+        onToggleBgm={() =>
+          setSettings((prev) => ({ ...prev, bgmEnabled: !prev.bgmEnabled }))
+        }
+        onExit={handleExitSimulation}
+        onRequestResetTimer={handleResetTimer}
+      >
+        {renderSimulationModule(activeSimulation)}
+      </ChildFocusShell>
+    );
+  }
+
+  const profileChipLabel = ageInfo
+    ? `${settings.childName} · ${ageInfo.label}`
+    : `${settings.childName} · ${activePhase.shortLabel}`;
 
   return (
-    <div
-      className="app-shell"
-      onPointerDown={() => unlockAudio()}
-      onClick={() => unlockAudio()}
-    >
-      <header className="topbar">
-        <div className="brand-cluster">
-          {activeGame ? (
+    <div className="companion-shell">
+      <header className="companion-topbar">
+        <div className="brand-title-wrap">
+          <BrandMark size={38} />
+          <div className="brand-text-block">
+            <span className="brand-name">KecilMain</span>
+            <span className="brand-tagline">Tumbuh Kembang & Simulasi 0–5 Thn</span>
+          </div>
+        </div>
+
+        <nav className="desktop-nav" aria-label="Navigasi utama">
+          {TAB_ITEMS.map((item) => (
             <button
+              key={item.id}
               type="button"
-              className="home-pill-btn"
-              onClick={() => {
-                stopVoice();
-                playGentlePop();
-                setActiveGame(null);
-              }}
+              className={`desktop-nav-btn ${activeTab === item.id ? 'is-active' : ''}`}
+              onClick={() => setActiveTab(item.id)}
+              aria-current={activeTab === item.id ? 'page' : undefined}
             >
-              <IconHome size={22} />
-              <span>Menu</span>
+              {renderNavIcon(item.id)}
+              <span>{item.label}</span>
             </button>
-          ) : (
-            <div className="brand-title-wrap">
-              <BrandMark size={36} />
-              <div className="brand-text-block">
-                <span className="brand-name">KecilMain</span>
-                <span className="brand-tagline">Belajar &amp; Gerak Balita</span>
-              </div>
-            </div>
-          )}
-        </div>
+          ))}
+        </nav>
 
-        <div className="topbar-right">
-          {activeGame ? (
-            <div className="topbar-in-game-row">
-              <button
-                type="button"
-                className={`bgm-circle-btn ${settings.bgmEnabled ? 'is-active' : ''}`}
-                onClick={() => {
-                  playGentlePop();
-                  unlockAudio();
-                  const next = !settings.bgmEnabled;
-                  setSettings((prev) => ({ ...prev, bgmEnabled: next }));
-                }}
-                aria-label="Musik santai pengantar"
-                title={settings.bgmEnabled ? 'Matikan musik pengantar' : 'Nyalakan musik pengantar'}
-              >
-                <span>{settings.bgmEnabled ? '🎵' : '🔇'}</span>
-              </button>
-
-              {remainingSec !== null && (
-                <div className="timer-pill" title="Sisa waktu bermain hari ini">
-                  <span>⏱️ {formatRemainingSeconds(remainingSec)}</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="topbar-home-row">
-              <button
-                type="button"
-                className="sticker-pill is-interactive"
-                onClick={() => {
-                  playGentlePop();
-                  setStickerAlbumOpen(true);
-                }}
-                aria-label={`Buka Buku Album Stiker, ${progress.stickers.length} dari 9 stiker terkumpul`}
-                title="Buka Buku Album Stiker"
-              >
-                <IconStar size={18} filled />
-                <span className="sticker-label-full">{progress.stickers.length} / 9 Stiker</span>
-                <span className="sticker-label-compact">{progress.stickers.length}</span>
-              </button>
-
-              <button
-                type="button"
-                className={`bgm-circle-btn ${settings.bgmEnabled ? 'is-active' : ''}`}
-                onClick={() => {
-                  playGentlePop();
-                  unlockAudio();
-                  const next = !settings.bgmEnabled;
-                  setSettings((prev) => ({ ...prev, bgmEnabled: next }));
-                }}
-                aria-label="Musik santai pengantar"
-                title={settings.bgmEnabled ? 'Matikan musik pengantar' : 'Nyalakan musik pengantar'}
-              >
-                <span>{settings.bgmEnabled ? '🎵' : '🔇'}</span>
-              </button>
-
-              {remainingSec !== null && (
-                <div className="timer-pill" title="Sisa waktu bermain hari ini">
-                  <span>⏱️ {formatRemainingSeconds(remainingSec)}</span>
-                </div>
-              )}
-
-              <button
-                type="button"
-                className="parent-circle-btn"
-                onClick={() => setParentOpen(true)}
-                aria-label="Pengaturan Orang Tua"
-                title="Pengaturan Orang Tua"
-              >
-                <IconLock size={18} />
-                <span className="parent-btn-text">Orang Tua</span>
-              </button>
-            </div>
-          )}
-        </div>
+        <button
+          type="button"
+          className="profile-chip"
+          onClick={() => setParentOpen(true)}
+          aria-label="Buka profil anak dan pengaturan"
+        >
+          <span>{profileChipLabel}</span>
+          <span className="chip-caret" aria-hidden="true">⚙</span>
+        </button>
       </header>
 
-      {bannerSticker && (
-        <div className="reward-toast" role="status">
-          <IconStar size={24} filled />
-          <span>Bintang Stiker Baru Terkumpul! Hebat, {settings.childName}!</span>
-        </div>
-      )}
+      <main className="companion-main">
+        {activeTab === 'stimulasi' && (
+          <StimulasiTab
+            childName={settings.childName}
+            ageInfo={ageInfo}
+            activeBand={activeBand}
+            onSelectBand={handleSelectBand}
+            completedMissions={progress.completedMissions}
+            onToggleMission={handleToggleMission}
+            journal={journal}
+            onOpenSimulation={handleLaunchSimulation}
+            onOpenProfile={() => setParentOpen(true)}
+            onOpenTabCatatan={() => setActiveTab('catatan')}
+          />
+        )}
 
-      {isTimeUp ? (
-        <main className="rest-screen">
-          <div className="rest-card">
-            <svg width="96" height="96" viewBox="0 0 96 96" fill="none" aria-hidden="true">
-              <circle cx="48" cy="48" r="42" fill="#233732" />
-              <path
-                d="M58 24C44 26 34 38 36 52C38 66 50 74 64 70C53 76 38 72 31 60C24 48 28 32 40 25C46 22 52 22 58 24Z"
-                fill="#E89F1C"
-              />
-              <circle cx="64" cy="34" r="3" fill="#F5F7F2" />
-              <circle cx="72" cy="48" r="2.2" fill="#F5F7F2" />
-            </svg>
-            <h1 className="rest-title">Waktunya Istirahat Mata, {settings.childName}</h1>
-            <p className="rest-body">
-              Waktu bermain layar hari ini ({settings.dailyLimitMinutes} menit) sudah selesai. Ayo minum air putih dan bermain di luar bersama Ayah atau Ibu!
-            </p>
-            <button
-              type="button"
-              className="secondary-btn"
-              onClick={() => setParentOpen(true)}
-            >
-              Pengaturan Orang Tua
-            </button>
-          </div>
-        </main>
-      ) : activeGame === null ? (
-        <main className="home-main">
-          {!isStandalone && !bannerDismissed && (
-            <section className="pwa-install-banner" aria-label="Saran Pasang Aplikasi">
-              <div className="pwa-banner-left">
-                <span className="pwa-banner-emoji" aria-hidden="true">📲</span>
-                <div className="pwa-banner-text">
-                  <strong className="pwa-banner-title">Pasang di Layar HP</strong>
-                  <span className="pwa-banner-desc">Main lancar tanpa kuota</span>
-                </div>
-              </div>
-              <div className="pwa-banner-actions">
-                <button
-                  type="button"
-                  className="pwa-banner-install-btn"
-                  onClick={handleTriggerInstall}
-                >
-                  <IconDownload size={14} />
-                  <span>Pasang</span>
-                </button>
-                <button
-                  type="button"
-                  className="pwa-banner-dismiss-btn"
-                  aria-label="Tutup saran pemasangan"
-                  onClick={() => {
-                    setBannerDismissed(true);
-                    try {
-                      sessionStorage.setItem('pwa_banner_dismissed', '1');
-                    } catch {}
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-            </section>
-          )}
+        {activeTab === 'simulasi' && (
+          <SimulasiTab
+            activeBand={activeBand}
+            isGameTimeUp={isGameTimeUp}
+            stickersCount={progress.stickers.length}
+            onOpenStickerAlbum={() => setAlbumOpen(true)}
+            onLaunchSimulation={handleLaunchSimulation}
+            onOpenTimeLimitReset={() => setParentOpen(true)}
+          />
+        )}
 
-          <section className="welcome-band" aria-labelledby="home-heading">
-            <div className="welcome-text-wrap">
-              <h1 id="home-heading" className="home-heading">
-                Halo, {settings.childName}! 👋
-              </h1>
-              <p className="home-lead">
-                Ayo pilih mainan yang kamu suka:
-              </p>
-            </div>
+        {activeTab === 'catatan' && (
+          <CatatanTab
+            childName={settings.childName}
+            ageLabel={ageInfo?.label ?? activePhase.rangeLabel}
+            activeBand={activeBand}
+            journal={journal}
+            onToggleMilestone={handleToggleMilestone}
+            onAddGrowth={handleAddGrowth}
+            onDeleteGrowth={handleDeleteGrowth}
+            onAddNote={handleAddNote}
+            onDeleteNote={handleDeleteNote}
+          />
+        )}
 
-            <div className="age-filter-bar" role="tablist" aria-label="Saring berdasarkan usia balita">
-              {AGE_FILTERS.map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={settings.ageFilter === f.id}
-                  className={`age-pill ${settings.ageFilter === f.id ? 'is-active' : ''}`}
-                  onClick={() => {
-                    playGentlePop();
-                    setSettings((prev) => ({ ...prev, ageFilter: f.id }));
-                  }}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          </section>
+        {activeTab === 'tips' && (
+          <TipsTab
+            savedTipIds={journal.savedTipIds}
+            onToggleSaveTip={handleToggleSaveTip}
+          />
+        )}
+      </main>
 
-          {(settings.ageFilter === 'all' || settings.ageFilter === '1-2.5') && (
-            <section className="toddler-zone-banner" aria-label="Zona Khusus Balita 1 sampai 2.5 tahun">
-              <div className="toddler-zone-header">
-                <span className="toddler-zone-badge">👶 Batita (1–2,5 Thn)</span>
-                <span className="toddler-zone-subbadge">Sentuh Bebas ✨</span>
-              </div>
-              <div className="toddler-zone-actions">
-                <button
-                  type="button"
-                  className="toddler-zone-card-btn card-peekaboo"
-                  onClick={() => {
-                    playGentlePop();
-                    setActiveGame('peekaboo');
-                  }}
-                >
-                  <span className="toddler-card-icon" aria-hidden="true">🙈</span>
-                  <div className="toddler-card-text">
-                    <span className="toddler-card-title">Cilukba</span>
-                    <span className="toddler-card-subtitle">Ketuk semak</span>
-                  </div>
-                </button>
+      <nav className="mobile-bottom-nav" aria-label="Navigasi seluler">
+        {TAB_ITEMS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={`bottom-nav-btn ${activeTab === item.id ? 'is-active' : ''}`}
+            onClick={() => setActiveTab(item.id)}
+            aria-current={activeTab === item.id ? 'page' : undefined}
+          >
+            {renderNavIcon(item.id)}
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </nav>
 
-                <button
-                  type="button"
-                  className="toddler-zone-card-btn card-bubble"
-                  onClick={() => {
-                    playGentlePop();
-                    setActiveGame('bubblepopper');
-                  }}
-                >
-                  <span className="toddler-card-icon" aria-hidden="true">🫧</span>
-                  <div className="toddler-card-text">
-                    <span className="toddler-card-title">Gelembung</span>
-                    <span className="toddler-card-subtitle">Pecahkan nada</span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  className="toddler-zone-card-btn card-colors"
-                  onClick={() => {
-                    playGentlePop();
-                    setActiveGame('colors');
-                  }}
-                >
-                  <span className="toddler-card-icon" aria-hidden="true">🎨</span>
-                  <div className="toddler-card-text">
-                    <span className="toddler-card-title">Warna</span>
-                    <span className="toddler-card-subtitle">Balon & cipratan</span>
-                  </div>
-                </button>
-              </div>
-            </section>
-          )}
-
-          <section className="activity-grid" aria-label="Daftar aktivitas belajar dan motorik">
-            {visibleActivities.map((act) => {
-              const earned = progress.stickers.includes(act.stickerId);
-              return (
-                <button
-                  key={act.key}
-                  type="button"
-                  className="activity-card"
-                  style={{ backgroundColor: act.surfaceTint }}
-                  onClick={() => {
-                    playGentlePop();
-                    setActiveGame(act.key);
-                  }}
-                >
-                  <div className="activity-card-top-badges">
-                    <span className="meta-pill">{act.ageTag}</span>
-                    {earned && (
-                      <span className="card-earned-star" aria-label="Stiker diperoleh">
-                        <IconStar size={16} filled />
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="activity-card-art">
-                    {act.key === 'peekaboo' && <AnimalIllustration id="cat" size={76} />}
-                    {act.key === 'bubblepopper' && (
-                      <div className="activity-art-emoji" aria-hidden="true">🫧</div>
-                    )}
-                    {act.key === 'colors' && (
-                      <div className="activity-art-emoji" aria-hidden="true">🎨</div>
-                    )}
-                    {act.key === 'alphabet' && (
-                      <div className="alphabet-preview-badge" aria-hidden="true">
-                        <span className="alphabet-preview-text">Abc</span>
-                      </div>
-                    )}
-                    {act.key === 'numbers' && (
-                      <div className="numbers-preview-badge" aria-hidden="true">
-                        <span className="numbers-preview-digit">123</span>
-                      </div>
-                    )}
-                    {act.key === 'sensory' && <AnimalIllustration id="duck" size={76} />}
-                    {act.key === 'shapes' && <ShapeGlyph shape="star" fill="#2B9361" size={72} />}
-                    {act.key === 'trace' && (
-                      <div className="trace-preview-glyph" aria-hidden="true">Aa</div>
-                    )}
-                    {act.key === 'motor' && <ActionPoseIllustration pose="bunny" active={false} />}
-                    {act.key === 'coloring' && <IconPalette size={72} />}
-                    {act.key === 'puzzle' && <IconPuzzle size={72} />}
-                    {act.key === 'balloon' && <IconBalloon size={72} />}
-                  </div>
-
-                  <div className="activity-card-body">
-                    <h2 className="activity-card-title">{act.title}</h2>
-                    <p className="activity-card-desc">{act.subtitle}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </section>
-          <MascotGuide childName={settings.childName} />
-        </main>
-      ) : (
-        <main className="game-main">
-          {activeGame === 'peekaboo' && (
-            <PeekabooAnimals onComplete={(s) => handleActivityComplete('peekaboo', s)} />
-          )}
-          {activeGame === 'bubblepopper' && (
-            <BubblePopper onComplete={(s) => handleActivityComplete('bubblepopper', s)} />
-          )}
-          {activeGame === 'colors' && (
-            <ColorGarden onComplete={(s) => handleActivityComplete('colors', s)} />
-          )}
-          {activeGame === 'alphabet' && (
-            <AlphabetGarden onComplete={(s) => handleActivityComplete('alphabet', s)} />
-          )}
-          {activeGame === 'numbers' && (
-            <NumberGarden onComplete={(s) => handleActivityComplete('numbers', s)} />
-          )}
-          {activeGame === 'sensory' && (
-            <SensoryPlay onComplete={(s) => handleActivityComplete('sensory', s)} />
-          )}
-          {activeGame === 'shapes' && (
-            <ShapeSorter onComplete={(s) => handleActivityComplete('shapes', s)} />
-          )}
-          {activeGame === 'trace' && (
-            <TraceCanvas onComplete={(s) => handleActivityComplete('trace', s)} />
-          )}
-          {activeGame === 'motor' && (
-            <GrossMotorPlay onComplete={(s) => handleActivityComplete('motor', s)} />
-          )}
-          {activeGame === 'coloring' && (
-            <ColoringBook onComplete={(s) => handleActivityComplete('coloring', s)} />
-          )}
-          {activeGame === 'puzzle' && (
-            <JigsawPuzzle onComplete={(s) => handleActivityComplete('puzzle', s)} />
-          )}
-          {activeGame === 'balloon' && (
-            <BalloonCatch onComplete={(s) => handleActivityComplete('balloon', s)} />
-          )}
-        </main>
-      )}
-
-      {parentOpen && (
-        <ParentDrawer
-          settings={settings}
-          progress={progress}
-          installEvent={installEvent}
-          isStandalone={isStandalone}
-          isIos={isIos}
-          onUpdateSettings={setSettings}
-          onResetTodayTimer={() => setProgress((prev) => ({ ...prev, playedSeconds: 0 }))}
-          onTriggerInstall={() => {
-            if (!installEvent) return;
-            void installEvent.prompt().then(() => setInstallEvent(null));
-          }}
-          onOpenInstallGuide={() => setInstallModalOpen(true)}
-          onClose={() => setParentOpen(false)}
-        />
-      )}
+      <ParentDrawer
+        open={parentOpen}
+        onClose={() => setParentOpen(false)}
+        settings={settings}
+        onUpdateSettings={handleUpdateSettings}
+        playedSeconds={progress.playedSeconds}
+        isGameTimeUp={isGameTimeUp}
+        onResetTimer={handleResetTimer}
+        installEvent={installEvent}
+        isIos={isIos}
+        onOpenInstallGuide={() => setInstallModalOpen(true)}
+      />
 
       <InstallModal
         isOpen={installModalOpen}
         onClose={() => setInstallModalOpen(false)}
         installEvent={installEvent}
         onTriggerInstall={() => {
-          if (!installEvent) return;
-          void installEvent.prompt().then(() => setInstallEvent(null));
+          if (installEvent) {
+            void installEvent.prompt();
+            void installEvent.userChoice.then(() => setInstallEvent(null));
+          }
+          setInstallModalOpen(false);
         }}
         isIos={isIos}
       />
 
-      {stickerAlbumOpen && (
+      {albumOpen && (
         <StickerAlbumModal
           unlockedStickers={progress.stickers}
-          onClose={() => setStickerAlbumOpen(false)}
+          onClose={() => setAlbumOpen(false)}
         />
       )}
     </div>
   );
 }
+
+export default App;
