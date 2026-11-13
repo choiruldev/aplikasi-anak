@@ -1,8 +1,17 @@
+import {
+  type AgeBand,
+  isValidAgeBand,
+  isValidIsoDate
+} from './development.ts';
+
+// Kept during Task 1-5 transition until App.tsx refactor in Task 6
 export type AgeFilter = 'all' | '1-2.5' | '2.5-4' | '4-5';
 
 export interface AppSettings {
   childName: string;
-  ageFilter: AgeFilter;
+  birthDate?: string;
+  ageBand: AgeBand;
+  childLockExit: boolean;
   soundEnabled: boolean;
   voiceEnabled: boolean;
   bgmEnabled: boolean;
@@ -14,6 +23,7 @@ export interface DailyProgress {
   playedSeconds: number;
   stickers: string[];
   completedCounts: Record<string, number>;
+  completedMissions: string[];
 }
 
 const SETTINGS_KEY = 'kecilmain.settings.v1';
@@ -24,39 +34,72 @@ export function todayKey(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-const DEFAULT_SETTINGS: AppSettings = {
+export function migrateLegacyAgeFilter(legacy?: string): AgeBand {
+  switch (legacy) {
+    case '1-2.5':
+      return '1-2y';
+    case '2.5-4':
+      return '2-3y';
+    case '4-5':
+      return '3-5y';
+    default:
+      return '1-2y';
+  }
+}
+
+export const DEFAULT_SETTINGS: AppSettings = {
   childName: 'Adik',
-  ageFilter: 'all',
+  ageBand: '1-2y',
+  childLockExit: false,
   soundEnabled: true,
   voiceEnabled: true,
   bgmEnabled: false,
   dailyLimitMinutes: 20
 };
 
-export function loadSettings(): AppSettings {
+export function parseSettingsRaw(raw: string | null): AppSettings {
+  if (!raw) return { ...DEFAULT_SETTINGS };
   try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    if (!raw) return DEFAULT_SETTINGS;
-    const parsed = JSON.parse(raw) as Partial<AppSettings>;
-    const validAge: AgeFilter[] = ['all', '1-2.5', '2.5-4', '4-5'];
+    const parsed = JSON.parse(raw) as Partial<AppSettings> & { ageFilter?: string };
+    const ageBand = isValidAgeBand(parsed.ageBand)
+      ? parsed.ageBand
+      : migrateLegacyAgeFilter(parsed.ageFilter);
+    const birthDate =
+      typeof parsed.birthDate === 'string' && isValidIsoDate(parsed.birthDate)
+        ? parsed.birthDate
+        : undefined;
+
     return {
       childName:
         typeof parsed.childName === 'string' && parsed.childName.trim()
           ? parsed.childName.trim().slice(0, 20)
           : DEFAULT_SETTINGS.childName,
-      ageFilter: validAge.includes(parsed.ageFilter as AgeFilter)
-        ? (parsed.ageFilter as AgeFilter)
-        : 'all',
+      birthDate,
+      ageBand,
+      childLockExit:
+        typeof parsed.childLockExit === 'boolean'
+          ? parsed.childLockExit
+          : DEFAULT_SETTINGS.childLockExit,
       soundEnabled: typeof parsed.soundEnabled === 'boolean' ? parsed.soundEnabled : true,
       voiceEnabled: typeof parsed.voiceEnabled === 'boolean' ? parsed.voiceEnabled : true,
       bgmEnabled: typeof parsed.bgmEnabled === 'boolean' ? parsed.bgmEnabled : false,
       dailyLimitMinutes:
-        typeof parsed.dailyLimitMinutes === 'number' && parsed.dailyLimitMinutes >= 0
+        typeof parsed.dailyLimitMinutes === 'number' &&
+        Number.isFinite(parsed.dailyLimitMinutes) &&
+        parsed.dailyLimitMinutes >= 0
           ? parsed.dailyLimitMinutes
-          : 20
+          : DEFAULT_SETTINGS.dailyLimitMinutes
     };
   } catch {
-    return DEFAULT_SETTINGS;
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+export function loadSettings(): AppSettings {
+  try {
+    return parseSettingsRaw(localStorage.getItem(SETTINGS_KEY));
+  } catch {
+    return { ...DEFAULT_SETTINGS };
   }
 }
 
@@ -68,35 +111,76 @@ export function saveSettings(settings: AppSettings): void {
   }
 }
 
-export function loadProgress(): DailyProgress {
-  const today = todayKey();
+export function parseProgressRaw(raw: string | null, today: string = todayKey()): DailyProgress {
+  const empty: DailyProgress = {
+    date: today,
+    playedSeconds: 0,
+    stickers: [],
+    completedCounts: {},
+    completedMissions: []
+  };
+  if (!raw) return empty;
   try {
-    const raw = localStorage.getItem(PROGRESS_KEY);
-    if (!raw) {
-      return { date: today, playedSeconds: 0, stickers: [], completedCounts: {} };
-    }
     const parsed = JSON.parse(raw) as Partial<DailyProgress>;
     const stickers = Array.isArray(parsed.stickers)
       ? parsed.stickers.filter((s): s is string => typeof s === 'string')
       : [];
-    // Reset daily screen-time counter on a new calendar day while keeping collected stickers
+
+    // Reset daily counters and daily missions on calendar rollover, preserving stickers
     if (parsed.date !== today) {
-      return { date: today, playedSeconds: 0, stickers, completedCounts: {} };
+      return {
+        date: today,
+        playedSeconds: 0,
+        stickers,
+        completedCounts: {},
+        completedMissions: []
+      };
     }
+
+    const completedCounts: Record<string, number> = {};
+    if (parsed.completedCounts && typeof parsed.completedCounts === 'object') {
+      for (const [k, v] of Object.entries(parsed.completedCounts)) {
+        if (typeof v === 'number' && Number.isFinite(v) && v >= 0) {
+          completedCounts[k] = v;
+        }
+      }
+    }
+
+    const completedMissions = Array.isArray(parsed.completedMissions)
+      ? Array.from(
+          new Set(parsed.completedMissions.filter((id): id is string => typeof id === 'string'))
+        )
+      : [];
+
     return {
       date: today,
       playedSeconds:
-        typeof parsed.playedSeconds === 'number' && parsed.playedSeconds >= 0
+        typeof parsed.playedSeconds === 'number' &&
+        Number.isFinite(parsed.playedSeconds) &&
+        parsed.playedSeconds >= 0
           ? parsed.playedSeconds
           : 0,
       stickers,
-      completedCounts:
-        parsed.completedCounts && typeof parsed.completedCounts === 'object'
-          ? (parsed.completedCounts as Record<string, number>)
-          : {}
+      completedCounts,
+      completedMissions
     };
   } catch {
-    return { date: today, playedSeconds: 0, stickers: [], completedCounts: {} };
+    return empty;
+  }
+}
+
+export function loadProgress(): DailyProgress {
+  const today = todayKey();
+  try {
+    return parseProgressRaw(localStorage.getItem(PROGRESS_KEY), today);
+  } catch {
+    return {
+      date: today,
+      playedSeconds: 0,
+      stickers: [],
+      completedCounts: {},
+      completedMissions: []
+    };
   }
 }
 
