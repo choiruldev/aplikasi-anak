@@ -48,15 +48,16 @@ export function formatAgeLabel(months: number): string {
 
 export function computeAgeInfo(birthDate?: string, now: Date = new Date()): AgeInfo | null {
   if (!birthDate || !isValidIsoDate(birthDate)) return null;
+  if (!(now instanceof Date) || Number.isNaN(now.getTime())) return null;
 
   const [yStr, mStr, dStr] = birthDate.split('-');
   const birthYear = Number(yStr);
   const birthMonth = Number(mStr);
   const birthDay = Number(dStr);
 
-  const nowYear = now.getUTCFullYear();
-  const nowMonth = now.getUTCMonth() + 1;
-  const nowDay = now.getUTCDate();
+  const nowYear = now.getFullYear();
+  const nowMonth = now.getMonth() + 1;
+  const nowDay = now.getDate();
 
   const isFuture =
     birthYear > nowYear ||

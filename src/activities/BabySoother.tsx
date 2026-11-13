@@ -49,6 +49,8 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
   const ctxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
+  const fadeTimeoutRef = useRef<number | null>(null);
+  const rattleTimeoutRef = useRef<number | null>(null);
 
   const ensureContext = useCallback((): AudioContext | null => {
     const AudioCtx =
@@ -64,12 +66,16 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
     return ctxRef.current;
   }, []);
 
-  const stopNoiseNodes = useCallback(() => {
+  const stopNoiseNodes = useCallback((immediate = false) => {
+    if (fadeTimeoutRef.current !== null) {
+      window.clearTimeout(fadeTimeoutRef.current);
+      fadeTimeoutRef.current = null;
+    }
     if (gainRef.current && ctxRef.current) {
       const now = ctxRef.current.currentTime;
       try {
         gainRef.current.gain.cancelScheduledValues(now);
-        gainRef.current.gain.setTargetAtTime(0.0001, now, 0.08);
+        gainRef.current.gain.setTargetAtTime(0.0001, now, immediate ? 0.01 : 0.08);
       } catch {
         // Ignore teardown timing edge
       }
@@ -77,22 +83,33 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
     if (sourceRef.current) {
       const src = sourceRef.current;
       sourceRef.current = null;
-      window.setTimeout(() => {
+      const stopSrc = () => {
         try {
           src.stop();
           src.disconnect();
         } catch {
           // Ignore already stopped
         }
-      }, 180);
+      };
+      if (immediate) {
+        stopSrc();
+      } else {
+        fadeTimeoutRef.current = window.setTimeout(() => {
+          fadeTimeoutRef.current = null;
+          stopSrc();
+        }, 180);
+      }
     }
     gainRef.current = null;
   }, []);
 
-  const stopAllSounds = useCallback(() => {
-    stopNoiseNodes();
-    stopLullabyBgm();
-  }, [stopNoiseNodes]);
+  const stopAllSounds = useCallback(
+    (immediate = false) => {
+      stopNoiseNodes(immediate);
+      stopLullabyBgm();
+    },
+    [stopNoiseNodes]
+  );
 
   const startNoiseEngine = useCallback(
     (mode: 'white-noise' | 'rain') => {
@@ -176,7 +193,13 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
   const playRattle = () => {
     const ctx = ensureContext();
     setRattlePulse(true);
-    window.setTimeout(() => setRattlePulse(false), 180);
+    if (rattleTimeoutRef.current !== null) {
+      window.clearTimeout(rattleTimeoutRef.current);
+    }
+    rattleTimeoutRef.current = window.setTimeout(() => {
+      rattleTimeoutRef.current = null;
+      setRattlePulse(false);
+    }, 180);
     if (!ctx) return;
 
     const now = ctx.currentTime;
@@ -211,21 +234,25 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
   useEffect(() => {
     if (activeSound === 'off') return;
     const id = window.setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          stopAllSounds();
-          setActiveSound('off');
-          return 0;
-        }
-        return prev - 1;
-      });
+      setSecondsLeft((prev) => Math.max(0, prev - 1));
     }, 1000);
     return () => window.clearInterval(id);
-  }, [activeSound, stopAllSounds]);
+  }, [activeSound]);
+
+  useEffect(() => {
+    if (activeSound !== 'off' && secondsLeft === 0) {
+      stopAllSounds();
+      setActiveSound('off');
+    }
+  }, [activeSound, secondsLeft, stopAllSounds]);
 
   useEffect(() => {
     return () => {
-      stopAllSounds();
+      if (rattleTimeoutRef.current !== null) {
+        window.clearTimeout(rattleTimeoutRef.current);
+        rattleTimeoutRef.current = null;
+      }
+      stopAllSounds(true);
       if (ctxRef.current) {
         void ctxRef.current.close().catch(() => {});
         ctxRef.current = null;

@@ -51,8 +51,10 @@ import {
 import {
   loadProgress,
   loadSettings,
+  rolloverIfNeeded,
   saveProgress,
   saveSettings,
+  todayKey,
   type AppSettings,
   type DailyProgress
 } from './lib/storage.ts';
@@ -162,6 +164,22 @@ export function App(): JSX.Element {
     }
   }, [settings.bgmEnabled, activeSimulation]);
 
+  // Live calendar rollover check when app regains focus/visibility
+  useEffect(() => {
+    const checkRollover = () => {
+      setProgress((prev) => rolloverIfNeeded(prev, todayKey()));
+    };
+    const onVisChange = () => {
+      if (document.visibilityState === 'visible') checkRollover();
+    };
+    document.addEventListener('visibilitychange', onVisChange);
+    window.addEventListener('focus', checkRollover);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisChange);
+      window.removeEventListener('focus', checkRollover);
+    };
+  }, []);
+
   // Screen-time counter ticks strictly for 1-5y toddler simulation games
   useEffect(() => {
     if (!activeSimMeta) return;
@@ -171,10 +189,13 @@ export function App(): JSX.Element {
     }
 
     const timerId = window.setInterval(() => {
-      setProgress((prev) => ({
-        ...prev,
-        playedSeconds: prev.playedSeconds + 1
-      }));
+      setProgress((prev) => {
+        const rolled = rolloverIfNeeded(prev, todayKey());
+        return {
+          ...rolled,
+          playedSeconds: rolled.playedSeconds + 1
+        };
+      });
     }, 1000);
     return () => window.clearInterval(timerId);
   }, [activeSimMeta, isGameTimeUp, parentOpen, installModalOpen, albumOpen]);
@@ -213,12 +234,13 @@ export function App(): JSX.Element {
 
   const handleToggleMission = (missionId: string) => {
     setProgress((prev) => {
-      const exists = prev.completedMissions.includes(missionId);
+      const rolled = rolloverIfNeeded(prev, todayKey());
+      const exists = rolled.completedMissions.includes(missionId);
       return {
-        ...prev,
+        ...rolled,
         completedMissions: exists
-          ? prev.completedMissions.filter((id) => id !== missionId)
-          : [...prev.completedMissions, missionId]
+          ? rolled.completedMissions.filter((id) => id !== missionId)
+          : [...rolled.completedMissions, missionId]
       };
     });
   };
@@ -242,22 +264,23 @@ export function App(): JSX.Element {
 
   const handleActivityComplete = useCallback((key: SimulationKey, stickerId?: string) => {
     setProgress((prev) => {
+      const rolled = rolloverIfNeeded(prev, todayKey());
       const nextStickers =
-        stickerId && !prev.stickers.includes(stickerId)
-          ? [...prev.stickers, stickerId]
-          : prev.stickers;
+        stickerId && !rolled.stickers.includes(stickerId)
+          ? [...rolled.stickers, stickerId]
+          : rolled.stickers;
 
       const linkedMissionIds = STIMULATION_MISSIONS.filter(
         (m) => m.linkedSimulation === key
       ).map((m) => m.id);
-      const nextMissions = Array.from(new Set([...prev.completedMissions, ...linkedMissionIds]));
+      const nextMissions = Array.from(new Set([...rolled.completedMissions, ...linkedMissionIds]));
 
       return {
-        ...prev,
+        ...rolled,
         stickers: nextStickers,
         completedCounts: {
-          ...prev.completedCounts,
-          [key]: (prev.completedCounts[key] ?? 0) + 1
+          ...rolled.completedCounts,
+          [key]: (rolled.completedCounts[key] ?? 0) + 1
         },
         completedMissions: nextMissions
       };
@@ -265,7 +288,10 @@ export function App(): JSX.Element {
   }, []);
 
   const handleResetTimer = () => {
-    setProgress((prev) => ({ ...prev, playedSeconds: 0 }));
+    setProgress((prev) => {
+      const rolled = rolloverIfNeeded(prev, todayKey());
+      return { ...rolled, playedSeconds: 0 };
+    });
   };
 
   const handleToggleMilestone = (milestoneId: string) => {
@@ -352,9 +378,10 @@ export function App(): JSX.Element {
     );
   }
 
+  const displayChildName = settings.childName.trim() || 'Adik';
   const profileChipLabel = ageInfo
-    ? `${settings.childName} · ${ageInfo.label}`
-    : `${settings.childName} · ${activePhase.shortLabel}`;
+    ? `${displayChildName} · ${ageInfo.label}`
+    : `${displayChildName} · ${activePhase.shortLabel}`;
 
   return (
     <div className="companion-shell">
@@ -396,7 +423,7 @@ export function App(): JSX.Element {
       <main className="companion-main">
         {activeTab === 'stimulasi' && (
           <StimulasiTab
-            childName={settings.childName}
+            childName={displayChildName}
             ageInfo={ageInfo}
             activeBand={activeBand}
             onSelectBand={handleSelectBand}
@@ -422,7 +449,7 @@ export function App(): JSX.Element {
 
         {activeTab === 'catatan' && (
           <CatatanTab
-            childName={settings.childName}
+            childName={displayChildName}
             ageLabel={ageInfo?.label ?? activePhase.rangeLabel}
             activeBand={activeBand}
             journal={journal}

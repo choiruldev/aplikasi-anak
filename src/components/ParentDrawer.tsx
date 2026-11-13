@@ -122,9 +122,14 @@ export function ParentDrawer({
                 onChange={(e) =>
                   onUpdateSettings({
                     ...settings,
-                    childName: e.target.value || 'Adik'
+                    childName: e.target.value
                   })
                 }
+                onBlur={() => {
+                  if (!settings.childName.trim()) {
+                    onUpdateSettings({ ...settings, childName: 'Adik' });
+                  }
+                }}
                 placeholder="misal Kenzo"
               />
             </label>

@@ -73,7 +73,9 @@ export function parseJournalRaw(raw: string | null): JournalData {
             Boolean(g) &&
             typeof g.id === 'string' &&
             typeof g.date === 'string' &&
-            (isPositiveMeasurement(g.weightKg) || isPositiveMeasurement(g.heightCm))
+            (g.weightKg === undefined || isPositiveMeasurement(g.weightKg)) &&
+            (g.heightCm === undefined || isPositiveMeasurement(g.heightCm)) &&
+            (g.weightKg !== undefined || g.heightCm !== undefined)
         )
       : [];
 

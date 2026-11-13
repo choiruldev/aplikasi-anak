@@ -166,6 +166,20 @@ export function parseProgressRaw(raw: string | null, today: string = todayKey())
   }
 }
 
+export function rolloverIfNeeded(
+  prev: DailyProgress,
+  today: string = todayKey()
+): DailyProgress {
+  if (prev.date === today) return prev;
+  return {
+    date: today,
+    playedSeconds: 0,
+    stickers: prev.stickers,
+    completedCounts: {},
+    completedMissions: []
+  };
+}
+
 export function loadProgress(): DailyProgress {
   const today = todayKey();
   try {

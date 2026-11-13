@@ -172,14 +172,13 @@ export function HighContrastCards({ onComplete }: Props): JSX.Element {
     playBubblePop(360 + nextIdx * 35);
     setIndex(nextIdx);
     const nextId = CARDS[nextIdx].id;
-    setSeenIds((prev) => {
-      if (prev.includes(nextId)) return prev;
-      const updated = [...prev, nextId];
+    if (!seenIds.includes(nextId)) {
+      const updated = [...seenIds, nextId];
+      setSeenIds(updated);
       if (updated.length === CARDS.length) {
         onComplete?.();
       }
-      return updated;
-    });
+    }
   };
 
   return (

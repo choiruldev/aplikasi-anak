@@ -1,4 +1,4 @@
-import { useEffect, useState, type JSX } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
 import { playGentlePop, playSuccessChime } from '../lib/audio.ts';
 
 interface PromptCard {
@@ -44,23 +44,28 @@ export function TummyTimeGuide({ onComplete }: Props): JSX.Element {
   const [running, setRunning] = useState(false);
   const [finished, setFinished] = useState(false);
   const [promptIndex, setPromptIndex] = useState(0);
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     if (!running) return;
     const id = window.setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          setRunning(false);
-          setFinished(true);
-          playSuccessChime();
-          onComplete?.();
-          return 0;
-        }
-        return prev - 1;
-      });
+      setSecondsLeft((prev) => Math.max(0, prev - 1));
     }, 1000);
     return () => window.clearInterval(id);
-  }, [running, onComplete]);
+  }, [running]);
+
+  useEffect(() => {
+    if (running && secondsLeft === 0) {
+      setRunning(false);
+      setFinished(true);
+      playSuccessChime();
+      onCompleteRef.current?.();
+    }
+  }, [running, secondsLeft]);
 
   const handleSelectPreset = (mins: number) => {
     playGentlePop();

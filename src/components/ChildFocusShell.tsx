@@ -91,16 +91,20 @@ export function ChildFocusShell({
           )}
         </div>
 
-        <button
-          type="button"
-          className={`focus-bgm-btn ${bgmEnabled ? 'is-on' : ''}`}
-          onClick={onToggleBgm}
-          aria-pressed={bgmEnabled}
-          aria-label={bgmEnabled ? 'Matikan musik latar' : 'Nyalakan musik latar'}
-        >
-          <IconSpeaker size={18} />
-          <span>{bgmEnabled ? 'Musik On' : 'Musik Off'}</span>
-        </button>
+        {moduleMeta.key === 'baby-soother' ? (
+          <div className="focus-spacer" aria-hidden="true" />
+        ) : (
+          <button
+            type="button"
+            className={`focus-bgm-btn ${bgmEnabled ? 'is-on' : ''}`}
+            onClick={onToggleBgm}
+            aria-pressed={bgmEnabled}
+            aria-label={bgmEnabled ? 'Matikan musik latar' : 'Nyalakan musik latar'}
+          >
+            <IconSpeaker size={18} />
+            <span>{bgmEnabled ? 'Musik On' : 'Musik Off'}</span>
+          </button>
+        )}
       </header>
 
       <main className="focus-stage">

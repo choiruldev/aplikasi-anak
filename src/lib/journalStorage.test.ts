@@ -53,8 +53,20 @@ test('addDailyNote rejects blank text, deletes cleanly, and toggleSavedTip dedup
   assert.deepEqual(j.savedTipIds, []);
 });
 
-test('parseJournalRaw safely recovers from corrupt JSON and formatJournalSummary builds text', () => {
+test('parseJournalRaw safely recovers from corrupt JSON, rejects half-invalid growth logs, and formatJournalSummary builds text', () => {
   assert.deepEqual(parseJournalRaw('{broken'), createEmptyJournal());
+  const halfInvalidRaw = JSON.stringify({
+    milestoneStatus: {},
+    growthLogs: [
+      { id: 'g-bad', date: '2026-11-01', weightKg: 7.5, heightCm: -1 },
+      { id: 'g-ok', date: '2026-11-02', weightKg: 7.6 }
+    ],
+    dailyNotes: [],
+    savedTipIds: []
+  });
+  const parsed = parseJournalRaw(halfInvalidRaw);
+  assert.equal(parsed.growthLogs.length, 1);
+  assert.equal(parsed.growthLogs[0].id, 'g-ok');
   const summary = formatJournalSummary({
     childName: 'Kenzo',
     ageLabel: '4 bln',

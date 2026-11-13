@@ -9,7 +9,8 @@ import {
 import {
   migrateLegacyAgeFilter,
   parseProgressRaw,
-  parseSettingsRaw
+  parseSettingsRaw,
+  rolloverIfNeeded
 } from './storage.ts';
 
 test('mapMonthsToAgeBand maps 0-60+ months accurately', () => {
@@ -24,16 +25,16 @@ test('mapMonthsToAgeBand maps 0-60+ months accurately', () => {
 });
 
 test('computeAgeInfo handles valid, future, and invalid birthDates', () => {
-  const ref = new Date('2026-11-13T12:00:00Z');
+  const ref = new Date(2026, 10, 13, 12, 0, 0);
   const infant = computeAgeInfo('2026-07-10', ref);
   assert.equal(infant?.months, 4);
   assert.equal(infant?.band, '3-6m');
   assert.equal(infant?.label, '4 bln');
 
-  const newborn = computeAgeInfo('2026-11-01', ref);
-  assert.equal(newborn?.months, 0);
-  assert.equal(newborn?.band, '0-3m');
-  assert.equal(newborn?.label, 'Baru lahir');
+  const bornToday = computeAgeInfo('2026-11-13', new Date(2026, 10, 13, 1, 30, 0));
+  assert.equal(bornToday?.months, 0);
+  assert.equal(bornToday?.band, '0-3m');
+  assert.equal(bornToday?.label, 'Baru lahir');
 
   const toddler = computeAgeInfo('2024-05-01', ref);
   assert.equal(toddler?.months, 30);
@@ -44,6 +45,7 @@ test('computeAgeInfo handles valid, future, and invalid birthDates', () => {
   assert.equal(computeAgeInfo('not-a-date', ref), null);
   assert.equal(computeAgeInfo('2026-02-30', ref), null);
   assert.equal(computeAgeInfo('2099-01-01', ref), null);
+  assert.equal(computeAgeInfo('2026-10-01', new Date('invalid')), null);
 });
 
 test('migrateLegacyAgeFilter converts v1 filters to AgeBand', () => {
@@ -94,4 +96,23 @@ test('parseProgressRaw resets daily counters and missions on calendar rollover',
   assert.deepEqual(rolled.completedCounts, {});
   assert.deepEqual(rolled.completedMissions, []);
   assert.deepEqual(rolled.stickers, ['star', 'lion']);
+});
+
+test('rolloverIfNeeded resets live progress state when calendar day advances', () => {
+  const prev = {
+    date: '2026-11-12',
+    playedSeconds: 420,
+    stickers: ['sticker-colors'],
+    completedCounts: { colors: 3 },
+    completedMissions: ['mis-12y-3']
+  };
+  const sameDay = rolloverIfNeeded(prev, '2026-11-12');
+  assert.equal(sameDay, prev);
+
+  const nextDay = rolloverIfNeeded(prev, '2026-11-13');
+  assert.equal(nextDay.date, '2026-11-13');
+  assert.equal(nextDay.playedSeconds, 0);
+  assert.deepEqual(nextDay.completedCounts, {});
+  assert.deepEqual(nextDay.completedMissions, []);
+  assert.deepEqual(nextDay.stickers, ['sticker-colors']);
 });

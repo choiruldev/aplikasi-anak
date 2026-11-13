@@ -4270,13 +4270,21 @@ textarea:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  height: auto;
   border: 1px solid #f0d79a;
+  border-bottom-width: 1px;
   background: #fff9ec;
   color: #8b5b00;
   border-radius: 999px;
   padding: 7px 12px;
   font-size: 0.82rem;
   font-weight: 700;
+  box-shadow: none;
+}
+
+.focus-spacer {
+  width: 78px;
+  flex-shrink: 0;
 }
 
 .sim-section {
