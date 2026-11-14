@@ -26,8 +26,11 @@ const PROMPTS: PromptCard[] = [
 ];
 
 const PRESET_MINUTES = [1, 3, 5] as const;
+const DAILY_GOAL_SECONDS = 15 * 60;
 
 interface Props {
+  dailySeconds?: number;
+  onAddSeconds?: (seconds: number) => void;
   onComplete?: () => void;
 }
 
@@ -38,17 +41,26 @@ function formatMMSS(totalSeconds: number): string {
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
-export function TummyTimeGuide({ onComplete }: Props): JSX.Element {
+export function TummyTimeGuide({
+  dailySeconds = 0,
+  onAddSeconds,
+  onComplete
+}: Props): JSX.Element {
   const [presetMinutes, setPresetMinutes] = useState<number>(3);
   const [secondsLeft, setSecondsLeft] = useState<number>(180);
   const [running, setRunning] = useState(false);
   const [finished, setFinished] = useState(false);
   const [promptIndex, setPromptIndex] = useState(0);
   const onCompleteRef = useRef(onComplete);
+  const onAddSecondsRef = useRef(onAddSeconds);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
+
+  useEffect(() => {
+    onAddSecondsRef.current = onAddSeconds;
+  }, [onAddSeconds]);
 
   useEffect(() => {
     if (!running) return;
@@ -63,9 +75,10 @@ export function TummyTimeGuide({ onComplete }: Props): JSX.Element {
       setRunning(false);
       setFinished(true);
       playSuccessChime();
+      onAddSecondsRef.current?.(presetMinutes * 60);
       onCompleteRef.current?.();
     }
-  }, [running, secondsLeft]);
+  }, [running, secondsLeft, presetMinutes]);
 
   const handleSelectPreset = (mins: number) => {
     playGentlePop();
@@ -95,11 +108,46 @@ export function TummyTimeGuide({ onComplete }: Props): JSX.Element {
   const progressPct = Math.round(
     ((presetMinutes * 60 - secondsLeft) / Math.max(1, presetMinutes * 60)) * 100
   );
+  const goalPct = Math.min(100, Math.round((dailySeconds / DAILY_GOAL_SECONDS) * 100));
+  const dailyMinutes = Math.round(dailySeconds / 60);
+  const radius = 20;
+  const circumference = 2 * Math.PI * radius;
+  const dashOffset = circumference * (1 - goalPct / 100);
 
   return (
     <div className="baby-tool-wrap">
-      <div className="baby-tool-banner" role="note">
-        Lakukan saat bayi segar · Di matras rata · Awasi penuh tanpa meninggalkan bayi
+      <div className="tummy-goal-strip">
+        <div className="tummy-goal-left">
+          <svg width="52" height="52" viewBox="0 0 52 52" aria-hidden="true">
+            <circle cx="26" cy="26" r={radius} fill="none" stroke="var(--line)" strokeWidth="5" />
+            <circle
+              cx="26"
+              cy="26"
+              r={radius}
+              fill="none"
+              stroke="var(--sage)"
+              strokeWidth="5"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={dashOffset}
+              transform="rotate(-90 26 26)"
+            />
+          </svg>
+          <div>
+            <strong>{dailyMinutes}/15 mnt</strong>
+            <span>Target harian</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="btn-outline btn-compact"
+          onClick={() => {
+            playGentlePop();
+            onAddSeconds?.(60);
+          }}
+        >
+          +1 mnt
+        </button>
       </div>
 
       <div className="tummy-preset-row" role="group" aria-label="Pilih durasi tummy time">
@@ -124,14 +172,14 @@ export function TummyTimeGuide({ onComplete }: Props): JSX.Element {
         </div>
         <p className="tummy-status">
           {finished
-            ? 'Sesi selesai! Peluk si kecil dan beri apresiasi hangat.'
+            ? 'Sesi selesai!'
             : running
-              ? 'Timer berjalan — jika bayi mulai rewel, boleh berhenti lebih awal.'
-              : 'Tekan Mulai saat bayi sudah siap di posisi tengkurap.'}
+              ? 'Timer aktif · Awasi selalu'
+              : 'Matras rata · Bayi siap tengkurap'}
         </p>
         <div className="baby-tool-controls">
           <button type="button" className="btn-primary-calm" onClick={toggleRun}>
-            {running ? 'Jeda' : finished ? 'Ulangi Sesi' : 'Mulai Timer'}
+            {running ? 'Jeda' : finished ? 'Ulangi' : 'Mulai'}
           </button>
           <button type="button" className="btn-outline" onClick={handleReset}>
             Reset
@@ -141,7 +189,7 @@ export function TummyTimeGuide({ onComplete }: Props): JSX.Element {
 
       <div className="tummy-prompt-card">
         <div className="tummy-prompt-head">
-          <span className="eyebrow">Ide Ajak Bermain ({promptIndex + 1}/{PROMPTS.length})</span>
+          <span className="eyebrow">Ide Bermain ({promptIndex + 1}/{PROMPTS.length})</span>
           <div className="tummy-prompt-tabs">
             {PROMPTS.map((p, idx) => (
               <button

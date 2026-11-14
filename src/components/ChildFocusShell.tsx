@@ -1,5 +1,6 @@
 import { useState, type JSX, type ReactNode } from 'react';
-import { IconLock, IconSpeaker } from '../components/Art.tsx';
+import { IconLock, IconSpeaker, IconStar } from '../components/Art.tsx';
+import { LightbulbIcon } from '../components/ModuleIcons.tsx';
 import type { SimulationModuleMeta } from '../data/stimulationData.ts';
 import { formatRemainingSeconds } from '../lib/geometry.ts';
 
@@ -10,6 +11,7 @@ interface Props {
   dailyLimitMinutes: number;
   bgmEnabled: boolean;
   childLockExit: boolean;
+  toastMessage?: string | null;
   onToggleBgm: () => void;
   onExit: () => void;
   onRequestResetTimer: () => void;
@@ -29,6 +31,7 @@ export function ChildFocusShell({
   dailyLimitMinutes,
   bgmEnabled,
   childLockExit,
+  toastMessage,
   onToggleBgm,
   onExit,
   onRequestResetTimer,
@@ -38,6 +41,7 @@ export function ChildFocusShell({
   const [challenge, setChallenge] = useState(makeGateChallenge);
   const [inputValue, setInputValue] = useState('');
   const [gateError, setGateError] = useState(false);
+  const [coPlayOpen, setCoPlayOpen] = useState(false);
 
   const openGate = (action: 'exit' | 'reset-timer') => {
     setChallenge(makeGateChallenge());
@@ -81,31 +85,60 @@ export function ChildFocusShell({
         <div className="focus-title-group">
           <strong>{moduleMeta.title}</strong>
           {moduleMeta.isBabyTool ? (
-            <span className="focus-sub-badge">Mode Bayi · Bebas Timer</span>
+            <span className="focus-sub-badge">Mode Bayi</span>
           ) : dailyLimitMinutes > 0 ? (
             <span className="focus-sub-badge tabular">
-              Sisa hari ini: {formatRemainingSeconds(remainingSec)}
+              {formatRemainingSeconds(remainingSec)}
             </span>
           ) : (
-            <span className="focus-sub-badge">Simulasi 1–5 Thn</span>
+            <span className="focus-sub-badge">Bebas Timer</span>
           )}
         </div>
 
-        {moduleMeta.key === 'baby-soother' ? (
-          <div className="focus-spacer" aria-hidden="true" />
-        ) : (
+        <div className="focus-top-actions">
           <button
             type="button"
-            className={`focus-bgm-btn ${bgmEnabled ? 'is-on' : ''}`}
-            onClick={onToggleBgm}
-            aria-pressed={bgmEnabled}
-            aria-label={bgmEnabled ? 'Matikan musik latar' : 'Nyalakan musik latar'}
+            className={`focus-icon-btn ${coPlayOpen ? 'is-on' : ''}`}
+            onClick={() => setCoPlayOpen((v) => !v)}
+            aria-pressed={coPlayOpen}
+            aria-label="Panduan Co-Play Orang Tua"
           >
-            <IconSpeaker size={18} />
-            <span>{bgmEnabled ? 'Musik On' : 'Musik Off'}</span>
+            <LightbulbIcon size={18} />
           </button>
-        )}
+
+          {moduleMeta.key !== 'baby-soother' && (
+            <button
+              type="button"
+              className={`focus-bgm-btn ${bgmEnabled ? 'is-on' : ''}`}
+              onClick={onToggleBgm}
+              aria-pressed={bgmEnabled}
+              aria-label={bgmEnabled ? 'Matikan musik latar' : 'Nyalakan musik latar'}
+            >
+              <IconSpeaker size={18} />
+            </button>
+          )}
+        </div>
       </header>
+
+      {coPlayOpen && (
+        <div className="coplay-banner" role="status">
+          <LightbulbIcon size={16} />
+          <div>
+            <strong>Co-Play · {moduleMeta.goalLabel}</strong>
+            <span>{moduleMeta.subtitle} Ajak sebutkan suara atau warna bersama.</span>
+          </div>
+          <button type="button" className="coplay-close" onClick={() => setCoPlayOpen(false)} aria-label="Tutup panduan">
+            ×
+          </button>
+        </div>
+      )}
+
+      {toastMessage && (
+        <div className="focus-reward-toast" role="status">
+          <IconStar size={16} />
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
       <main className="focus-stage">
         {showLockedOverlay ? (

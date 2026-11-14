@@ -103,7 +103,7 @@ export function PeekabooAnimals({
           setRewarded(true);
           window.setTimeout(() => {
             playSuccessChime();
-            onComplete('sticker-sensory');
+            onComplete('sticker-peekaboo');
           }, 800);
         }
         return next;

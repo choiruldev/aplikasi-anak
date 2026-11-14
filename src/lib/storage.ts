@@ -12,6 +12,7 @@ export interface AppSettings {
   soundEnabled: boolean;
   voiceEnabled: boolean;
   bgmEnabled: boolean;
+  nightMode: boolean;
   dailyLimitMinutes: number; // 0 = unlimited
 }
 
@@ -21,6 +22,10 @@ export interface DailyProgress {
   stickers: string[];
   completedCounts: Record<string, number>;
   completedMissions: string[];
+  favoriteModules: string[];
+  playCounts: Record<string, number>;
+  tummyTimeSeconds: number;
+  activeDates: string[];
 }
 
 const SETTINGS_KEY = 'kecilmain.settings.v1';
@@ -51,6 +56,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   soundEnabled: true,
   voiceEnabled: true,
   bgmEnabled: false,
+  nightMode: false,
   dailyLimitMinutes: 20
 };
 
@@ -80,6 +86,7 @@ export function parseSettingsRaw(raw: string | null): AppSettings {
       soundEnabled: typeof parsed.soundEnabled === 'boolean' ? parsed.soundEnabled : true,
       voiceEnabled: typeof parsed.voiceEnabled === 'boolean' ? parsed.voiceEnabled : true,
       bgmEnabled: typeof parsed.bgmEnabled === 'boolean' ? parsed.bgmEnabled : false,
+      nightMode: typeof parsed.nightMode === 'boolean' ? parsed.nightMode : false,
       dailyLimitMinutes:
         typeof parsed.dailyLimitMinutes === 'number' &&
         Number.isFinite(parsed.dailyLimitMinutes) &&
@@ -108,46 +115,78 @@ export function saveSettings(settings: AppSettings): void {
   }
 }
 
-export function parseProgressRaw(raw: string | null, today: string = todayKey()): DailyProgress {
-  const empty: DailyProgress = {
+function sanitizeStringList(value: unknown, limit = 60): string[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(value.filter((item): item is string => typeof item === 'string'))).slice(0, limit);
+}
+
+function sanitizeCountMap(value: unknown): Record<string, number> {
+  const counts: Record<string, number> = {};
+  if (!value || typeof value !== 'object') return counts;
+  for (const [k, v] of Object.entries(value)) {
+    if (typeof v === 'number' && Number.isFinite(v) && v >= 0) {
+      counts[k] = v;
+    }
+  }
+  return counts;
+}
+
+export function createEmptyProgress(today: string = todayKey()): DailyProgress {
+  return {
     date: today,
     playedSeconds: 0,
     stickers: [],
     completedCounts: {},
-    completedMissions: []
+    completedMissions: [],
+    favoriteModules: [],
+    playCounts: {},
+    tummyTimeSeconds: 0,
+    activeDates: []
   };
+}
+
+export function toggleFavoriteModule(progress: DailyProgress, moduleKey: string): DailyProgress {
+  const exists = progress.favoriteModules.includes(moduleKey);
+  return {
+    ...progress,
+    favoriteModules: exists
+      ? progress.favoriteModules.filter((k) => k !== moduleKey)
+      : [moduleKey, ...progress.favoriteModules]
+  };
+}
+
+export function recordActiveDate(activeDates: string[], dateKey: string = todayKey()): string[] {
+  const merged = Array.from(new Set([...activeDates, dateKey].filter(isValidIsoDate))).sort();
+  return merged.slice(-60);
+}
+
+export function parseProgressRaw(raw: string | null, today: string = todayKey()): DailyProgress {
+  const empty = createEmptyProgress(today);
   if (!raw) return empty;
   try {
     const parsed = JSON.parse(raw) as Partial<DailyProgress>;
-    const stickers = Array.isArray(parsed.stickers)
-      ? parsed.stickers.filter((s): s is string => typeof s === 'string')
-      : [];
+    const stickers = sanitizeStringList(parsed.stickers, 30);
+    const favoriteModules = sanitizeStringList(parsed.favoriteModules, 30);
+    const playCounts = sanitizeCountMap(parsed.playCounts);
+    const activeDates = sanitizeStringList(parsed.activeDates, 60).filter(isValidIsoDate).sort();
 
-    // Reset daily counters and daily missions on calendar rollover, preserving stickers
+    // Reset daily counters and daily missions on calendar rollover, preserving lifetime stickers, favorites, playCounts, activeDates
     if (parsed.date !== today) {
       return {
         date: today,
         playedSeconds: 0,
         stickers,
         completedCounts: {},
-        completedMissions: []
+        completedMissions: [],
+        favoriteModules,
+        playCounts,
+        tummyTimeSeconds: 0,
+        activeDates
       };
     }
 
-    const completedCounts: Record<string, number> = {};
-    if (parsed.completedCounts && typeof parsed.completedCounts === 'object') {
-      for (const [k, v] of Object.entries(parsed.completedCounts)) {
-        if (typeof v === 'number' && Number.isFinite(v) && v >= 0) {
-          completedCounts[k] = v;
-        }
-      }
-    }
-
-    const completedMissions = Array.isArray(parsed.completedMissions)
-      ? Array.from(
-          new Set(parsed.completedMissions.filter((id): id is string => typeof id === 'string'))
-        )
-      : [];
+    const completedCounts = sanitizeCountMap(parsed.completedCounts);
+    const completedMissions = sanitizeStringList(parsed.completedMissions, 60);
 
     return {
       date: today,
@@ -159,7 +198,16 @@ export function parseProgressRaw(raw: string | null, today: string = todayKey())
           : 0,
       stickers,
       completedCounts,
-      completedMissions
+      completedMissions,
+      favoriteModules,
+      playCounts,
+      tummyTimeSeconds:
+        typeof parsed.tummyTimeSeconds === 'number' &&
+        Number.isFinite(parsed.tummyTimeSeconds) &&
+        parsed.tummyTimeSeconds >= 0
+          ? parsed.tummyTimeSeconds
+          : 0,
+      activeDates
     };
   } catch {
     return empty;
@@ -176,7 +224,11 @@ export function rolloverIfNeeded(
     playedSeconds: 0,
     stickers: prev.stickers,
     completedCounts: {},
-    completedMissions: []
+    completedMissions: [],
+    favoriteModules: prev.favoriteModules,
+    playCounts: prev.playCounts,
+    tummyTimeSeconds: 0,
+    activeDates: prev.activeDates
   };
 }
 
@@ -185,13 +237,7 @@ export function loadProgress(): DailyProgress {
   try {
     return parseProgressRaw(localStorage.getItem(PROGRESS_KEY), today);
   } catch {
-    return {
-      date: today,
-      playedSeconds: 0,
-      stickers: [],
-      completedCounts: {},
-      completedMissions: []
-    };
+    return createEmptyProgress(today);
   }
 }
 

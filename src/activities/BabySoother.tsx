@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from 'react';
 import { startLullabyBgm, stopLullabyBgm } from '../lib/bgm.ts';
+import { MoonIcon } from '../components/ModuleIcons.tsx';
 
-type SootherSound = 'off' | 'white-noise' | 'rain' | 'lullaby';
+type SootherSound = 'off' | 'white-noise' | 'rain' | 'heartbeat' | 'night-calm' | 'lullaby';
 
 interface SoundOption {
   id: Exclude<SootherSound, 'off'>;
@@ -10,21 +11,11 @@ interface SoundOption {
 }
 
 const SOUND_OPTIONS: SoundOption[] = [
-  {
-    id: 'white-noise',
-    title: 'White Noise Lembut',
-    desc: 'Desiran hangat frekuensi rendah (lowpass 900Hz) mirip suasana rahim.'
-  },
-  {
-    id: 'rain',
-    title: 'Rintik Hujan Tenang',
-    desc: 'Suara hujan lembut terfilter untuk meredam suara bising sekitar.'
-  },
-  {
-    id: 'lullaby',
-    title: 'Lullaby Kotak Musik',
-    desc: 'Melodi kalem bertempo pelan untuk pengantar tidur siang atau malam.'
-  }
+  { id: 'white-noise', title: 'White Noise', desc: 'Desir hangat lowpass' },
+  { id: 'rain', title: 'Hujan Tenang', desc: 'Rintik hujan terfilter' },
+  { id: 'heartbeat', title: 'Detak 60 BPM', desc: 'Ritme jantung lembut' },
+  { id: 'night-calm', title: 'Malam Tenang', desc: 'Harmoni tidur redup' },
+  { id: 'lullaby', title: 'Kotak Musik', desc: 'Melodi kalem pelan' }
 ];
 
 const TIMER_OPTIONS = [10, 20, 30] as const;
@@ -45,10 +36,13 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
   const [timerMinutes, setTimerMinutes] = useState<number>(10);
   const [secondsLeft, setSecondsLeft] = useState<number>(600);
   const [rattlePulse, setRattlePulse] = useState(false);
+  const [dimmerOn, setDimmerOn] = useState(false);
+  const [breathSeconds, setBreathSeconds] = useState(0);
 
   const ctxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
+  const beatIntervalRef = useRef<number | null>(null);
   const fadeTimeoutRef = useRef<number | null>(null);
   const rattleTimeoutRef = useRef<number | null>(null);
 
@@ -67,6 +61,10 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
   }, []);
 
   const stopNoiseNodes = useCallback((immediate = false) => {
+    if (beatIntervalRef.current !== null) {
+      window.clearInterval(beatIntervalRef.current);
+      beatIntervalRef.current = null;
+    }
     if (fadeTimeoutRef.current !== null) {
       window.clearTimeout(fadeTimeoutRef.current);
       fadeTimeoutRef.current = null;
@@ -111,8 +109,36 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
     [stopNoiseNodes]
   );
 
+  const startHeartbeatEngine = useCallback(() => {
+    const ctx = ensureContext();
+    if (!ctx) return;
+    stopNoiseNodes();
+    stopLullabyBgm();
+
+    const triggerPulse = () => {
+      const now = ctx.currentTime;
+      [0, 0.24].forEach((offset, idx) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(idx === 0 ? 64 : 52, now + offset);
+        osc.frequency.exponentialRampToValueAtTime(34, now + offset + 0.16);
+        g.gain.setValueAtTime(0.001, now + offset);
+        g.gain.linearRampToValueAtTime(idx === 0 ? 0.22 : 0.14, now + offset + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.22);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(now + offset);
+        osc.stop(now + offset + 0.24);
+      });
+    };
+
+    triggerPulse();
+    beatIntervalRef.current = window.setInterval(triggerPulse, 1000); // 60 BPM
+  }, [ensureContext, stopNoiseNodes]);
+
   const startNoiseEngine = useCallback(
-    (mode: 'white-noise' | 'rain') => {
+    (mode: 'white-noise' | 'rain' | 'night-calm') => {
       const ctx = ensureContext();
       if (!ctx) return;
 
@@ -123,12 +149,16 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
       const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
       const data = buffer.getChannelData(0);
 
-      // Gently smoothed pink-weighted noise to avoid harsh digital hiss
       let lastOut = 0;
       for (let i = 0; i < length; i++) {
         const white = Math.random() * 2 - 1;
         lastOut = (lastOut + 0.08 * white) / 1.08;
-        data[i] = mode === 'rain' ? lastOut * 2.2 + white * 0.14 : lastOut * 2.4;
+        data[i] =
+          mode === 'rain'
+            ? lastOut * 2.2 + white * 0.14
+            : mode === 'night-calm'
+              ? lastOut * 1.9
+              : lastOut * 2.4;
       }
 
       const source = ctx.createBufferSource();
@@ -139,6 +169,9 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
       if (mode === 'white-noise') {
         filter.type = 'lowpass';
         filter.frequency.value = 900;
+      } else if (mode === 'night-calm') {
+        filter.type = 'lowpass';
+        filter.frequency.value = 480;
       } else {
         filter.type = 'bandpass';
         filter.frequency.value = 1100;
@@ -148,7 +181,7 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
       const gain = ctx.createGain();
       const now = ctx.currentTime;
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(mode === 'rain' ? 0.18 : 0.15, now + 0.35);
+      gain.gain.linearRampToValueAtTime(mode === 'rain' ? 0.18 : 0.14, now + 0.35);
 
       source.connect(filter);
       filter.connect(gain);
@@ -174,6 +207,8 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
     if (soundId === 'lullaby') {
       stopNoiseNodes();
       startLullabyBgm();
+    } else if (soundId === 'heartbeat') {
+      startHeartbeatEngine();
     } else {
       startNoiseEngine(soundId);
     }
@@ -190,7 +225,7 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
     setActiveSound('off');
   };
 
-  const playRattle = () => {
+  const playRattle = (pan: number = 0) => {
     const ctx = ensureContext();
     setRattlePulse(true);
     if (rattleTimeoutRef.current !== null) {
@@ -225,11 +260,26 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
 
       noise.connect(bandpass);
       bandpass.connect(g);
-      g.connect(ctx.destination);
+      if (typeof ctx.createStereoPanner === 'function') {
+        const panner = ctx.createStereoPanner();
+        panner.pan.value = pan;
+        g.connect(panner);
+        panner.connect(ctx.destination);
+      } else {
+        g.connect(ctx.destination);
+      }
       noise.start(now + offset);
     });
     onComplete?.();
   };
+
+  useEffect(() => {
+    if (breathSeconds <= 0) return;
+    const id = window.setInterval(() => {
+      setBreathSeconds((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [breathSeconds]);
 
   useEffect(() => {
     if (activeSound === 'off') return;
@@ -260,10 +310,27 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
     };
   }, [stopAllSounds]);
 
+  const breathPhase =
+    breathSeconds === 0
+      ? 'Tenang 30d'
+      : breathSeconds % 6 >= 3
+        ? 'Tarik napas...'
+        : 'Hembus pelan...';
+
   return (
-    <div className="baby-tool-wrap">
-      <div className="baby-tool-banner" role="note">
-        Putar volume pelan (±45–50 dB) dan letakkan ponsel berjarak minimal 1 meter dari kepala bayi.
+    <div className={`baby-tool-wrap ${dimmerOn ? 'is-dimmed-stage' : ''}`}>
+      <div className="soother-top-strip">
+        <span className="baby-tool-banner" role="note">
+          Volume pelan · Jarak ≥ 1m
+        </span>
+        <button
+          type="button"
+          className={`btn-outline btn-compact ${dimmerOn ? 'is-selected' : ''}`}
+          onClick={() => setDimmerOn((v) => !v)}
+          aria-pressed={dimmerOn}
+        >
+          <MoonIcon size={14} /> {dimmerOn ? 'Terangkan' : 'Redupkan'}
+        </button>
       </div>
 
       <div className="soother-sound-grid">
@@ -290,7 +357,7 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
       <div className="soother-timer-box">
         <div className="soother-timer-row">
           <div>
-            <span className="eyebrow">Auto-Off Timer</span>
+            <span className="eyebrow">Auto-Off</span>
             <div className="soother-countdown tabular">
               {activeSound === 'off' ? `${timerMinutes}:00` : formatMMSS(secondsLeft)}
             </div>
@@ -303,7 +370,7 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
                 className={`pill-btn ${timerMinutes === mins ? 'is-active' : ''}`}
                 onClick={() => handleSelectTimer(mins)}
               >
-                {mins} mnt
+                {mins}m
               </button>
             ))}
           </div>
@@ -315,13 +382,34 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
         )}
       </div>
 
+      <div className="soother-stereo-box">
+        <div className="soother-stereo-head">
+          <strong>Kerincingan Stereo</strong>
+          <span>Latih respons menoleh</span>
+        </div>
+        <div className="soother-pan-row">
+          <button type="button" className={`pill-btn ${rattlePulse ? 'is-active' : ''}`} onClick={() => playRattle(-0.9)}>
+            ← Kiri
+          </button>
+          <button type="button" className={`pill-btn ${rattlePulse ? 'is-active' : ''}`} onClick={() => playRattle(0)}>
+            Tengah
+          </button>
+          <button type="button" className={`pill-btn ${rattlePulse ? 'is-active' : ''}`} onClick={() => playRattle(0.9)}>
+            Kanan →
+          </button>
+        </div>
+      </div>
+
       <button
         type="button"
-        className={`soother-rattle-pad ${rattlePulse ? 'is-tapped' : ''}`}
-        onClick={playRattle}
+        className={`soother-breath-btn ${breathSeconds > 0 ? 'is-active' : ''}`}
+        onClick={() => setBreathSeconds((s) => (s > 0 ? 0 : 30))}
       >
-        <strong>Ketuk Kerincingan Lembut</strong>
-        <span>Bunyikan di sisi kiri atau kanan untuk melatih respons menoleh si kecil</span>
+        <span className={`soother-breath-orb ${breathSeconds > 0 && breathSeconds % 6 >= 3 ? 'is-inhale' : ''}`} />
+        <div>
+          <strong>Napas Tenang Orang Tua</strong>
+          <span>{breathSeconds > 0 ? `${breathPhase} (${breathSeconds}d)` : 'Ketuk untuk panduan 30 detik'}</span>
+        </div>
       </button>
     </div>
   );

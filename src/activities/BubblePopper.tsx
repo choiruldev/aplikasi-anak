@@ -385,7 +385,7 @@ export function BubblePopper({
       triggerHaptic('success');
       fireConfetti();
       playSuccessChime();
-      onComplete('sticker-balloon');
+      onComplete('sticker-bubblepopper');
     }
   }
 

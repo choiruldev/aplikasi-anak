@@ -1,6 +1,7 @@
 import { type JSX } from 'react';
 import { fireConfetti, triggerHaptic } from '../lib/confetti';
 import { playGentlePop, playSuccessChime } from '../lib/audio';
+import { IconLock, IconStar } from './Art';
 
 interface StickerItem {
   id: string;
@@ -216,18 +217,83 @@ const STICKER_LIST: StickerItem[] = [
   },
   {
     id: 'sticker-colors',
-    name: 'Pelangi Ceria Batita',
+    name: 'Pelangi Warna',
     skill: 'Pengenalan Warna',
-    hint: 'Sentuh 5 warna ceria di Taman Warna',
+    hint: 'Sentuh 5 warna di Taman Warna',
     bgColor: '#FFF0F5',
     borderColor: '#FF4081',
     iconSvg: (
-      <svg width="44" height="44" viewBox="0 0 48 48" fill="none">
-        <circle cx="24" cy="24" r="20" fill="#FF80AB" />
-        <circle cx="16" cy="18" r="7" fill="#FF5252" />
-        <circle cx="32" cy="18" r="7" fill="#FFD740" />
-        <circle cx="24" cy="30" r="7" fill="#40C4FF" />
-        <circle cx="24" cy="22" r="5" fill="#69F0AE" />
+      <svg width="68" height="68" viewBox="0 0 68 68" fill="none">
+        <circle cx="34" cy="34" r="30" fill="#FFE6F0" stroke="#FF4081" strokeWidth="3" />
+        <circle cx="24" cy="27" r="9" fill="#FF5252" />
+        <circle cx="44" cy="27" r="9" fill="#FFD740" />
+        <circle cx="34" cy="42" r="9" fill="#40C4FF" />
+        <circle cx="34" cy="33" r="6" fill="#69F0AE" />
+      </svg>
+    )
+  },
+  {
+    id: 'sticker-peekaboo',
+    name: 'Kelinci Cilukba',
+    skill: 'Bahasa & Sosial',
+    hint: 'Mainkan 1 sesi Cilukba Hewan',
+    bgColor: '#E5F5ED',
+    borderColor: '#2B6E4F',
+    iconSvg: (
+      <svg width="68" height="68" viewBox="0 0 68 68" fill="none">
+        <circle cx="34" cy="34" r="30" fill="#D5EFE0" stroke="#2B6E4F" strokeWidth="3" />
+        <ellipse cx="26" cy="21" rx="4.5" ry="10" fill="#2B6E4F" />
+        <ellipse cx="42" cy="21" rx="4.5" ry="10" fill="#2B6E4F" />
+        <circle cx="34" cy="38" r="14" fill="#FFFDF7" stroke="#2B6E4F" strokeWidth="2.5" />
+        <circle cx="29" cy="36" r="2.2" fill="#18221D" />
+        <circle cx="39" cy="36" r="2.2" fill="#18221D" />
+        <ellipse cx="34" cy="42" rx="3.5" ry="2.2" fill="#F29F8B" />
+      </svg>
+    )
+  },
+  {
+    id: 'sticker-bubblepopper',
+    name: 'Pemburu Gelembung',
+    skill: 'Koordinasi Mata-Tangan',
+    hint: 'Pecahkan gelembung di Pop Gelembung',
+    bgColor: '#E7F4FC',
+    borderColor: '#1982C4',
+    iconSvg: (
+      <svg width="68" height="68" viewBox="0 0 68 68" fill="none">
+        <circle cx="34" cy="34" r="30" fill="#DAF0FC" stroke="#1982C4" strokeWidth="3" />
+        <circle cx="29" cy="37" r="13" fill="#70C6FA" fillOpacity="0.55" stroke="#1982C4" strokeWidth="2.5" />
+        <circle cx="44" cy="24" r="8" fill="#FFD166" fillOpacity="0.65" stroke="#E07A18" strokeWidth="2.5" />
+        <circle cx="24" cy="31" r="3.2" fill="#FFFFFF" />
+      </svg>
+    )
+  },
+  {
+    id: 'sticker-newborn',
+    name: 'Bintang Bayi Tenang',
+    skill: 'Stimulasi Bayi 0–12m',
+    hint: 'Selesaikan sesi Kartu Kontras / Tummy Time',
+    bgColor: '#EEECFF',
+    borderColor: '#5A4FB8',
+    iconSvg: (
+      <svg width="68" height="68" viewBox="0 0 68 68" fill="none">
+        <circle cx="34" cy="34" r="30" fill="#E4E0FF" stroke="#5A4FB8" strokeWidth="3" />
+        <path d="M41 18A15 15 0 1 0 51 41A12 12 0 1 1 41 18Z" fill="#5A4FB8" />
+        <circle cx="45" cy="24" r="3.5" fill="#F7B731" />
+      </svg>
+    )
+  },
+  {
+    id: 'sticker-streak',
+    name: 'Api Semangat 3 Hari',
+    skill: 'Kebiasaan Harian',
+    hint: 'Aktif stimulasi 3 hari berturut-turut',
+    bgColor: '#FFF3DC',
+    borderColor: '#B86E00',
+    iconSvg: (
+      <svg width="68" height="68" viewBox="0 0 68 68" fill="none">
+        <circle cx="34" cy="34" r="30" fill="#FFE9BF" stroke="#B86E00" strokeWidth="3" />
+        <path d="M36 16s8 7 8 16a10 10 0 0 1-20 0c0-4 1.5-7.5 4-10 0 4 2.5 6 4.5 6 0-5 1.5-9 3.5-12Z" fill="#E07A18" />
+        <circle cx="34" cy="37" r="5" fill="#F7B731" />
       </svg>
     )
   }
@@ -261,10 +327,10 @@ export function StickerAlbumModal({
         <div className="modal-top">
           <div>
             <h2 id="sticker-modal-title" className="modal-title">
-              Buku Album Stikerku 🌟
+              Album Stiker
             </h2>
             <p className="sticker-album-sub">
-              Koleksi stiker prestasimu saat bermain dan belajar!
+              {earnedCount} / {totalCount} terkumpul
             </p>
           </div>
           <button type="button" className="secondary-btn" onClick={onClose}>
@@ -276,18 +342,18 @@ export function StickerAlbumModal({
         <div className="sticker-progress-box">
           <div className="sticker-progress-header">
             <span className="sticker-progress-label">
-              ⭐ Terkumpul: <strong>{earnedCount}</strong> dari {totalCount} Stiker
+              <IconStar size={16} /> <strong>{earnedCount}</strong>/{totalCount} Stiker
             </span>
             <span className="sticker-progress-pct">{progressPct}%</span>
           </div>
           <div className="sticker-progress-track">
             <div className="sticker-progress-bar" style={{ width: `${progressPct}%` }} />
           </div>
-          {earnedCount === totalCount ? (
-            <p className="sticker-album-praise">🎉 WOW! Semua stiker sudah kamu kumpulkan! Kamu anak pintar & hebat!</p>
-          ) : (
-            <p className="sticker-album-hint-general">Ketuk stiker yang terkumpul untuk melihat efek bintang!</p>
-          )}
+          <p className="sticker-album-hint-general">
+            {earnedCount === totalCount
+              ? 'Semua stiker lengkap!'
+              : 'Ketuk stiker terbuka untuk efek konfeti'}
+          </p>
         </div>
 
         {/* Sticker Badges Grid */}
@@ -311,7 +377,9 @@ export function StickerAlbumModal({
                     sticker.iconSvg
                   ) : (
                     <div className="sticker-locked-icon">
-                      <span className="sticker-lock-symbol">🔒</span>
+                      <span className="sticker-lock-symbol" aria-hidden="true">
+                        <IconLock size={20} />
+                      </span>
                       <div className="sticker-silhouette-circle" />
                     </div>
                   )}

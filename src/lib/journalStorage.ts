@@ -21,6 +21,7 @@ export interface DailyNote {
   date: string;
   mood: NoteMood;
   text: string;
+  tags?: string[];
 }
 
 export interface JournalData {
@@ -28,6 +29,8 @@ export interface JournalData {
   growthLogs: GrowthEntry[];
   dailyNotes: DailyNote[];
   savedTipIds: string[];
+  completedRoutineIds: Record<string, string[]>;
+  completedImmunizations: Record<string, string>;
 }
 
 const JOURNAL_KEY = 'kecilmain.journal.v1';
@@ -45,7 +48,9 @@ export function createEmptyJournal(): JournalData {
     milestoneStatus: {},
     growthLogs: [],
     dailyNotes: [],
-    savedTipIds: []
+    savedTipIds: [],
+    completedRoutineIds: {},
+    completedImmunizations: {}
   };
 }
 
@@ -81,26 +86,59 @@ export function parseJournalRaw(raw: string | null): JournalData {
 
     const validMoods: NoteMood[] = ['happy', 'calm', 'fussy'];
     const dailyNotes: DailyNote[] = Array.isArray(parsed.dailyNotes)
-      ? parsed.dailyNotes.filter(
-          (n): n is DailyNote =>
-            Boolean(n) &&
-            typeof n.id === 'string' &&
-            typeof n.date === 'string' &&
-            validMoods.includes(n.mood) &&
-            typeof n.text === 'string' &&
-            n.text.trim().length > 0
-        )
+      ? parsed.dailyNotes
+          .filter(
+            (n): n is DailyNote =>
+              Boolean(n) &&
+              typeof n.id === 'string' &&
+              typeof n.date === 'string' &&
+              validMoods.includes(n.mood) &&
+              typeof n.text === 'string' &&
+              n.text.trim().length > 0
+          )
+          .map((n) => ({
+            ...n,
+            ...(Array.isArray(n.tags)
+              ? {
+                  tags: Array.from(
+                    new Set(n.tags.filter((t): t is string => typeof t === 'string' && t.trim().length > 0))
+                  ).slice(0, 6)
+                }
+              : {})
+          }))
       : [];
 
     const savedTipIds = Array.isArray(parsed.savedTipIds)
       ? Array.from(new Set(parsed.savedTipIds.filter((id): id is string => typeof id === 'string')))
       : [];
 
+    const completedRoutineIds: Record<string, string[]> = {};
+    if (parsed.completedRoutineIds && typeof parsed.completedRoutineIds === 'object') {
+      for (const [dateKey, list] of Object.entries(parsed.completedRoutineIds)) {
+        if (isValidIsoDate(dateKey) && Array.isArray(list)) {
+          completedRoutineIds[dateKey] = Array.from(
+            new Set(list.filter((id): id is string => typeof id === 'string'))
+          );
+        }
+      }
+    }
+
+    const completedImmunizations: Record<string, string> = {};
+    if (parsed.completedImmunizations && typeof parsed.completedImmunizations === 'object') {
+      for (const [immId, dateVal] of Object.entries(parsed.completedImmunizations)) {
+        if (typeof dateVal === 'string' && isValidIsoDate(dateVal)) {
+          completedImmunizations[immId] = dateVal;
+        }
+      }
+    }
+
     return {
       milestoneStatus,
       growthLogs,
       dailyNotes,
-      savedTipIds
+      savedTipIds,
+      completedRoutineIds,
+      completedImmunizations
     };
   } catch {
     return createEmptyJournal();
@@ -172,20 +210,60 @@ export function deleteGrowthLog(data: JournalData, id: string): JournalData {
 
 export function addDailyNote(
   data: JournalData,
-  input: { date: string; mood: NoteMood; text: string }
+  input: { date: string; mood: NoteMood; text: string; tags?: string[] }
 ): JournalData {
   const trimmed = input.text.trim();
   if (!trimmed) return data;
+
+  const cleanTags = Array.isArray(input.tags)
+    ? Array.from(new Set(input.tags.map((t) => t.trim()).filter(Boolean))).slice(0, 6)
+    : undefined;
 
   const entry: DailyNote = {
     id: makeId('n'),
     date: isValidIsoDate(input.date) ? input.date : todayKey(),
     mood: input.mood,
-    text: trimmed.slice(0, 280)
+    text: trimmed.slice(0, 280),
+    ...(cleanTags && cleanTags.length > 0 ? { tags: cleanTags } : {})
   };
 
   const dailyNotes = [entry, ...data.dailyNotes].sort((a, b) => b.date.localeCompare(a.date));
   return { ...data, dailyNotes };
+}
+
+export function toggleRoutineItem(
+  data: JournalData,
+  dateKey: string,
+  routineId: string
+): JournalData {
+  const safeDate = isValidIsoDate(dateKey) ? dateKey : todayKey();
+  const prev = data.completedRoutineIds[safeDate] ?? [];
+  const exists = prev.includes(routineId);
+  const next = exists ? prev.filter((id) => id !== routineId) : [...prev, routineId];
+  return {
+    ...data,
+    completedRoutineIds: {
+      ...data.completedRoutineIds,
+      [safeDate]: next
+    }
+  };
+}
+
+export function toggleImmunization(
+  data: JournalData,
+  vaccineId: string,
+  dateKey: string = todayKey()
+): JournalData {
+  const nextMap = { ...data.completedImmunizations };
+  if (nextMap[vaccineId]) {
+    delete nextMap[vaccineId];
+  } else {
+    nextMap[vaccineId] = isValidIsoDate(dateKey) ? dateKey : todayKey();
+  }
+  return {
+    ...data,
+    completedImmunizations: nextMap
+  };
 }
 
 export function deleteDailyNote(data: JournalData, id: string): JournalData {

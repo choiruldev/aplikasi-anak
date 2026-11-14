@@ -17,6 +17,7 @@ import { TummyTimeGuide } from './activities/TummyTimeGuide.tsx';
 import { BrandMark } from './components/Art.tsx';
 import { ChildFocusShell } from './components/ChildFocusShell.tsx';
 import { InstallModal } from './components/InstallModal.tsx';
+import { AvatarIcon, MoonIcon } from './components/ModuleIcons.tsx';
 import {
   ParentDrawer,
   type BeforeInstallPromptEvent
@@ -29,6 +30,8 @@ import {
   type SimulationKey
 } from './data/stimulationData.ts';
 import { setAudioPreferences, stopVoice, unlockAudio } from './lib/audio.ts';
+import { addBabyCareEntry, deleteBabyCareEntry, type BabyCareType } from './lib/babyCareStorage.ts';
+import { createBackupJson, parseAndValidateBackup } from './lib/backup.ts';
 import { isLullabyPlaying, startLullabyBgm, stopLullabyBgm } from './lib/bgm.ts';
 import {
   computeAgeInfo,
@@ -41,22 +44,32 @@ import {
   addGrowthLog,
   deleteDailyNote,
   deleteGrowthLog,
-  loadJournal,
-  saveJournal,
+  toggleImmunization,
   toggleMilestone,
-  toggleSavedTip,
-  type JournalData,
-  type NoteMood
+  toggleRoutineItem,
+  toggleSavedTip
 } from './lib/journalStorage.ts';
 import {
-  loadProgress,
-  loadSettings,
+  addProfile,
+  deleteProfile,
+  getActiveProfile,
+  loadProfilesState,
+  rolloverProfilesIfNeeded,
+  saveProfilesState,
+  switchProfile,
+  updateActiveProfile,
+  updateActiveProfileSettings,
+  type ProfileAvatarId,
+  type ProfilesState
+} from './lib/profilesStorage.ts';
+import { computeStreakInfo } from './lib/stats.ts';
+import { STICKER_META } from './lib/stickersMeta.ts';
+import {
+  recordActiveDate,
   rolloverIfNeeded,
-  saveProgress,
-  saveSettings,
   todayKey,
-  type AppSettings,
-  type DailyProgress
+  toggleFavoriteModule,
+  type AppSettings
 } from './lib/storage.ts';
 import { CatatanTab } from './tabs/CatatanTab.tsx';
 import { SimulasiTab } from './tabs/SimulasiTab.tsx';
@@ -65,11 +78,11 @@ import { TipsTab } from './tabs/TipsTab.tsx';
 
 type MainTab = 'stimulasi' | 'simulasi' | 'catatan' | 'tips';
 
-const TAB_ITEMS: Array<{ id: MainTab; label: string; shortDesc: string }> = [
-  { id: 'stimulasi', label: 'Stimulasi', shortDesc: 'Misi harian' },
-  { id: 'simulasi', label: 'Simulasi', shortDesc: '15 modul' },
-  { id: 'catatan', label: 'Catatan', shortDesc: 'Jurnal anak' },
-  { id: 'tips', label: 'Tips', shortDesc: 'Info Gen Z' }
+const TAB_ITEMS: Array<{ id: MainTab; label: string }> = [
+  { id: 'stimulasi', label: 'Stimulasi' },
+  { id: 'simulasi', label: 'Simulasi' },
+  { id: 'catatan', label: 'Catatan' },
+  { id: 'tips', label: 'Tips' }
 ];
 
 function renderNavIcon(id: MainTab): JSX.Element {
@@ -107,9 +120,7 @@ function renderNavIcon(id: MainTab): JSX.Element {
 }
 
 export function App(): JSX.Element {
-  const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
-  const [progress, setProgress] = useState<DailyProgress>(() => loadProgress());
-  const [journal, setJournal] = useState<JournalData>(() => loadJournal());
+  const [profilesState, setProfilesState] = useState<ProfilesState>(() => loadProfilesState());
 
   const [activeTab, setActiveTab] = useState<MainTab>('stimulasi');
   const [activeSimulation, setActiveSimulation] = useState<SimulationKey | null>(null);
@@ -118,13 +129,18 @@ export function App(): JSX.Element {
   const [parentOpen, setParentOpen] = useState(false);
   const [installModalOpen, setInstallModalOpen] = useState(false);
   const [albumOpen, setAlbumOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [isIos, setIsIos] = useState(false);
 
+  const activeProfile = getActiveProfile(profilesState);
+  const { settings, progress, journal, babyCare, avatarId } = activeProfile;
+
   const ageInfo = computeAgeInfo(settings.birthDate);
   const activeBand: AgeBand = manualBandOverride ?? ageInfo?.band ?? settings.ageBand;
   const activePhase = AGE_PHASES.find((p) => p.id === activeBand) ?? AGE_PHASES[3];
+  const streakInfo = computeStreakInfo(progress.activeDates, todayKey());
 
   const isGameTimeUp =
     settings.dailyLimitMinutes > 0 &&
@@ -139,19 +155,20 @@ export function App(): JSX.Element {
     : null;
 
   useEffect(() => {
-    saveSettings(settings);
+    saveProfilesState(profilesState);
+  }, [profilesState]);
+
+  useEffect(() => {
     setAudioPreferences(settings.soundEnabled, settings.voiceEnabled);
-  }, [settings]);
+    document.documentElement.setAttribute('data-theme', settings.nightMode ? 'night' : 'light');
+  }, [settings.soundEnabled, settings.voiceEnabled, settings.nightMode]);
 
   useEffect(() => {
-    saveProgress(progress);
-  }, [progress]);
+    if (!toastMessage) return;
+    const id = window.setTimeout(() => setToastMessage(null), 3200);
+    return () => window.clearTimeout(id);
+  }, [toastMessage]);
 
-  useEffect(() => {
-    saveJournal(journal);
-  }, [journal]);
-
-  // Ambient BGM plays only when enabled and inside a non-soother simulation
   useEffect(() => {
     if (
       settings.bgmEnabled &&
@@ -167,7 +184,7 @@ export function App(): JSX.Element {
   // Live calendar rollover check when app regains focus/visibility
   useEffect(() => {
     const checkRollover = () => {
-      setProgress((prev) => rolloverIfNeeded(prev, todayKey()));
+      setProfilesState((prev) => rolloverProfilesIfNeeded(prev, todayKey()));
     };
     const onVisChange = () => {
       if (document.visibilityState === 'visible') checkRollover();
@@ -189,13 +206,15 @@ export function App(): JSX.Element {
     }
 
     const timerId = window.setInterval(() => {
-      setProgress((prev) => {
-        const rolled = rolloverIfNeeded(prev, todayKey());
-        return {
-          ...rolled,
-          playedSeconds: rolled.playedSeconds + 1
-        };
-      });
+      setProfilesState((prev) =>
+        updateActiveProfile(prev, (p) => {
+          const rolled = rolloverIfNeeded(p.progress, todayKey());
+          return {
+            ...p,
+            progress: { ...rolled, playedSeconds: rolled.playedSeconds + 1 }
+          };
+        })
+      );
     }, 1000);
     return () => window.clearInterval(timerId);
   }, [activeSimMeta, isGameTimeUp, parentOpen, installModalOpen, albumOpen]);
@@ -217,9 +236,16 @@ export function App(): JSX.Element {
     return () => window.removeEventListener('beforeinstallprompt', onBeforeInstall);
   }, []);
 
-  const handleUpdateSettings = (next: AppSettings) => {
-    setSettings(next);
-    // Reset preview phase override if user explicitly changed birthDate or manual band
+  const showRewardIfNewSticker = (prevStickers: string[], nextStickers: string[]) => {
+    const newlyUnlocked = nextStickers.find((id) => !prevStickers.includes(id));
+    if (newlyUnlocked) {
+      const label = STICKER_META.find((s) => s.id === newlyUnlocked)?.label ?? 'Stiker Baru';
+      setToastMessage(`Stiker terbuka: ${label}!`);
+    }
+  };
+
+  const handleUpdateSettings = (next: AppSettings, nextAvatarId?: ProfileAvatarId) => {
+    setProfilesState((prev) => updateActiveProfileSettings(prev, next, nextAvatarId));
     if (next.birthDate !== settings.birthDate || next.ageBand !== settings.ageBand) {
       setManualBandOverride(null);
     }
@@ -228,21 +254,41 @@ export function App(): JSX.Element {
   const handleSelectBand = (band: AgeBand) => {
     setManualBandOverride(band);
     if (!settings.birthDate) {
-      setSettings((prev) => ({ ...prev, ageBand: band }));
+      setProfilesState((prev) =>
+        updateActiveProfile(prev, (p) => ({
+          ...p,
+          settings: { ...p.settings, ageBand: band }
+        }))
+      );
     }
   };
 
   const handleToggleMission = (missionId: string) => {
-    setProgress((prev) => {
-      const rolled = rolloverIfNeeded(prev, todayKey());
-      const exists = rolled.completedMissions.includes(missionId);
-      return {
-        ...rolled,
-        completedMissions: exists
+    const today = todayKey();
+    setProfilesState((prev) =>
+      updateActiveProfile(prev, (p) => {
+        const rolled = rolloverIfNeeded(p.progress, today);
+        const exists = rolled.completedMissions.includes(missionId);
+        const nextMissions = exists
           ? rolled.completedMissions.filter((id) => id !== missionId)
-          : [...rolled.completedMissions, missionId]
-      };
-    });
+          : [...rolled.completedMissions, missionId];
+        const nextDates = !exists ? recordActiveDate(rolled.activeDates, today) : rolled.activeDates;
+        const streakAfter = computeStreakInfo(nextDates, today).streakDays;
+        let nextStickers = rolled.stickers;
+        if (streakAfter >= 3 && !nextStickers.includes('sticker-streak')) {
+          nextStickers = [...nextStickers, 'sticker-streak'];
+        }
+        return {
+          ...p,
+          progress: {
+            ...rolled,
+            completedMissions: nextMissions,
+            activeDates: nextDates,
+            stickers: nextStickers
+          }
+        };
+      })
+    );
   };
 
   const handleLaunchSimulation = (key: SimulationKey) => {
@@ -262,65 +308,110 @@ export function App(): JSX.Element {
     setActiveSimulation(null);
   };
 
-  const handleActivityComplete = useCallback((key: SimulationKey, stickerId?: string) => {
-    setProgress((prev) => {
-      const rolled = rolloverIfNeeded(prev, todayKey());
-      const nextStickers =
-        stickerId && !rolled.stickers.includes(stickerId)
-          ? [...rolled.stickers, stickerId]
-          : rolled.stickers;
+  const handleActivityComplete = useCallback((key: SimulationKey, explicitStickerId?: string) => {
+    const today = todayKey();
+    const modSticker = SIMULATION_MODULES.find((m) => m.key === key)?.stickerId;
+    const stickerId = explicitStickerId ?? modSticker;
 
-      const linkedMissionIds = STIMULATION_MISSIONS.filter(
-        (m) => m.linkedSimulation === key
-      ).map((m) => m.id);
-      const nextMissions = Array.from(new Set([...rolled.completedMissions, ...linkedMissionIds]));
+    setProfilesState((prev) => {
+      const current = getActiveProfile(prev);
+      const prevStickers = current.progress.stickers;
+      const updatedState = updateActiveProfile(prev, (p) => {
+        const rolled = rolloverIfNeeded(p.progress, today);
+        const nextDates = recordActiveDate(rolled.activeDates, today);
+        const streakDaysAfter = computeStreakInfo(nextDates, today).streakDays;
 
-      return {
-        ...rolled,
-        stickers: nextStickers,
-        completedCounts: {
-          ...rolled.completedCounts,
-          [key]: (rolled.completedCounts[key] ?? 0) + 1
-        },
-        completedMissions: nextMissions
-      };
+        let nextStickers =
+          stickerId && !rolled.stickers.includes(stickerId)
+            ? [...rolled.stickers, stickerId]
+            : [...rolled.stickers];
+
+        if (streakDaysAfter >= 3 && !nextStickers.includes('sticker-streak')) {
+          nextStickers = [...nextStickers, 'sticker-streak'];
+        }
+
+        const linkedMissionIds = STIMULATION_MISSIONS.filter(
+          (m) => m.linkedSimulation === key
+        ).map((m) => m.id);
+
+        showRewardIfNewSticker(prevStickers, nextStickers);
+
+        return {
+          ...p,
+          progress: {
+            ...rolled,
+            stickers: nextStickers,
+            activeDates: nextDates,
+            completedCounts: {
+              ...rolled.completedCounts,
+              [key]: (rolled.completedCounts[key] ?? 0) + 1
+            },
+            playCounts: {
+              ...rolled.playCounts,
+              [key]: (rolled.playCounts[key] ?? 0) + 1
+            },
+            completedMissions: Array.from(new Set([...rolled.completedMissions, ...linkedMissionIds]))
+          }
+        };
+      });
+      return updatedState;
     });
   }, []);
 
+  const handleAddTummySeconds = useCallback((secs: number) => {
+    const today = todayKey();
+    setProfilesState((prev) =>
+      updateActiveProfile(prev, (p) => {
+        const rolled = rolloverIfNeeded(p.progress, today);
+        return {
+          ...p,
+          progress: {
+            ...rolled,
+            tummyTimeSeconds: rolled.tummyTimeSeconds + Math.max(0, Math.round(secs))
+          }
+        };
+      })
+    );
+  }, []);
+
+  const handleToggleFavorite = (key: SimulationKey) => {
+    setProfilesState((prev) =>
+      updateActiveProfile(prev, (p) => ({
+        ...p,
+        progress: toggleFavoriteModule(p.progress, key)
+      }))
+    );
+  };
+
   const handleResetTimer = () => {
-    setProgress((prev) => {
-      const rolled = rolloverIfNeeded(prev, todayKey());
-      return { ...rolled, playedSeconds: 0 };
-    });
+    setProfilesState((prev) =>
+      updateActiveProfile(prev, (p) => ({
+        ...p,
+        progress: {
+          ...rolloverIfNeeded(p.progress, todayKey()),
+          playedSeconds: 0
+        }
+      }))
+    );
   };
 
-  const handleToggleMilestone = (milestoneId: string) => {
-    setJournal((prev) => toggleMilestone(prev, milestoneId));
+  const handleExportBackup = () => {
+    const json = createBackupJson(profilesState);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cilukba-cadangan-${todayKey()}.json`;
+    a.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
-  const handleAddGrowth = (input: {
-    date: string;
-    weightKg?: number;
-    heightCm?: number;
-    note?: string;
-  }) => {
-    setJournal((prev) => addGrowthLog(prev, input));
-  };
-
-  const handleDeleteGrowth = (id: string) => {
-    setJournal((prev) => deleteGrowthLog(prev, id));
-  };
-
-  const handleAddNote = (input: { date: string; mood: NoteMood; text: string }) => {
-    setJournal((prev) => addDailyNote(prev, input));
-  };
-
-  const handleDeleteNote = (id: string) => {
-    setJournal((prev) => deleteDailyNote(prev, id));
-  };
-
-  const handleToggleSaveTip = (tipId: string) => {
-    setJournal((prev) => toggleSavedTip(prev, tipId));
+  const handleImportBackup = (rawJson: string): { ok: boolean; error?: string } => {
+    const parsed = parseAndValidateBackup(rawJson, todayKey());
+    if (!parsed.ok) return { ok: false, error: parsed.error };
+    setProfilesState(parsed.state);
+    setManualBandOverride(null);
+    return { ok: true };
   };
 
   const renderSimulationModule = (key: SimulationKey): JSX.Element => {
@@ -328,7 +419,13 @@ export function App(): JSX.Element {
       case 'high-contrast':
         return <HighContrastCards onComplete={() => handleActivityComplete('high-contrast')} />;
       case 'tummy-time':
-        return <TummyTimeGuide onComplete={() => handleActivityComplete('tummy-time')} />;
+        return (
+          <TummyTimeGuide
+            dailySeconds={progress.tummyTimeSeconds}
+            onAddSeconds={handleAddTummySeconds}
+            onComplete={() => handleActivityComplete('tummy-time')}
+          />
+        );
       case 'baby-soother':
         return <BabySoother onComplete={() => handleActivityComplete('baby-soother')} />;
       case 'peekaboo':
@@ -367,8 +464,9 @@ export function App(): JSX.Element {
         dailyLimitMinutes={settings.dailyLimitMinutes}
         bgmEnabled={settings.bgmEnabled}
         childLockExit={settings.childLockExit}
+        toastMessage={toastMessage}
         onToggleBgm={() =>
-          setSettings((prev) => ({ ...prev, bgmEnabled: !prev.bgmEnabled }))
+          handleUpdateSettings({ ...settings, bgmEnabled: !settings.bgmEnabled })
         }
         onExit={handleExitSimulation}
         onRequestResetTimer={handleResetTimer}
@@ -387,10 +485,9 @@ export function App(): JSX.Element {
     <div className="companion-shell">
       <header className="companion-topbar">
         <div className="brand-title-wrap">
-          <BrandMark size={38} />
+          <BrandMark size={36} />
           <div className="brand-text-block">
             <span className="brand-name">Cilukba</span>
-            <span className="brand-tagline">Tumbuh Kembang & Simulasi 0–5 Thn</span>
           </div>
         </div>
 
@@ -409,26 +506,48 @@ export function App(): JSX.Element {
           ))}
         </nav>
 
-        <button
-          type="button"
-          className="profile-chip"
-          onClick={() => setParentOpen(true)}
-          aria-label="Buka profil anak dan pengaturan"
-        >
-          <span>{profileChipLabel}</span>
-          <span className="chip-caret" aria-hidden="true">⚙</span>
-        </button>
+        <div className="topbar-right-group">
+          <button
+            type="button"
+            className={`icon-circle-btn ${settings.nightMode ? 'is-active' : ''}`}
+            onClick={() => handleUpdateSettings({ ...settings, nightMode: !settings.nightMode })}
+            aria-label={settings.nightMode ? 'Matikan mode malam' : 'Nyalakan mode malam'}
+            title="Mode Malam"
+          >
+            <MoonIcon size={16} />
+          </button>
+
+          <button
+            type="button"
+            className="profile-chip"
+            onClick={() => setParentOpen(true)}
+            aria-label="Buka profil anak dan pengaturan"
+          >
+            <AvatarIcon avatarId={avatarId} size={22} />
+            <span>{profileChipLabel}</span>
+          </button>
+        </div>
       </header>
 
       <main className="companion-main">
         {activeTab === 'stimulasi' && (
           <StimulasiTab
             childName={displayChildName}
+            avatarId={avatarId}
             ageInfo={ageInfo}
             activeBand={activeBand}
+            streakDays={streakInfo.streakDays}
             onSelectBand={handleSelectBand}
-            completedMissions={progress.completedMissions}
+            progress={progress}
             onToggleMission={handleToggleMission}
+            onToggleRoutine={(routineId) =>
+              setProfilesState((prev) =>
+                updateActiveProfile(prev, (p) => ({
+                  ...p,
+                  journal: toggleRoutineItem(p.journal, todayKey(), routineId)
+                }))
+              )
+            }
             journal={journal}
             onOpenSimulation={handleLaunchSimulation}
             onOpenProfile={() => setParentOpen(true)}
@@ -441,6 +560,9 @@ export function App(): JSX.Element {
             activeBand={activeBand}
             isGameTimeUp={isGameTimeUp}
             stickersCount={progress.stickers.length}
+            favoriteModules={progress.favoriteModules}
+            playCounts={progress.playCounts}
+            onToggleFavorite={handleToggleFavorite}
             onOpenStickerAlbum={() => setAlbumOpen(true)}
             onLaunchSimulation={handleLaunchSimulation}
             onOpenTimeLimitReset={() => setParentOpen(true)}
@@ -451,20 +573,88 @@ export function App(): JSX.Element {
           <CatatanTab
             childName={displayChildName}
             ageLabel={ageInfo?.label ?? activePhase.rangeLabel}
+            ageInfo={ageInfo}
             activeBand={activeBand}
+            stickersCount={progress.stickers.length}
+            streakDays={streakInfo.streakDays}
             journal={journal}
-            onToggleMilestone={handleToggleMilestone}
-            onAddGrowth={handleAddGrowth}
-            onDeleteGrowth={handleDeleteGrowth}
-            onAddNote={handleAddNote}
-            onDeleteNote={handleDeleteNote}
+            babyCare={babyCare}
+            onToggleMilestone={(id) =>
+              setProfilesState((prev) =>
+                updateActiveProfile(prev, (p) => ({ ...p, journal: toggleMilestone(p.journal, id) }))
+              )
+            }
+            onToggleImmunization={(id) =>
+              setProfilesState((prev) =>
+                updateActiveProfile(prev, (p) => ({
+                  ...p,
+                  journal: toggleImmunization(p.journal, id)
+                }))
+              )
+            }
+            onAddGrowth={(input) =>
+              setProfilesState((prev) =>
+                updateActiveProfile(prev, (p) => ({
+                  ...p,
+                  journal: addGrowthLog(p.journal, input)
+                }))
+              )
+            }
+            onDeleteGrowth={(id) =>
+              setProfilesState((prev) =>
+                updateActiveProfile(prev, (p) => ({
+                  ...p,
+                  journal: deleteGrowthLog(p.journal, id)
+                }))
+              )
+            }
+            onAddNote={(input) =>
+              setProfilesState((prev) =>
+                updateActiveProfile(prev, (p) => ({
+                  ...p,
+                  journal: addDailyNote(p.journal, input)
+                }))
+              )
+            }
+            onDeleteNote={(id) =>
+              setProfilesState((prev) =>
+                updateActiveProfile(prev, (p) => ({
+                  ...p,
+                  journal: deleteDailyNote(p.journal, id)
+                }))
+              )
+            }
+            onAddBabyCare={(type: BabyCareType) =>
+              setProfilesState((prev) =>
+                updateActiveProfile(prev, (p) => ({
+                  ...p,
+                  babyCare: addBabyCareEntry(p.babyCare, { type })
+                }))
+              )
+            }
+            onDeleteBabyCare={(id) =>
+              setProfilesState((prev) =>
+                updateActiveProfile(prev, (p) => ({
+                  ...p,
+                  babyCare: deleteBabyCareEntry(p.babyCare, id)
+                }))
+              )
+            }
           />
         )}
 
         {activeTab === 'tips' && (
           <TipsTab
+            activeBand={activeBand}
             savedTipIds={journal.savedTipIds}
-            onToggleSaveTip={handleToggleSaveTip}
+            onToggleSaveTip={(tipId) =>
+              setProfilesState((prev) =>
+                updateActiveProfile(prev, (p) => ({
+                  ...p,
+                  journal: toggleSavedTip(p.journal, tipId)
+                }))
+              )
+            }
           />
         )}
       </main>
@@ -487,11 +677,28 @@ export function App(): JSX.Element {
       <ParentDrawer
         open={parentOpen}
         onClose={() => setParentOpen(false)}
+        profiles={profilesState.profiles}
+        activeProfileId={profilesState.activeProfileId}
+        activeAvatarId={avatarId}
         settings={settings}
+        onSwitchProfile={(id) => {
+          setProfilesState((prev) => switchProfile(prev, id));
+          setManualBandOverride(null);
+        }}
+        onAddProfile={(input) => {
+          setProfilesState((prev) => addProfile(prev, input, todayKey()));
+          setManualBandOverride(null);
+        }}
+        onDeleteProfile={(id) => {
+          setProfilesState((prev) => deleteProfile(prev, id));
+          setManualBandOverride(null);
+        }}
         onUpdateSettings={handleUpdateSettings}
         playedSeconds={progress.playedSeconds}
         isGameTimeUp={isGameTimeUp}
         onResetTimer={handleResetTimer}
+        onExportBackup={handleExportBackup}
+        onImportBackup={handleImportBackup}
         installEvent={installEvent}
         isIos={isIos}
         onOpenInstallGuide={() => setInstallModalOpen(true)}

@@ -1,4 +1,4 @@
-import { useState, type JSX } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
 import { playBubblePop } from '../lib/audio.ts';
 
 interface ContrastCard {
@@ -153,6 +153,44 @@ const CARDS: ContrastCard[] = [
         </svg>
       );
     }
+  },
+  {
+    id: 'stars-grid',
+    title: 'Bintang Kontras',
+    tip: 'Pola titik & sudut membantu pelacakan visual 1–4 bulan.',
+    renderGraphic: (inverted) => {
+      const fg = inverted ? '#FFFFFF' : '#111111';
+      const bg = inverted ? '#111111' : '#FFFFFF';
+      return (
+        <svg viewBox="0 0 280 280" className="hc-svg" aria-hidden="true">
+          <rect width="280" height="280" fill={bg} rx="24" />
+          <polygon
+            points="140,34 166,102 238,106 182,152 200,222 140,182 80,222 98,152 42,106 114,102"
+            fill={fg}
+          />
+          <circle cx="140" cy="140" r="24" fill="#E53935" />
+          <circle cx="52" cy="52" r="10" fill={fg} />
+          <circle cx="228" cy="52" r="10" fill={fg} />
+        </svg>
+      );
+    }
+  },
+  {
+    id: 'waves',
+    title: 'Ombak Lembut',
+    tip: 'Ikuti lengkung ombak pelan dari kiri ke kanan.',
+    renderGraphic: (inverted) => {
+      const fg = inverted ? '#FFFFFF' : '#111111';
+      const bg = inverted ? '#111111' : '#FFFFFF';
+      return (
+        <svg viewBox="0 0 280 280" className="hc-svg" aria-hidden="true">
+          <rect width="280" height="280" fill={bg} rx="24" />
+          <path d="M24 85 Q82 40 140 85 T256 85" fill="none" stroke={fg} strokeWidth="20" strokeLinecap="round" />
+          <path d="M24 145 Q82 100 140 145 T256 145" fill="none" stroke="#E53935" strokeWidth="20" strokeLinecap="round" />
+          <path d="M24 205 Q82 160 140 205 T256 205" fill="none" stroke={fg} strokeWidth="20" strokeLinecap="round" />
+        </svg>
+      );
+    }
   }
 ];
 
@@ -163,35 +201,65 @@ interface Props {
 export function HighContrastCards({ onComplete }: Props): JSX.Element {
   const [index, setIndex] = useState(0);
   const [inverted, setInverted] = useState(false);
+  const [autoSlide, setAutoSlide] = useState(false);
   const [seenIds, setSeenIds] = useState<string[]>(['concentric']);
+  const touchStartXRef = useRef<number | null>(null);
+  const completedRef = useRef(false);
 
   const card = CARDS[index];
 
   const stepCard = (delta: number) => {
     const nextIdx = (index + delta + CARDS.length) % CARDS.length;
-    playBubblePop(360 + nextIdx * 35);
+    playBubblePop(360 + nextIdx * 30);
     setIndex(nextIdx);
     const nextId = CARDS[nextIdx].id;
-    if (!seenIds.includes(nextId)) {
-      const updated = [...seenIds, nextId];
-      setSeenIds(updated);
-      if (updated.length === CARDS.length) {
+    setSeenIds((prev) => {
+      if (prev.includes(nextId)) return prev;
+      const updated = [...prev, nextId];
+      if (updated.length >= 6 && !completedRef.current) {
+        completedRef.current = true;
         onComplete?.();
       }
-    }
+      return updated;
+    });
   };
+
+  useEffect(() => {
+    if (!autoSlide) return;
+    const id = window.setInterval(() => {
+      setIndex((prevIdx) => {
+        const nextIdx = (prevIdx + 1) % CARDS.length;
+        return nextIdx;
+      });
+    }, 15000);
+    return () => window.clearInterval(id);
+  }, [autoSlide]);
 
   return (
     <div className="baby-tool-wrap">
       <div className="baby-tool-banner" role="note">
-        Jarak ideal 20–30 cm · Maks 2–5 mnt · Kartu {index + 1}/{CARDS.length}
+        Jarak 20–30 cm · Geser atau ketuk · {index + 1}/{CARDS.length}
       </div>
 
       <button
         type="button"
         className={`hc-card-stage ${inverted ? 'is-dark' : 'is-light'}`}
         onClick={() => stepCard(1)}
-        aria-label={`Kartu kontras ${card.title}. Ketuk untuk kartu berikutnya.`}
+        onTouchStart={(e) => {
+          touchStartXRef.current = e.changedTouches[0]?.clientX ?? null;
+        }}
+        onTouchEnd={(e) => {
+          const startX = touchStartXRef.current;
+          const endX = e.changedTouches[0]?.clientX;
+          touchStartXRef.current = null;
+          if (startX === null || endX === undefined) return;
+          const diff = endX - startX;
+          if (Math.abs(diff) > 42) {
+            e.preventDefault();
+            stepCard(diff < 0 ? 1 : -1);
+          }
+        }}
+        aria-label={`Kartu kontras ${card.title}. Ketuk untuk berikutnya.`}
       >
         {card.renderGraphic(inverted)}
       </button>
@@ -202,8 +270,8 @@ export function HighContrastCards({ onComplete }: Props): JSX.Element {
       </div>
 
       <div className="baby-tool-controls">
-        <button type="button" className="btn-outline" onClick={() => stepCard(-1)}>
-          ← Sebelumnya
+        <button type="button" className="btn-outline" onClick={() => stepCard(-1)} aria-label="Kartu sebelumnya">
+          ← Mundur
         </button>
         <button
           type="button"
@@ -211,10 +279,18 @@ export function HighContrastCards({ onComplete }: Props): JSX.Element {
           onClick={() => setInverted((v) => !v)}
           aria-pressed={inverted}
         >
-          {inverted ? 'Dasar Terang' : 'Dasar Gelap'}
+          {inverted ? 'Terang' : 'Gelap'}
         </button>
-        <button type="button" className="btn-primary-calm" onClick={() => stepCard(1)}>
-          Berikutnya →
+        <button
+          type="button"
+          className={`btn-outline ${autoSlide ? 'is-selected' : ''}`}
+          onClick={() => setAutoSlide((v) => !v)}
+          aria-pressed={autoSlide}
+        >
+          {autoSlide ? 'Auto 15d ✓' : 'Auto 15d'}
+        </button>
+        <button type="button" className="btn-primary-calm" onClick={() => stepCard(1)} aria-label="Kartu berikutnya">
+          Lanjut →
         </button>
       </div>
 
