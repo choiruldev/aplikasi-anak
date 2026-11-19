@@ -2,34 +2,46 @@ import { useState, type JSX } from 'react';
 import { IconCheck, IconDownload, IconShare, IconStar } from '../components/Art.tsx';
 import {
   CareIcon,
+  EmptyStateIllustration,
   MoodIcon,
   PillarIcon,
   SyringeIcon
 } from '../components/ModuleIcons.tsx';
 import { IMMUNIZATION_SCHEDULE } from '../data/immunizationData.ts';
-import { AGE_PHASES, MILESTONES, PILLAR_LABELS } from '../data/stimulationData.ts';
+import { evaluateKpspAnswers, getNearestKpspCheckpoint, KPSP_CHECKPOINTS } from '../data/kpspData.ts';
+import {
+  AGE_PHASES,
+  MILESTONES,
+  PILLAR_LABELS,
+  SIMULATION_MODULES,
+  type SimulationKey
+} from '../data/stimulationData.ts';
 import {
   type BabyCareData,
   type BabyCareType,
   formatElapsedShort,
   getTodayCareSummary
 } from '../lib/babyCareStorage.ts';
-import type { AgeBand, AgeInfo } from '../lib/development.ts';
+import { buildCalendarIcs } from '../lib/calendarIcs.ts';
+import type { AgeBand, AgeInfo, StimulationPillar } from '../lib/development.ts';
+import { buildDoctorReportPdfBytes } from '../lib/doctorReport.ts';
 import {
   buildSparklinePoints,
-  getDefaultMonthsForBand,
-  getGrowthReferenceForMonths
+  getDefaultMonthsForBand
 } from '../lib/growthReference.ts';
 import {
   formatJournalSummary,
   type JournalData,
+  type KpspStatus,
   type NoteMood
 } from '../lib/journalStorage.ts';
 import { buildWhatsAppShareUrl, generateMilestoneCardPng } from '../lib/shareCard.ts';
-import { todayKey } from '../lib/storage.ts';
+import { todayKey, type ChildGender } from '../lib/storage.ts';
+import { computeWhoCurveBand, evaluateChildGrowthWho } from '../lib/whoGrowth.ts';
 
 interface Props {
   childName: string;
+  gender: ChildGender;
   ageLabel: string;
   ageInfo: AgeInfo | null;
   activeBand: AgeBand;
@@ -39,15 +51,30 @@ interface Props {
   babyCare: BabyCareData;
   onToggleMilestone: (milestoneId: string) => void;
   onToggleImmunization: (vaccineId: string) => void;
-  onAddGrowth: (input: { date: string; weightKg?: number; heightCm?: number; note?: string }) => void;
+  onAddGrowth: (input: {
+    date: string;
+    weightKg?: number;
+    heightCm?: number;
+    headCircumferenceCm?: number;
+    note?: string;
+  }) => void;
   onDeleteGrowth: (id: string) => void;
+  onAddKpspResult: (input: {
+    date: string;
+    checkpointMonths: number;
+    yesCount: number;
+    totalCount: number;
+    status: KpspStatus;
+    weakPillars: StimulationPillar[];
+  }) => void;
   onAddNote: (input: { date: string; mood: NoteMood; text: string; tags?: string[] }) => void;
   onDeleteNote: (id: string) => void;
   onAddBabyCare: (type: BabyCareType) => void;
   onDeleteBabyCare: (id: string) => void;
+  onOpenSimulation: (key: SimulationKey) => void;
 }
 
-type SectionView = 'milestone' | 'growth' | 'immunization' | 'notes';
+type SectionView = 'growth' | 'kpsp' | 'milestone' | 'immunization' | 'notes';
 type MilestoneFilter = 'all' | 'pending' | 'done';
 
 const MOOD_OPTIONS: Array<{ id: NoteMood; label: string }> = [
@@ -60,6 +87,7 @@ const QUICK_TAGS = ['Motorik', 'Bicara', 'Makan', 'Tidur', 'Sosial'];
 
 export function CatatanTab({
   childName,
+  gender,
   ageLabel,
   ageInfo,
   activeBand,
@@ -71,21 +99,30 @@ export function CatatanTab({
   onToggleImmunization,
   onAddGrowth,
   onDeleteGrowth,
+  onAddKpspResult,
   onAddNote,
   onDeleteNote,
   onAddBabyCare,
-  onDeleteBabyCare
+  onDeleteBabyCare,
+  onOpenSimulation
 }: Props): JSX.Element {
-  const [section, setSection] = useState<SectionView>('milestone');
+  const monthsForRef = ageInfo?.months ?? getDefaultMonthsForBand(activeBand);
+  const defaultCheckpoint = getNearestKpspCheckpoint(monthsForRef);
+
+  const [section, setSection] = useState<SectionView>('growth');
   const [milestoneBand, setMilestoneBand] = useState<AgeBand>(activeBand);
   const [milestoneFilter, setMilestoneFilter] = useState<MilestoneFilter>('all');
-  const [chartMetric, setChartMetric] = useState<'weightKg' | 'heightCm'>('weightKg');
+  const [chartMetric, setChartMetric] = useState<'weightKg' | 'heightCm' | 'headCircumferenceCm'>('weightKg');
   const [copied, setCopied] = useState(false);
 
   const [weightInput, setWeightInput] = useState('');
   const [heightInput, setHeightInput] = useState('');
+  const [headInput, setHeadInput] = useState('');
   const [growthDate, setGrowthDate] = useState(todayKey());
   const [growthNote, setGrowthNote] = useState('');
+
+  const [kpspMonths, setKpspMonths] = useState<number>(defaultCheckpoint.months);
+  const [kpspAnswers, setKpspAnswers] = useState<Record<string, boolean>>({});
 
   const [mood, setMood] = useState<NoteMood>('happy');
   const [noteDate, setNoteDate] = useState(todayKey());
@@ -110,16 +147,25 @@ export function CatatanTab({
   const [showBabyLogger, setShowBabyLogger] = useState(isBabyPhase);
   const careSummary = getTodayCareSummary(babyCare, todayKey());
 
-  const monthsForRef = ageInfo?.months ?? getDefaultMonthsForBand(activeBand);
-  const refBand = getGrowthReferenceForMonths(monthsForRef);
+  const latestGrowth = journal.growthLogs[0];
+  const whoEval = evaluateChildGrowthWho({
+    gender,
+    months: monthsForRef,
+    weightKg: latestGrowth?.weightKg,
+    heightCm: latestGrowth?.heightCm,
+    headCircumferenceCm: latestGrowth?.headCircumferenceCm
+  });
+
+  const indicatorKey = chartMetric === 'weightKg' ? 'wfa' : chartMetric === 'heightCm' ? 'hfa' : 'hcfa';
+  const whoCurveBand = computeWhoCurveBand(gender, indicatorKey, 0, Math.max(24, monthsForRef + 6));
+  const currentBandRow = whoCurveBand[whoCurveBand.length - 1] ?? { sdMinus2: 6, median: 10, sdPlus2: 14 };
+
   const chartSeries = buildSparklinePoints(
     journal.growthLogs,
-    chartMetric,
+    chartMetric as 'weightKg' | 'heightCm',
     260,
     92,
-    chartMetric === 'weightKg'
-      ? { min: refBand.weightMinKg, max: refBand.weightMaxKg }
-      : { min: refBand.heightMinCm, max: refBand.heightMaxCm }
+    { min: currentBandRow.sdMinus2, max: currentBandRow.sdPlus2 }
   );
 
   const summaryText = formatJournalSummary({
@@ -128,7 +174,7 @@ export function CatatanTab({
     phaseLabel: activePhase?.label ?? activeBand,
     achievedCount: achievedInActiveBand,
     totalPhaseMilestones: totalInActiveBand,
-    latestGrowth: journal.growthLogs[0],
+    latestGrowth,
     recentNotes: journal.dailyNotes
   });
 
@@ -161,22 +207,98 @@ export function CatatanTab({
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
+  const handleDownloadPdfReport = () => {
+    const lines: string[] = [
+      `Fase Usia: ${activePhase?.label ?? activeBand}`,
+      `Milestone Tercapai: ${achievedInActiveBand}/${totalInActiveBand} | Stiker: ${stickersCount}/14`,
+      `Imunisasi Selesai: ${Object.keys(journal.completedImmunizations).length}/${IMMUNIZATION_SCHEDULE.length}`
+    ];
+    if (latestGrowth) {
+      lines.push(
+        `Pengukuran Terakhir (${latestGrowth.date}): BB ${latestGrowth.weightKg ?? '-'} kg | TB ${latestGrowth.heightCm ?? '-'} cm | LK ${latestGrowth.headCircumferenceCm ?? '-'} cm`
+      );
+    }
+    if (whoEval.wfa) lines.push(`Analisa WHO ${whoEval.wfa.label}: Z=${whoEval.wfa.zScore} SD (${whoEval.wfa.status})`);
+    if (whoEval.hfa) lines.push(`Analisa WHO ${whoEval.hfa.label}: Z=${whoEval.hfa.zScore} SD (${whoEval.hfa.status})`);
+    if (whoEval.wfh) lines.push(`Analisa WHO ${whoEval.wfh.label}: Z=${whoEval.wfh.zScore} SD (${whoEval.wfh.status})`);
+    if (whoEval.hcfa) lines.push(`Analisa WHO ${whoEval.hcfa.label}: Z=${whoEval.hcfa.zScore} SD (${whoEval.hcfa.status})`);
+
+    const latestKpsp = journal.kpspResults[0];
+    if (latestKpsp) {
+      lines.push(
+        `Skrining KPSP ${latestKpsp.checkpointMonths} bln (${latestKpsp.date}): ${latestKpsp.status.toUpperCase()} (${latestKpsp.yesCount}/${latestKpsp.totalCount} Ya)`
+      );
+    }
+    for (const g of journal.growthLogs.slice(0, 5)) {
+      lines.push(`- [${g.date}] BB: ${g.weightKg ?? '-'} kg | TB: ${g.heightCm ?? '-'} cm | LK: ${g.headCircumferenceCm ?? '-'} cm`);
+    }
+
+    const bytes = buildDoctorReportPdfBytes({
+      childName,
+      ageLabel,
+      genderLabel: gender === 'girl' ? 'Perempuan' : 'Laki-laki',
+      generatedDate: todayKey(),
+      summaryLines: lines
+    });
+    const blob = new Blob([bytes.buffer as ArrayBuffer], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `laporan-cilukba-${childName.toLowerCase().replace(/\s+/g, '-')}.pdf`;
+    a.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const handleDownloadIcsReminder = (title: string, dateIso: string, desc: string) => {
+    const ics = buildCalendarIcs({ title, dateIso, description: desc });
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pengingat-cilukba-${dateIso}.ics`;
+    a.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
   const handleGrowthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const parsedW = weightInput.trim() ? Number(weightInput.replace(',', '.')) : undefined;
     const parsedH = heightInput.trim() ? Number(heightInput.replace(',', '.')) : undefined;
-    if ((parsedW === undefined || !(parsedW > 0)) && (parsedH === undefined || !(parsedH > 0))) {
+    const parsedHead = headInput.trim() ? Number(headInput.replace(',', '.')) : undefined;
+    if (
+      (parsedW === undefined || !(parsedW > 0)) &&
+      (parsedH === undefined || !(parsedH > 0)) &&
+      (parsedHead === undefined || !(parsedHead > 0))
+    ) {
       return;
     }
     onAddGrowth({
       date: growthDate,
       weightKg: parsedW && parsedW > 0 ? parsedW : undefined,
       heightCm: parsedH && parsedH > 0 ? parsedH : undefined,
+      headCircumferenceCm: parsedHead && parsedHead > 0 ? parsedHead : undefined,
       note: growthNote.trim() || undefined
     });
     setWeightInput('');
     setHeightInput('');
+    setHeadInput('');
     setGrowthNote('');
+  };
+
+  const activeKpspCp =
+    KPSP_CHECKPOINTS.find((c) => c.months === kpspMonths) ?? KPSP_CHECKPOINTS[0];
+
+  const handleSaveKpsp = () => {
+    const ansArray = activeKpspCp.questions.map((q) => Boolean(kpspAnswers[q.id]));
+    const evaluated = evaluateKpspAnswers(activeKpspCp.months, ansArray);
+    onAddKpspResult({
+      date: todayKey(),
+      checkpointMonths: activeKpspCp.months,
+      yesCount: evaluated.yesCount,
+      totalCount: evaluated.totalCount,
+      status: evaluated.status,
+      weakPillars: evaluated.weakPillars
+    });
   };
 
   const handleNoteSubmit = (e: React.FormEvent) => {
@@ -196,46 +318,40 @@ export function CatatanTab({
   const immunizationsDone = IMMUNIZATION_SCHEDULE.filter((i) =>
     Boolean(journal.completedImmunizations[i.id])
   ).length;
+  const latestKpsp = journal.kpspResults[0];
 
   return (
     <div className="tab-stack">
-      {/* Compact Visual Metrics & Quick Share */}
+      {/* Header Metrics & Actions */}
       <section className="ed-card">
         <div className="cat-head-row">
           <div>
-            <h1>Catatan {childName}</h1>
-            <span className="muted-mini">{ageLabel} · {activePhase?.shortLabel}</span>
+            <h1>Tumbuh & Analisa · {childName}</h1>
+            <span className="muted-mini">
+              {ageLabel} · {gender === 'girl' ? 'Perempuan' : 'Laki-laki'}
+            </span>
           </div>
           <div className="cat-export-actions">
-            <button
-              type="button"
-              className="btn-outline small"
-              onClick={handleCopySummary}
-              aria-label="Salin ringkasan"
-            >
-              <IconShare size={14} /> {copied ? 'Tersalin' : 'Salin'}
+            <button type="button" className="btn-primary-calm small" onClick={handleDownloadPdfReport}>
+              <IconDownload size={14} /> PDF Dokter
+            </button>
+            <button type="button" className="btn-outline small" onClick={handleDownloadCard}>
+              PNG
+            </button>
+            <button type="button" className="btn-outline small" onClick={handleCopySummary}>
+              <IconShare size={14} /> {copied ? '✓' : 'Salin'}
             </button>
             <a
               className="btn-outline small"
               href={buildWhatsAppShareUrl(summaryText)}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Bagikan ke WhatsApp"
             >
               WA
             </a>
-            <button
-              type="button"
-              className="btn-outline small"
-              onClick={handleDownloadCard}
-              aria-label="Unduh kartu PNG"
-            >
-              <IconDownload size={14} /> PNG
-            </button>
           </div>
         </div>
 
-        {/* 3 Visual Metric Pills */}
         <div className="cat-metric-strip">
           <div className="cat-metric-pill">
             <IconCheck size={16} />
@@ -247,8 +363,10 @@ export function CatatanTab({
           <div className="cat-metric-pill">
             <IconStar size={16} />
             <div>
-              <strong className="tabular">{stickersCount}/14</strong>
-              <span>Stiker</span>
+              <strong className="tabular">
+                {latestKpsp ? `${latestKpsp.yesCount}/${latestKpsp.totalCount}` : 'Belum'}
+              </strong>
+              <span>KPSP</span>
             </div>
           </div>
           <div className="cat-metric-pill">
@@ -260,59 +378,36 @@ export function CatatanTab({
           </div>
         </div>
 
-        {/* 0-12m Baby Care Quick Logger */}
         {(isBabyPhase || showBabyLogger) && (
           <div className="baby-care-bar">
             <div className="baby-care-head">
               <span className="eyebrow">Log Bayi Hari Ini</span>
               {!isBabyPhase && (
-                <button
-                  type="button"
-                  className="text-action-btn"
-                  onClick={() => setShowBabyLogger(false)}
-                >
-                  Sembunyikan
+                <button type="button" className="text-action-btn" onClick={() => setShowBabyLogger(false)}>
+                  Tutup
                 </button>
               )}
             </div>
             <div className="baby-care-grid">
-              <button
-                type="button"
-                className="baby-care-btn"
-                onClick={() => onAddBabyCare('feed')}
-              >
+              <button type="button" className="baby-care-btn" onClick={() => onAddBabyCare('feed')}>
                 <CareIcon type="feed" size={18} />
                 <div>
                   <strong>+ ASI/Susu ({careSummary.feedCount})</strong>
-                  <span>
-                    {careSummary.lastFeed ? formatElapsedShort(careSummary.lastFeed.timestamp) : 'Belum'}
-                  </span>
+                  <span>{careSummary.lastFeed ? formatElapsedShort(careSummary.lastFeed.timestamp) : 'Belum'}</span>
                 </div>
               </button>
-              <button
-                type="button"
-                className="baby-care-btn"
-                onClick={() => onAddBabyCare('sleep')}
-              >
+              <button type="button" className="baby-care-btn" onClick={() => onAddBabyCare('sleep')}>
                 <CareIcon type="sleep" size={18} />
                 <div>
                   <strong>+ Tidur ({careSummary.sleepCount})</strong>
-                  <span>
-                    {careSummary.lastSleep ? formatElapsedShort(careSummary.lastSleep.timestamp) : 'Belum'}
-                  </span>
+                  <span>{careSummary.lastSleep ? formatElapsedShort(careSummary.lastSleep.timestamp) : 'Belum'}</span>
                 </div>
               </button>
-              <button
-                type="button"
-                className="baby-care-btn"
-                onClick={() => onAddBabyCare('diaper')}
-              >
+              <button type="button" className="baby-care-btn" onClick={() => onAddBabyCare('diaper')}>
                 <CareIcon type="diaper" size={18} />
                 <div>
                   <strong>+ Popok ({careSummary.diaperCount})</strong>
-                  <span>
-                    {careSummary.lastDiaper ? formatElapsedShort(careSummary.lastDiaper.timestamp) : 'Belum'}
-                  </span>
+                  <span>{careSummary.lastDiaper ? formatElapsedShort(careSummary.lastDiaper.timestamp) : 'Belum'}</span>
                 </div>
               </button>
             </div>
@@ -321,13 +416,7 @@ export function CatatanTab({
                 {babyCare.entries.slice(0, 3).map((e) => (
                   <span key={e.id} className="care-chip">
                     {e.type === 'feed' ? 'ASI' : e.type === 'sleep' ? 'Tidur' : 'Popok'} · {formatElapsedShort(e.timestamp)}
-                    <button
-                      type="button"
-                      onClick={() => onDeleteBabyCare(e.id)}
-                      aria-label="Hapus log bayi"
-                    >
-                      ×
-                    </button>
+                    <button type="button" onClick={() => onDeleteBabyCare(e.id)} aria-label="Hapus log">×</button>
                   </span>
                 ))}
               </div>
@@ -336,57 +425,272 @@ export function CatatanTab({
         )}
 
         {!isBabyPhase && !showBabyLogger && (
-          <button
-            type="button"
-            className="text-action-btn"
-            onClick={() => setShowBabyLogger(true)}
-          >
-            + Tampilkan Log Bayi 0–12m
+          <button type="button" className="text-action-btn" onClick={() => setShowBabyLogger(true)}>
+            + Log ASI/Tidur/Popok
           </button>
         )}
 
-        {/* Section Switcher */}
-        <div className="segmented-tabs" role="tablist" aria-label="Bagian catatan">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={section === 'milestone'}
-            className={`seg-tab ${section === 'milestone' ? 'is-active' : ''}`}
-            onClick={() => setSection('milestone')}
-          >
-            Milestone
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={section === 'growth'}
-            className={`seg-tab ${section === 'growth' ? 'is-active' : ''}`}
-            onClick={() => setSection('growth')}
-          >
-            Tumbuh
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={section === 'immunization'}
-            className={`seg-tab ${section === 'immunization' ? 'is-active' : ''}`}
-            onClick={() => setSection('immunization')}
-          >
-            Imunisasi
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={section === 'notes'}
-            className={`seg-tab ${section === 'notes' ? 'is-active' : ''}`}
-            onClick={() => setSection('notes')}
-          >
-            Harian
-          </button>
+        <div className="segmented-tabs segmented-5" role="tablist" aria-label="Bagian analisa">
+          {(
+            [
+              ['growth', 'Analisa'],
+              ['kpsp', 'KPSP'],
+              ['milestone', 'Milestone'],
+              ['immunization', 'Imunisasi'],
+              ['notes', 'Harian']
+            ] as Array<[SectionView, string]>
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={section === id}
+              className={`seg-tab ${section === id ? 'is-active' : ''}`}
+              onClick={() => setSection(id)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </section>
 
-      {/* Section 1: Milestone */}
+      {/* Section 1: WHO Z-Score Growth Analysis + Curve + Head Circumference */}
+      {section === 'growth' && (
+        <section className="ed-card">
+          <div className="section-head-compact">
+            <h2>Analisa Kurva WHO</h2>
+            <div className="chip-row">
+              <button
+                type="button"
+                className={`pill-btn small ${chartMetric === 'weightKg' ? 'is-active' : ''}`}
+                onClick={() => setChartMetric('weightKg')}
+              >
+                Berat
+              </button>
+              <button
+                type="button"
+                className={`pill-btn small ${chartMetric === 'heightCm' ? 'is-active' : ''}`}
+                onClick={() => setChartMetric('heightCm')}
+              >
+                Tinggi
+              </button>
+              <button
+                type="button"
+                className={`pill-btn small ${chartMetric === 'headCircumferenceCm' ? 'is-active' : ''}`}
+                onClick={() => setChartMetric('headCircumferenceCm')}
+              >
+                L. Kepala
+              </button>
+            </div>
+          </div>
+
+          {/* WHO Z-Score Summary Badges */}
+          {(whoEval.wfa || whoEval.hfa || whoEval.wfh || whoEval.hcfa) && (
+            <div className="who-eval-grid">
+              {[whoEval.wfa, whoEval.hfa, whoEval.wfh, whoEval.hcfa]
+                .filter((x): x is NonNullable<typeof x> => Boolean(x))
+                .map((item) => (
+                  <div key={item.indicator} className={`who-stat-card tone-${item.tone}`}>
+                    <span className="who-stat-label">{item.label}</span>
+                    <strong>{item.status}</strong>
+                    <span className="tabular">Z: {item.zScore > 0 ? `+${item.zScore}` : item.zScore} SD</span>
+                  </div>
+                ))}
+            </div>
+          )}
+
+          <div className="growth-chart-box">
+            {chartSeries.points.length > 0 ? (
+              <svg viewBox="0 0 260 92" className="growth-svg" role="img" aria-label="Grafik WHO">
+                {chartSeries.bandTopY !== undefined && chartSeries.bandBottomY !== undefined && (
+                  <rect
+                    x="12"
+                    y={Math.min(chartSeries.bandTopY, chartSeries.bandBottomY)}
+                    width="236"
+                    height={Math.max(8, Math.abs(chartSeries.bandBottomY - chartSeries.bandTopY))}
+                    fill="var(--sage-soft)"
+                    rx="4"
+                  />
+                )}
+                {chartSeries.points.length > 1 && (
+                  <polyline
+                    fill="none"
+                    stroke="var(--sage)"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    points={chartSeries.polyline}
+                  />
+                )}
+                {chartSeries.points.map((pt, idx) => (
+                  <g key={idx}>
+                    <circle cx={pt.x} cy={pt.y} r="4.5" fill="var(--amber)" stroke="var(--sage)" strokeWidth="2" />
+                    <text x={pt.x} y={Math.max(11, pt.y - 7)} textAnchor="middle" fontSize="9" fontWeight="700" fill="var(--ink)">
+                      {pt.value}
+                    </text>
+                  </g>
+                ))}
+              </svg>
+            ) : (
+              <div className="empty-state-inline">
+                <EmptyStateIllustration size={48} />
+                <p className="muted-mini">Catat pengukuran pertama di bawah untuk melihat grafik & Z-Score WHO.</p>
+              </div>
+            )}
+            <span className="growth-ref-note">
+              Pita hijau = rentang normal WHO -2 SD s/d +2 SD ({currentBandRow.sdMinus2}–{currentBandRow.sdPlus2}). Non-diagnostik.
+            </span>
+          </div>
+
+          <form className="growth-form" onSubmit={handleGrowthSubmit}>
+            <div className="form-grid-4">
+              <label className="field-label">
+                Tanggal
+                <input type="date" max={todayKey()} value={growthDate} onChange={(e) => setGrowthDate(e.target.value)} required />
+              </label>
+              <label className="field-label">
+                Berat (kg)
+                <input type="number" step="0.1" min="1" max="40" placeholder="9.6" value={weightInput} onChange={(e) => setWeightInput(e.target.value)} />
+              </label>
+              <label className="field-label">
+                Tinggi (cm)
+                <input type="number" step="0.5" min="35" max="140" placeholder="76" value={heightInput} onChange={(e) => setHeightInput(e.target.value)} />
+              </label>
+              <label className="field-label">
+                L. Kepala (cm)
+                <input type="number" step="0.1" min="25" max="65" placeholder="46" value={headInput} onChange={(e) => setHeadInput(e.target.value)} />
+              </label>
+            </div>
+            <div className="form-row-submit">
+              <input type="text" placeholder="Catatan ukur (opsional)" maxLength={120} value={growthNote} onChange={(e) => setGrowthNote(e.target.value)} />
+              <button type="submit" className="btn-primary-calm small">Simpan</button>
+            </div>
+          </form>
+
+          {journal.growthLogs.length > 0 && (
+            <div className="history-list">
+              {journal.growthLogs.map((g) => (
+                <div key={g.id} className="history-row">
+                  <div>
+                    <strong className="tabular">
+                      {[
+                        g.weightKg !== undefined ? `${g.weightKg} kg` : '',
+                        g.heightCm !== undefined ? `${g.heightCm} cm` : '',
+                        g.headCircumferenceCm !== undefined ? `LK ${g.headCircumferenceCm} cm` : ''
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </strong>
+                    <span className="muted-mini">{g.date}{g.note ? ` — ${g.note}` : ''}</span>
+                  </div>
+                  <button type="button" className="text-action-btn danger" onClick={() => onDeleteGrowth(g.id)}>
+                    Hapus
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Section 2: Periodic KPSP Developmental Screening */}
+      {section === 'kpsp' && (
+        <section className="ed-card">
+          <div className="section-head-compact">
+            <h2>Skrining KPSP Berkala</h2>
+            <span className="pill-badge">{activeKpspCp.label}</span>
+          </div>
+
+          <div className="chip-row" style={{ marginBottom: '12px' }}>
+            {KPSP_CHECKPOINTS.map((cp) => (
+              <button
+                key={cp.months}
+                type="button"
+                className={`pill-btn small ${kpspMonths === cp.months ? 'is-active' : ''}`}
+                onClick={() => setKpspMonths(cp.months)}
+              >
+                {cp.months}m
+              </button>
+            ))}
+          </div>
+
+          {latestKpsp && (
+            <div className={`kpsp-result-banner tone-${latestKpsp.status === 'sesuai' ? 'ok' : latestKpsp.status === 'meragukan' ? 'info' : 'attention'}`}>
+              <div>
+                <strong>
+                  Hasil Terakhir ({latestKpsp.checkpointMonths} bln · {latestKpsp.yesCount}/{latestKpsp.totalCount} Ya):{' '}
+                  {latestKpsp.status === 'sesuai'
+                    ? 'Sesuai Tahap Usia'
+                    : latestKpsp.status === 'meragukan'
+                      ? 'Perlu Stimulasi Lanjutan 2 Minggu'
+                      : 'Disarankan Konsultasi Dokter'}
+                </strong>
+                {latestKpsp.weakPillars.length > 0 && (
+                  <span>Fokus latihan: {latestKpsp.weakPillars.map((p) => PILLAR_LABELS[p]).join(', ')}</span>
+                )}
+              </div>
+              {latestKpsp.weakPillars.length > 0 && (
+                <button
+                  type="button"
+                  className="btn-outline small"
+                  onClick={() => {
+                    const target = SIMULATION_MODULES.find((m) => m.pillar === latestKpsp.weakPillars[0]);
+                    if (target) onOpenSimulation(target.key);
+                  }}
+                >
+                  Latih Sekarang
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="kpsp-question-list">
+            {activeKpspCp.questions.map((question, idx) => {
+              const val = kpspAnswers[question.id];
+              return (
+                <div key={question.id} className="kpsp-q-card">
+                  <div className="kpsp-q-text">
+                    <span className="pill-badge">
+                      <PillarIcon pillar={question.pillar} size={12} /> {idx + 1}/10
+                    </span>
+                    <p>{question.text}</p>
+                  </div>
+                  <div className="kpsp-yn-row">
+                    <button
+                      type="button"
+                      className={`pill-btn small ${val === true ? 'is-active' : ''}`}
+                      onClick={() => setKpspAnswers((p) => ({ ...p, [question.id]: true }))}
+                    >
+                      Ya
+                    </button>
+                    <button
+                      type="button"
+                      className={`pill-btn small ${val === false ? 'is-danger-active' : ''}`}
+                      onClick={() => setKpspAnswers((p) => ({ ...p, [question.id]: false }))}
+                    >
+                      Belum
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            className="btn-primary-calm"
+            style={{ marginTop: '12px', width: '100%' }}
+            onClick={handleSaveKpsp}
+          >
+            Simpan & Analisa Skrining
+          </button>
+          <p className="muted-mini" style={{ marginTop: '8px' }}>
+            Acuan edukatif KPSP/KIA Kemenkes. Bukan pengganti evaluasi medis langsung dokter anak.
+          </p>
+        </section>
+      )}
+
+      {/* Section 3: Milestone */}
       {section === 'milestone' && (
         <section className="ed-card">
           <div className="chip-row" role="group" aria-label="Filter fase milestone">
@@ -421,11 +725,7 @@ export function CatatanTab({
               const checked = Boolean(rec?.checked);
               return (
                 <label key={ms.id} className={`milestone-row ${checked ? 'is-checked' : ''}`}>
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => onToggleMilestone(ms.id)}
-                  />
+                  <input type="checkbox" checked={checked} onChange={() => onToggleMilestone(ms.id)} />
                   <div className="milestone-content">
                     <strong>{ms.text}</strong>
                     <span className="milestone-meta">
@@ -440,187 +740,55 @@ export function CatatanTab({
         </section>
       )}
 
-      {/* Section 2: Growth + SVG Chart */}
-      {section === 'growth' && (
-        <section className="ed-card">
-          <div className="section-head-compact">
-            <h2>Kurva Berat & Tinggi</h2>
-            <div className="chip-row">
-              <button
-                type="button"
-                className={`pill-btn small ${chartMetric === 'weightKg' ? 'is-active' : ''}`}
-                onClick={() => setChartMetric('weightKg')}
-              >
-                Berat (kg)
-              </button>
-              <button
-                type="button"
-                className={`pill-btn small ${chartMetric === 'heightCm' ? 'is-active' : ''}`}
-                onClick={() => setChartMetric('heightCm')}
-              >
-                Tinggi (cm)
-              </button>
-            </div>
-          </div>
-
-          <div className="growth-chart-box">
-            {chartSeries.points.length > 0 ? (
-              <svg viewBox="0 0 260 92" className="growth-svg" role="img" aria-label="Grafik pertumbuhan anak">
-                {chartSeries.bandTopY !== undefined && chartSeries.bandBottomY !== undefined && (
-                  <rect
-                    x="12"
-                    y={Math.min(chartSeries.bandTopY, chartSeries.bandBottomY)}
-                    width="236"
-                    height={Math.max(8, Math.abs(chartSeries.bandBottomY - chartSeries.bandTopY))}
-                    fill="var(--sage-soft)"
-                    rx="4"
-                  />
-                )}
-                {chartSeries.points.length > 1 && (
-                  <polyline
-                    fill="none"
-                    stroke="var(--sage)"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    points={chartSeries.polyline}
-                  />
-                )}
-                {chartSeries.points.map((pt, idx) => (
-                  <g key={idx}>
-                    <circle cx={pt.x} cy={pt.y} r="4.5" fill="var(--amber)" stroke="var(--sage)" strokeWidth="2" />
-                    <text x={pt.x} y={Math.max(11, pt.y - 7)} textAnchor="middle" fontSize="9" fontWeight="700" fill="var(--ink)">
-                      {pt.value}
-                    </text>
-                  </g>
-                ))}
-              </svg>
-            ) : (
-              <p className="muted-mini">Isi data di bawah untuk melihat grafik.</p>
-            )}
-            <span className="growth-ref-note">
-              Rentang umum usia {refBand.label}:{' '}
-              {chartMetric === 'weightKg'
-                ? `${refBand.weightMinKg}–${refBand.weightMaxKg} kg`
-                : `${refBand.heightMinCm}–${refBand.heightMaxCm} cm`}{' '}
-              (non-diagnostik)
-            </span>
-          </div>
-
-          <form className="growth-form" onSubmit={handleGrowthSubmit}>
-            <div className="form-grid-3">
-              <label className="field-label">
-                Tanggal
-                <input
-                  type="date"
-                  max={todayKey()}
-                  value={growthDate}
-                  onChange={(e) => setGrowthDate(e.target.value)}
-                  required
-                />
-              </label>
-              <label className="field-label">
-                Berat (kg)
-                <input
-                  type="number"
-                  step="0.1"
-                  min="1"
-                  max="40"
-                  placeholder="9.4"
-                  value={weightInput}
-                  onChange={(e) => setWeightInput(e.target.value)}
-                />
-              </label>
-              <label className="field-label">
-                Tinggi (cm)
-                <input
-                  type="number"
-                  step="0.5"
-                  min="35"
-                  max="140"
-                  placeholder="76"
-                  value={heightInput}
-                  onChange={(e) => setHeightInput(e.target.value)}
-                />
-              </label>
-            </div>
-            <div className="form-row-submit">
-              <input
-                type="text"
-                placeholder="Catatan singkat (opsional)"
-                maxLength={120}
-                value={growthNote}
-                onChange={(e) => setGrowthNote(e.target.value)}
-              />
-              <button type="submit" className="btn-primary-calm small">
-                Simpan
-              </button>
-            </div>
-          </form>
-
-          {journal.growthLogs.length > 0 && (
-            <div className="history-list">
-              {journal.growthLogs.map((g) => (
-                <div key={g.id} className="history-row">
-                  <div>
-                    <strong className="tabular">
-                      {g.weightKg !== undefined ? `${g.weightKg} kg` : ''}
-                      {g.weightKg !== undefined && g.heightCm !== undefined ? ' · ' : ''}
-                      {g.heightCm !== undefined ? `${g.heightCm} cm` : ''}
-                    </strong>
-                    <span className="muted-mini">
-                      {g.date}{g.note ? ` — ${g.note}` : ''}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    className="text-action-btn danger"
-                    onClick={() => onDeleteGrowth(g.id)}
-                  >
-                    Hapus
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Section 3: Immunization Checklist */}
+      {/* Section 4: Immunization + ICS Reminder */}
       {section === 'immunization' && (
         <section className="ed-card">
           <div className="section-head-compact">
             <h2>Imunisasi & Vit A</h2>
-            <span className="pill-badge tabular">
-              {immunizationsDone}/{IMMUNIZATION_SCHEDULE.length}
-            </span>
+            <span className="pill-badge tabular">{immunizationsDone}/{IMMUNIZATION_SCHEDULE.length}</span>
           </div>
           <div className="milestone-list">
             {IMMUNIZATION_SCHEDULE.map((imm) => {
               const dateDone = journal.completedImmunizations[imm.id];
               const checked = Boolean(dateDone);
               return (
-                <label key={imm.id} className={`milestone-row ${checked ? 'is-checked' : ''}`}>
+                <div key={imm.id} className={`milestone-row ${checked ? 'is-checked' : ''}`}>
                   <input
                     type="checkbox"
                     checked={checked}
+                    aria-label={imm.name}
                     onChange={() => onToggleImmunization(imm.id)}
                   />
-                  <div className="milestone-content">
+                  <div className="milestone-content" style={{ flex: 1 }}>
                     <strong>{imm.name}</strong>
                     <span className="milestone-meta">
                       {imm.ageLabel} · {imm.note}
                       {dateDone ? ` · ✓ ${dateDone}` : ''}
                     </span>
                   </div>
-                </label>
+                  {!checked && (
+                    <button
+                      type="button"
+                      className="btn-outline small"
+                      onClick={() =>
+                        handleDownloadIcsReminder(
+                          `${imm.name} (${childName})`,
+                          todayKey(),
+                          `Jadwal ${imm.name} (${imm.ageLabel}): ${imm.note}`
+                        )
+                      }
+                    >
+                      + Kalender
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
         </section>
       )}
 
-      {/* Section 4: Daily Notes with Mood Icons & Tags */}
+      {/* Section 5: Daily Notes */}
       {section === 'notes' && (
         <section className="ed-card">
           <form className="notes-form" onSubmit={handleNoteSubmit}>
@@ -664,12 +832,10 @@ export function CatatanTab({
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
             />
-            <button type="submit" className="btn-primary-calm small">
-              Simpan Momen
-            </button>
+            <button type="submit" className="btn-primary-calm small">Simpan Momen</button>
           </form>
 
-          {journal.dailyNotes.length > 0 && (
+          {journal.dailyNotes.length > 0 ? (
             <div className="history-list">
               {journal.dailyNotes.map((n) => (
                 <article key={n.id} className="note-card">
@@ -680,11 +846,7 @@ export function CatatanTab({
                     </span>
                     <div className="note-card-right">
                       <span className="muted-mini">{n.date}</span>
-                      <button
-                        type="button"
-                        className="text-action-btn danger"
-                        onClick={() => onDeleteNote(n.id)}
-                      >
+                      <button type="button" className="text-action-btn danger" onClick={() => onDeleteNote(n.id)}>
                         Hapus
                       </button>
                     </div>
@@ -699,6 +861,11 @@ export function CatatanTab({
                   )}
                 </article>
               ))}
+            </div>
+          ) : (
+            <div className="empty-state-inline" style={{ marginTop: '14px' }}>
+              <EmptyStateIllustration size={46} />
+              <p className="muted-mini">Belum ada catatan harian tersimpan.</p>
             </div>
           )}
         </section>

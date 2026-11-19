@@ -20,9 +20,9 @@ test('all 6 age phases have missions and milestones', () => {
 
 test('mission linkedSimulation keys exist in SIMULATION_MODULES and IDs are unique', () => {
   const moduleKeys = new Set(SIMULATION_MODULES.map((s) => s.key));
-  assert.equal(moduleKeys.size, 15);
+  assert.equal(moduleKeys.size, 21);
   assert.equal(SIMULATION_MODULES.filter((s) => s.isBabyTool).length, 3);
-  assert.equal(SIMULATION_MODULES.filter((s) => !s.isBabyTool).length, 12);
+  assert.equal(SIMULATION_MODULES.filter((s) => !s.isBabyTool).length, 18);
 
   for (const m of STIMULATION_MISSIONS) {
     if (m.linkedSimulation) {

@@ -192,6 +192,13 @@ export function stopVoice(): void {
     window.clearTimeout(pendingVoiceTimer);
     pendingVoiceTimer = null;
   }
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    try {
+      window.speechSynthesis.cancel();
+    } catch {
+      // Ignore speechSynthesis cancel edge errors
+    }
+  }
   if (activeVoiceSource && activeVoiceGain && ctx) {
     const now = ctx.currentTime;
     const oldSrc = activeVoiceSource;
@@ -214,6 +221,20 @@ export function setAudioPreferences(sound: boolean, voice: boolean): void {
   voiceOn = voice;
   if (!voice) {
     stopVoice();
+  }
+}
+
+export function speakPhrase(text: string, lang: 'id-ID' | 'en-US' = 'id-ID'): void {
+  if (!voiceOn || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  try {
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = lang;
+    utter.rate = 0.92;
+    utter.pitch = 1.05;
+    window.speechSynthesis.speak(utter);
+  } catch {
+    // Fallback silent when device speech engine is unavailable
   }
 }
 

@@ -15,21 +15,25 @@ import {
   type SimulationKey
 } from '../data/stimulationData.ts';
 import { DAILY_ROUTINES, ROUTINE_SLOT_LABELS } from '../data/routineData.ts';
+import { generateChildInsights } from '../lib/analytics.ts';
+import type { BabyCareData } from '../lib/babyCareStorage.ts';
 import type { AgeBand, AgeInfo } from '../lib/development.ts';
+import { getDefaultMonthsForBand } from '../lib/growthReference.ts';
 import type { JournalData } from '../lib/journalStorage.ts';
 import type { ProfileAvatarId } from '../lib/profilesStorage.ts';
 import { computePillarBalance } from '../lib/stats.ts';
-import type { DailyProgress } from '../lib/storage.ts';
-import { todayKey } from '../lib/storage.ts';
+import { todayKey, type ChildGender, type DailyProgress } from '../lib/storage.ts';
 
 interface Props {
   childName: string;
+  gender: ChildGender;
   avatarId: ProfileAvatarId;
   ageInfo: AgeInfo | null;
   activeBand: AgeBand;
   streakDays: number;
   onSelectBand: (band: AgeBand) => void;
   progress: DailyProgress;
+  babyCare: BabyCareData;
   onToggleMission: (missionId: string) => void;
   onToggleRoutine: (routineId: string) => void;
   journal: JournalData;
@@ -40,12 +44,14 @@ interface Props {
 
 export function StimulasiTab({
   childName,
+  gender,
   avatarId,
   ageInfo,
   activeBand,
   streakDays,
   onSelectBand,
   progress,
+  babyCare,
   onToggleMission,
   onToggleRoutine,
   journal,
@@ -54,6 +60,7 @@ export function StimulasiTab({
   onOpenTabCatatan
 }: Props): JSX.Element {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showAllMissions, setShowAllMissions] = useState(false);
 
   const today = todayKey();
   const activePhase = AGE_PHASES.find((p) => p.id === activeBand) ?? AGE_PHASES[3];
@@ -68,20 +75,36 @@ export function StimulasiTab({
   const doneRoutines = journal.completedRoutineIds[today] ?? [];
   const pillarBalance = computePillarBalance(progress, journal, activeBand);
 
+  const months = ageInfo?.months ?? getDefaultMonthsForBand(activeBand);
+  const insights = generateChildInsights({
+    childName,
+    gender,
+    months,
+    ageBand: activeBand,
+    journal,
+    progress,
+    babyCare
+  });
+
+  const visibleMissions = showAllMissions ? missions : missions.slice(0, 3);
+
   const ringRadius = 22;
   const ringCirc = 2 * Math.PI * ringRadius;
   const ringOffset = ringCirc * (1 - missionPct / 100);
 
   return (
     <div className="tab-stack">
-      {/* Compact Visual Hero */}
+      {/* Card 1: Status & Smart Analytics */}
       <section className="ed-card hero-card">
         <div className="hero-compact-row">
           <button type="button" className="hero-identity-btn" onClick={onOpenProfile}>
             <AvatarIcon avatarId={avatarId} size={42} />
             <div className="hero-identity-copy">
               <h1>Halo, {childName}</h1>
-              <span>{ageInfo ? `${ageInfo.label} · ` : ''}{activePhase.shortLabel}</span>
+              <span>
+                {ageInfo ? `${ageInfo.label} · ` : ''}
+                {gender === 'girl' ? 'Perempuan' : 'Laki-laki'} · {activePhase.shortLabel}
+              </span>
             </div>
           </button>
 
@@ -110,7 +133,28 @@ export function StimulasiTab({
           </div>
         </div>
 
-        {/* Phase Switcher */}
+        {/* Analytics Insight Strip */}
+        <div className="insight-strip-box">
+          <div className="insight-headline-row">
+            <strong>{insights.headline}</strong>
+            <button type="button" className="text-action-btn" onClick={onOpenTabCatatan}>
+              Analisa & KPSP →
+            </button>
+          </div>
+          <div className="insight-pills-row">
+            {insights.cards.slice(0, 2).map((card) => (
+              <button
+                key={card.id}
+                type="button"
+                className={`insight-chip tone-${card.tone}`}
+                onClick={onOpenTabCatatan}
+              >
+                <span>{card.title}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="phase-pills-scroll" role="tablist" aria-label="Pilih rentang usia">
           {AGE_PHASES.map((phase) => (
             <button
@@ -127,15 +171,47 @@ export function StimulasiTab({
         </div>
       </section>
 
-      {/* Daily Missions */}
+      {/* Card 2: Dual-Mode Child Launch CTA */}
+      <section className="ed-card launch-child-card">
+        <div className="launch-child-left">
+          <SimulationIcon moduleKey={insights.recommendedSim.key} size={46} />
+          <div>
+            <span className="eyebrow">
+              {insights.priorityPillar ? `Fokus ${PILLAR_LABELS[insights.priorityPillar]}` : 'Rekomendasi Belajar'}
+            </span>
+            <h2>{insights.recommendedSim.title}</h2>
+            <span className="muted-mini">{insights.recommendedSim.goalLabel} · {insights.recommendedSim.ageTag}</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="btn-primary-calm"
+          onClick={() => onOpenSimulation(insights.recommendedSim.key)}
+        >
+          Ruang Main Anak →
+        </button>
+      </section>
+
+      {/* Card 3: Daily Missions & Routine */}
       <section className="ed-card">
         <div className="section-head-compact">
           <h2>Misi Hari Ini</h2>
-          <span className="pill-badge tabular">{doneCount}/{missions.length}</span>
+          <div className="hero-badges-row">
+            <span className="pill-badge tabular">{doneCount}/{missions.length}</span>
+            {missions.length > 3 && (
+              <button
+                type="button"
+                className="text-action-btn"
+                onClick={() => setShowAllMissions((v) => !v)}
+              >
+                {showAllMissions ? 'Ringkas' : 'Semua'}
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="mission-list">
-          {missions.map((mission) => {
+          {visibleMissions.map((mission) => {
             const done = progress.completedMissions.includes(mission.id);
             const isOpen = expandedId === mission.id;
             const linkedMod = mission.linkedSimulation
@@ -200,14 +276,14 @@ export function StimulasiTab({
         </div>
       </section>
 
-      {/* Daily Routine Pills */}
       <section className="ed-card">
         <div className="section-head-compact">
-          <h2>Rutinitas Harian</h2>
-          <span className="pill-badge tabular">
-            {routines.filter((r) => doneRoutines.includes(r.id)).length}/{routines.length}
-          </span>
+          <h2>Rutinitas & Keseimbangan</h2>
+          <button type="button" className="text-action-btn" onClick={onOpenTabCatatan}>
+            Milestone {milestoneDone}/{phaseMilestones.length} →
+          </button>
         </div>
+
         <div className="routine-grid">
           {routines.map((item) => {
             const done = doneRoutines.includes(item.id);
@@ -226,18 +302,8 @@ export function StimulasiTab({
             );
           })}
         </div>
-      </section>
 
-      {/* 4-Pillar Balance Strip + Milestone Link */}
-      <section className="ed-card">
-        <div className="section-head-compact">
-          <h2>Keseimbangan Aspek</h2>
-          <button type="button" className="text-action-btn" onClick={onOpenTabCatatan}>
-            Milestone {milestoneDone}/{phaseMilestones.length} →
-          </button>
-        </div>
-
-        <div className="pillar-balance-grid">
+        <div className="pillar-balance-grid" style={{ marginTop: '10px' }}>
           {pillarBalance.map((item) => (
             <div key={item.pillar} className="pillar-mini-tile">
               <div className="pillar-mini-top">

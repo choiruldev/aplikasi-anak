@@ -1,23 +1,10 @@
-import { useCallback, useEffect, useState, type JSX } from 'react';
-import { AlphabetGarden } from './activities/AlphabetGarden.tsx';
-import { BabySoother } from './activities/BabySoother.tsx';
-import { BalloonCatch } from './activities/BalloonCatch.tsx';
-import { BubblePopper } from './activities/BubblePopper.tsx';
-import { ColorGarden } from './activities/ColorGarden.tsx';
-import { ColoringBook } from './activities/ColoringBook.tsx';
-import { GrossMotorPlay } from './activities/GrossMotorPlay.tsx';
-import { HighContrastCards } from './activities/HighContrastCards.tsx';
-import { JigsawPuzzle } from './activities/JigsawPuzzle.tsx';
-import { NumberGarden } from './activities/NumberGarden.tsx';
-import { PeekabooAnimals } from './activities/PeekabooAnimals.tsx';
-import { SensoryPlay } from './activities/SensoryPlay.tsx';
-import { ShapeSorter } from './activities/ShapeSorter.tsx';
-import { TraceCanvas } from './activities/TraceCanvas.tsx';
-import { TummyTimeGuide } from './activities/TummyTimeGuide.tsx';
+import { lazy, Suspense, useCallback, useEffect, useState, type JSX } from 'react';
 import { BrandMark } from './components/Art.tsx';
 import { ChildFocusShell } from './components/ChildFocusShell.tsx';
 import { InstallModal } from './components/InstallModal.tsx';
+import { LegalPrivacyModal } from './components/LegalPrivacyModal.tsx';
 import { AvatarIcon, MoonIcon } from './components/ModuleIcons.tsx';
+import { OnboardingModal } from './components/OnboardingModal.tsx';
 import {
   ParentDrawer,
   type BeforeInstallPromptEvent
@@ -42,15 +29,19 @@ import {
 import {
   addDailyNote,
   addGrowthLog,
+  addKpspResult,
   deleteDailyNote,
   deleteGrowthLog,
   toggleImmunization,
   toggleMilestone,
+  toggleMpasiFood,
   toggleRoutineItem,
   toggleSavedTip
 } from './lib/journalStorage.ts';
 import {
   addProfile,
+  clearAllCilukbaStorage,
+  createInitialProfilesState,
   deleteProfile,
   getActiveProfile,
   loadProfilesState,
@@ -76,12 +67,35 @@ import { SimulasiTab } from './tabs/SimulasiTab.tsx';
 import { StimulasiTab } from './tabs/StimulasiTab.tsx';
 import { TipsTab } from './tabs/TipsTab.tsx';
 
+// Code-split 21 interactive modules for fast initial load (< 150 KB gzip)
+const AlphabetGarden = lazy(() => import('./activities/AlphabetGarden.tsx').then((m) => ({ default: m.AlphabetGarden })));
+const BabySoother = lazy(() => import('./activities/BabySoother.tsx').then((m) => ({ default: m.BabySoother })));
+const BalloonCatch = lazy(() => import('./activities/BalloonCatch.tsx').then((m) => ({ default: m.BalloonCatch })));
+const BodyEmotions = lazy(() => import('./activities/BodyEmotions.tsx').then((m) => ({ default: m.BodyEmotions })));
+const BubblePopper = lazy(() => import('./activities/BubblePopper.tsx').then((m) => ({ default: m.BubblePopper })));
+const ColorGarden = lazy(() => import('./activities/ColorGarden.tsx').then((m) => ({ default: m.ColorGarden })));
+const ColoringBook = lazy(() => import('./activities/ColoringBook.tsx').then((m) => ({ default: m.ColoringBook })));
+const FirstWords = lazy(() => import('./activities/FirstWords.tsx').then((m) => ({ default: m.FirstWords })));
+const GoodHabits = lazy(() => import('./activities/GoodHabits.tsx').then((m) => ({ default: m.GoodHabits })));
+const GrossMotorPlay = lazy(() => import('./activities/GrossMotorPlay.tsx').then((m) => ({ default: m.GrossMotorPlay })));
+const HighContrastCards = lazy(() => import('./activities/HighContrastCards.tsx').then((m) => ({ default: m.HighContrastCards })));
+const JigsawPuzzle = lazy(() => import('./activities/JigsawPuzzle.tsx').then((m) => ({ default: m.JigsawPuzzle })));
+const MathPatterns = lazy(() => import('./activities/MathPatterns.tsx').then((m) => ({ default: m.MathPatterns })));
+const NumberGarden = lazy(() => import('./activities/NumberGarden.tsx').then((m) => ({ default: m.NumberGarden })));
+const PeekabooAnimals = lazy(() => import('./activities/PeekabooAnimals.tsx').then((m) => ({ default: m.PeekabooAnimals })));
+const SensoryPlay = lazy(() => import('./activities/SensoryPlay.tsx').then((m) => ({ default: m.SensoryPlay })));
+const ShapeSorter = lazy(() => import('./activities/ShapeSorter.tsx').then((m) => ({ default: m.ShapeSorter })));
+const SizeSorter = lazy(() => import('./activities/SizeSorter.tsx').then((m) => ({ default: m.SizeSorter })));
+const SyllableBuilder = lazy(() => import('./activities/SyllableBuilder.tsx').then((m) => ({ default: m.SyllableBuilder })));
+const TraceCanvas = lazy(() => import('./activities/TraceCanvas.tsx').then((m) => ({ default: m.TraceCanvas })));
+const TummyTimeGuide = lazy(() => import('./activities/TummyTimeGuide.tsx').then((m) => ({ default: m.TummyTimeGuide })));
+
 type MainTab = 'stimulasi' | 'simulasi' | 'catatan' | 'tips';
 
 const TAB_ITEMS: Array<{ id: MainTab; label: string }> = [
-  { id: 'stimulasi', label: 'Stimulasi' },
-  { id: 'simulasi', label: 'Simulasi' },
-  { id: 'catatan', label: 'Catatan' },
+  { id: 'stimulasi', label: 'Beranda' },
+  { id: 'simulasi', label: 'Belajar' },
+  { id: 'catatan', label: 'Analisa' },
   { id: 'tips', label: 'Tips' }
 ];
 
@@ -104,8 +118,8 @@ function renderNavIcon(id: MainTab): JSX.Element {
     case 'catatan':
       return (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+          <path d="M3 3v18h18" />
+          <path d="M7 14l4-4 3 3 5-6" />
         </svg>
       );
     case 'tips':
@@ -127,6 +141,7 @@ export function App(): JSX.Element {
   const [manualBandOverride, setManualBandOverride] = useState<AgeBand | null>(null);
 
   const [parentOpen, setParentOpen] = useState(false);
+  const [legalOpen, setLegalOpen] = useState(false);
   const [installModalOpen, setInstallModalOpen] = useState(false);
   const [albumOpen, setAlbumOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -181,7 +196,6 @@ export function App(): JSX.Element {
     }
   }, [settings.bgmEnabled, activeSimulation]);
 
-  // Live calendar rollover check when app regains focus/visibility
   useEffect(() => {
     const checkRollover = () => {
       setProfilesState((prev) => rolloverProfilesIfNeeded(prev, todayKey()));
@@ -197,10 +211,9 @@ export function App(): JSX.Element {
     };
   }, []);
 
-  // Screen-time counter ticks strictly for 1-5y toddler simulation games
   useEffect(() => {
     if (!activeSimMeta) return;
-    const modalOpen = parentOpen || installModalOpen || albumOpen;
+    const modalOpen = parentOpen || installModalOpen || albumOpen || legalOpen;
     if (!shouldCountScreenTime(activeSimMeta.isBabyTool, isGameTimeUp, modalOpen)) {
       return;
     }
@@ -217,9 +230,8 @@ export function App(): JSX.Element {
       );
     }, 1000);
     return () => window.clearInterval(timerId);
-  }, [activeSimMeta, isGameTimeUp, parentOpen, installModalOpen, albumOpen]);
+  }, [activeSimMeta, isGameTimeUp, parentOpen, installModalOpen, albumOpen, legalOpen]);
 
-  // PWA install event detection
   useEffect(() => {
     const ua = window.navigator.userAgent;
     const isIosDevice = /iPad|iPhone|iPod/.test(ua) && !('MSStream' in window);
@@ -316,7 +328,7 @@ export function App(): JSX.Element {
     setProfilesState((prev) => {
       const current = getActiveProfile(prev);
       const prevStickers = current.progress.stickers;
-      const updatedState = updateActiveProfile(prev, (p) => {
+      return updateActiveProfile(prev, (p) => {
         const rolled = rolloverIfNeeded(p.progress, today);
         const nextDates = recordActiveDate(rolled.activeDates, today);
         const streakDaysAfter = computeStreakInfo(nextDates, today).streakDays;
@@ -354,7 +366,6 @@ export function App(): JSX.Element {
           }
         };
       });
-      return updatedState;
     });
   }, []);
 
@@ -414,6 +425,13 @@ export function App(): JSX.Element {
     return { ok: true };
   };
 
+  const handleDeleteAllData = () => {
+    clearAllCilukbaStorage();
+    setProfilesState(createInitialProfilesState(todayKey()));
+    setLegalOpen(false);
+    setParentOpen(false);
+  };
+
   const renderSimulationModule = (key: SimulationKey): JSX.Element => {
     switch (key) {
       case 'high-contrast':
@@ -452,6 +470,18 @@ export function App(): JSX.Element {
         return <JigsawPuzzle onComplete={(s) => handleActivityComplete('puzzle', s)} />;
       case 'balloon':
         return <BalloonCatch onComplete={(s) => handleActivityComplete('balloon', s)} />;
+      case 'words':
+        return <FirstWords onComplete={(s) => handleActivityComplete('words', s)} />;
+      case 'body-emotions':
+        return <BodyEmotions onComplete={(s) => handleActivityComplete('body-emotions', s)} />;
+      case 'size-sort':
+        return <SizeSorter onComplete={(s) => handleActivityComplete('size-sort', s)} />;
+      case 'good-habits':
+        return <GoodHabits onComplete={(s) => handleActivityComplete('good-habits', s)} />;
+      case 'syllables':
+        return <SyllableBuilder onComplete={(s) => handleActivityComplete('syllables', s)} />;
+      case 'math-patterns':
+        return <MathPatterns onComplete={(s) => handleActivityComplete('math-patterns', s)} />;
     }
   };
 
@@ -471,7 +501,9 @@ export function App(): JSX.Element {
         onExit={handleExitSimulation}
         onRequestResetTimer={handleResetTimer}
       >
-        {renderSimulationModule(activeSimulation)}
+        <Suspense fallback={<div className="module-loading-fallback">Memuat modul...</div>}>
+          {renderSimulationModule(activeSimulation)}
+        </Suspense>
       </ChildFocusShell>
     );
   }
@@ -533,12 +565,14 @@ export function App(): JSX.Element {
         {activeTab === 'stimulasi' && (
           <StimulasiTab
             childName={displayChildName}
+            gender={settings.gender}
             avatarId={avatarId}
             ageInfo={ageInfo}
             activeBand={activeBand}
             streakDays={streakInfo.streakDays}
             onSelectBand={handleSelectBand}
             progress={progress}
+            babyCare={babyCare}
             onToggleMission={handleToggleMission}
             onToggleRoutine={(routineId) =>
               setProfilesState((prev) =>
@@ -572,6 +606,7 @@ export function App(): JSX.Element {
         {activeTab === 'catatan' && (
           <CatatanTab
             childName={displayChildName}
+            gender={settings.gender}
             ageLabel={ageInfo?.label ?? activePhase.rangeLabel}
             ageInfo={ageInfo}
             activeBand={activeBand}
@@ -608,6 +643,14 @@ export function App(): JSX.Element {
                 }))
               )
             }
+            onAddKpspResult={(input) =>
+              setProfilesState((prev) =>
+                updateActiveProfile(prev, (p) => ({
+                  ...p,
+                  journal: addKpspResult(p.journal, input)
+                }))
+              )
+            }
             onAddNote={(input) =>
               setProfilesState((prev) =>
                 updateActiveProfile(prev, (p) => ({
@@ -640,6 +683,7 @@ export function App(): JSX.Element {
                 }))
               )
             }
+            onOpenSimulation={handleLaunchSimulation}
           />
         )}
 
@@ -647,11 +691,20 @@ export function App(): JSX.Element {
           <TipsTab
             activeBand={activeBand}
             savedTipIds={journal.savedTipIds}
+            triedMpasiFoods={journal.triedMpasiFoods}
             onToggleSaveTip={(tipId) =>
               setProfilesState((prev) =>
                 updateActiveProfile(prev, (p) => ({
                   ...p,
                   journal: toggleSavedTip(p.journal, tipId)
+                }))
+              )
+            }
+            onToggleMpasiFood={(foodId) =>
+              setProfilesState((prev) =>
+                updateActiveProfile(prev, (p) => ({
+                  ...p,
+                  journal: toggleMpasiFood(p.journal, foodId)
                 }))
               )
             }
@@ -673,6 +726,18 @@ export function App(): JSX.Element {
           </button>
         ))}
       </nav>
+
+      <OnboardingModal
+        open={!settings.onboardingCompleted}
+        initialSettings={settings}
+        initialAvatarId={avatarId}
+        onFinish={(nextSettings, nextAvatar) => {
+          handleUpdateSettings(nextSettings, nextAvatar);
+        }}
+        onSkip={() => {
+          handleUpdateSettings({ ...settings, onboardingCompleted: true });
+        }}
+      />
 
       <ParentDrawer
         open={parentOpen}
@@ -699,9 +764,19 @@ export function App(): JSX.Element {
         onResetTimer={handleResetTimer}
         onExportBackup={handleExportBackup}
         onImportBackup={handleImportBackup}
+        onOpenLegalPrivacy={() => {
+          setParentOpen(false);
+          setLegalOpen(true);
+        }}
         installEvent={installEvent}
         isIos={isIos}
         onOpenInstallGuide={() => setInstallModalOpen(true)}
+      />
+
+      <LegalPrivacyModal
+        open={legalOpen}
+        onClose={() => setLegalOpen(false)}
+        onDeleteAllData={handleDeleteAllData}
       />
 
       <InstallModal

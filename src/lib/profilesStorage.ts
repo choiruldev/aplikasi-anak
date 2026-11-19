@@ -6,6 +6,7 @@ import {
 } from './journalStorage.ts';
 import {
   type AppSettings,
+  type ChildGender,
   createEmptyProgress,
   type DailyProgress,
   DEFAULT_SETTINGS,
@@ -162,6 +163,17 @@ export function saveProfilesState(state: ProfilesState): void {
   }
 }
 
+export function clearAllCilukbaStorage(): void {
+  try {
+    localStorage.removeItem(PROFILES_KEY);
+    localStorage.removeItem(LEGACY_SETTINGS_KEY);
+    localStorage.removeItem(LEGACY_PROGRESS_KEY);
+    localStorage.removeItem(LEGACY_JOURNAL_KEY);
+  } catch {
+    // Ignore storage removal errors
+  }
+}
+
 export function getActiveProfile(state: ProfilesState): ChildProfile {
   return state.profiles.find((p) => p.id === state.activeProfileId) ?? state.profiles[0];
 }
@@ -191,6 +203,7 @@ export function addProfile(
   state: ProfilesState,
   input: {
     childName: string;
+    gender?: ChildGender;
     ageBand: AgeBand;
     birthDate?: string;
     avatarId?: ProfileAvatarId;
@@ -204,6 +217,8 @@ export function addProfile(
     avatarId: input.avatarId && VALID_AVATARS.includes(input.avatarId) ? input.avatarId : 'bunny',
     settings: {
       ...DEFAULT_SETTINGS,
+      onboardingCompleted: true,
+      gender: input.gender === 'girl' ? 'girl' : 'boy',
       nightMode: active.settings.nightMode,
       soundEnabled: active.settings.soundEnabled,
       voiceEnabled: active.settings.voiceEnabled,

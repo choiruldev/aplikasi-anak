@@ -155,6 +155,64 @@ export const SimulationIcon: React.FC<{ moduleKey: SimulationKey; size?: number 
           <path d="M16 25C16 29 14 31 14 33M25 22C25 27 27 30 27 33" stroke="#8C6D62" strokeWidth="1.8" strokeLinecap="round" fill="none" />
         </svg>
       );
+    case 'words':
+      return (
+        <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true">
+          <rect x="3" y="3" width="34" height="34" rx="10" fill="#FFF3DB" />
+          <rect x="9" y="9" width="22" height="22" rx="5" fill="#FFFFFF" stroke="#E07A18" strokeWidth="2" />
+          <circle cx="20" cy="18" r="5" fill="#E85A5A" />
+          <path d="M20 13C21.5 11 23 11 23 12.5" stroke="#2B6E4F" strokeWidth="2" strokeLinecap="round" fill="none" />
+          <rect x="14" y="25" width="12" height="2.5" rx="1.2" fill="#E07A18" />
+        </svg>
+      );
+    case 'body-emotions':
+      return (
+        <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true">
+          <rect x="3" y="3" width="34" height="34" rx="10" fill="#FFEAF0" />
+          <circle cx="20" cy="20" r="10" fill="#FFD166" stroke="#D8435E" strokeWidth="2" />
+          <circle cx="16.5" cy="18" r="1.6" fill="#18221D" />
+          <circle cx="23.5" cy="18" r="1.6" fill="#18221D" />
+          <path d="M16 22.5C17.5 25 22.5 25 24 22.5" stroke="#D8435E" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+        </svg>
+      );
+    case 'size-sort':
+      return (
+        <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true">
+          <rect x="3" y="3" width="34" height="34" rx="10" fill="#E6F6ED" />
+          <circle cx="14" cy="24" r="5" fill="#46B882" />
+          <circle cx="26" cy="20" r="8.5" fill="#2B6E4F" />
+          <circle cx="26" cy="20" r="3" fill="#F7B731" />
+        </svg>
+      );
+    case 'good-habits':
+      return (
+        <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true">
+          <rect x="3" y="3" width="34" height="34" rx="10" fill="#E6F4FA" />
+          <path d="M12 24C12 18 16 14 20 14C24 14 28 18 28 24" stroke="#1982C4" strokeWidth="3" strokeLinecap="round" fill="none" />
+          <circle cx="16" cy="12" r="2.2" fill="#70C6FA" />
+          <circle cx="24" cy="12" r="2.2" fill="#70C6FA" />
+          <rect x="13" y="25" width="14" height="5" rx="2.5" fill="#2B6E4F" />
+        </svg>
+      );
+    case 'syllables':
+      return (
+        <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true">
+          <rect x="3" y="3" width="34" height="34" rx="10" fill="#F1EAFF" />
+          <rect x="8" y="13" width="10" height="14" rx="3" fill="#8045D9" />
+          <rect x="22" y="13" width="10" height="14" rx="3" fill="#F7B731" />
+          <path d="M18 20H22" stroke="#18221D" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+      );
+    case 'math-patterns':
+      return (
+        <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true">
+          <rect x="3" y="3" width="34" height="34" rx="10" fill="#FFF3DC" />
+          <circle cx="13" cy="15" r="4" fill="#E07A18" />
+          <rect x="23" y="11" width="8" height="8" rx="2" fill="#2B6E4F" />
+          <path d="M10 26H16M13 23V29" stroke="#1982C4" strokeWidth="2.5" strokeLinecap="round" />
+          <path d="M23 26H31" stroke="#D8435E" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+      );
   }
 };
 
@@ -364,5 +422,15 @@ export const SyringeIcon: React.FC<IconProps> = ({ size = 18 }) => (
 export const HomePlayIcon: React.FC<IconProps> = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1v-9.5Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+  </svg>
+);
+
+
+export const EmptyStateIllustration: React.FC<{ size?: number }> = ({ size = 64 }) => (
+  <svg width={size} height={size} viewBox="0 0 64 64" fill="none" aria-hidden="true">
+    <circle cx="32" cy="32" r="28" fill="var(--sage-soft)" />
+    <path d="M32 45V24" stroke="var(--sage)" strokeWidth="3.5" strokeLinecap="round" />
+    <path d="M32 32c-7 0-12-4-12-10 7 0 12 4 12 10Z" fill="var(--sage)" />
+    <path d="M32 28c6.5 0 11-4 11-9.5-6.5 0-11 4-11 9.5Z" fill="var(--amber)" />
   </svg>
 );

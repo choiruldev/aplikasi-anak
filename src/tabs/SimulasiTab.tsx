@@ -1,6 +1,11 @@
 import { useState, type JSX } from 'react';
 import { IconLock, IconStar } from '../components/Art.tsx';
-import { HeartIcon, PillarIcon, SimulationIcon } from '../components/ModuleIcons.tsx';
+import {
+  EmptyStateIllustration,
+  HeartIcon,
+  PillarIcon,
+  SimulationIcon
+} from '../components/ModuleIcons.tsx';
 import {
   AGE_PHASES,
   SIMULATION_MODULES,
@@ -32,6 +37,12 @@ const PILLAR_FILTERS: Array<{ id: 'all' | StimulationPillar; label: string }> = 
   { id: 'bahasa', label: 'Bahasa' }
 ];
 
+function getMasteryBadge(plays: number): string {
+  if (plays >= 3) return 'Mahir';
+  if (plays >= 1) return 'Latih';
+  return 'Kenal';
+}
+
 export function SimulasiTab({
   activeBand,
   isGameTimeUp,
@@ -43,7 +54,7 @@ export function SimulasiTab({
   onLaunchSimulation,
   onOpenTimeLimitReset
 }: Props): JSX.Element {
-  const [onlyAgeMatch, setOnlyAgeMatch] = useState(false);
+  const [onlyAgeMatch, setOnlyAgeMatch] = useState(true);
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [pillarFilter, setPillarFilter] = useState<'all' | StimulationPillar>('all');
 
@@ -66,12 +77,11 @@ export function SimulasiTab({
 
   return (
     <div className="tab-stack">
-      {/* Compact Header + Filter Controls */}
       <section className="ed-card">
         <div className="sim-head-row">
           <div>
-            <h1>Simulasi & Alat</h1>
-            <span className="muted-mini">{phaseMeta?.shortLabel ?? '0–5 Thn'}</span>
+            <h1>Belajar & Main</h1>
+            <span className="muted-mini">Jalur {phaseMeta?.shortLabel ?? '0–5 Thn'}</span>
           </div>
           <button
             type="button"
@@ -90,7 +100,7 @@ export function SimulasiTab({
             className={`pill-btn small ${onlyAgeMatch ? 'is-active' : ''}`}
             onClick={() => setOnlyAgeMatch((v) => !v)}
           >
-            Sesuai Usia
+            {onlyAgeMatch ? `Usia ${phaseMeta?.shortLabel}` : 'Semua Usia'}
           </button>
           <button
             type="button"
@@ -127,16 +137,17 @@ export function SimulasiTab({
         )}
       </section>
 
-      {/* Recommended Today Strip */}
-      {!onlyFavorites && pillarFilter === 'all' && !onlyAgeMatch && (
+      {/* Recommended Curriculum Path */}
+      {!onlyFavorites && pillarFilter === 'all' && (
         <section className="ed-card">
           <div className="section-head-compact">
-            <h2>Cocok Hari Ini</h2>
+            <h2>Jalur Belajar Hari Ini</h2>
             <span className="pill-badge">{phaseMeta?.shortLabel}</span>
           </div>
           <div className="spotlight-row">
             {ageRecommended.map((mod) => {
               const locked = isModuleLockedByLimit(mod.isBabyTool, isGameTimeUp);
+              const count = playCounts[mod.key] ?? 0;
               return (
                 <button
                   key={mod.key}
@@ -147,7 +158,7 @@ export function SimulasiTab({
                 >
                   <SimulationIcon moduleKey={mod.key} size={38} />
                   <strong>{mod.title}</strong>
-                  <span>{mod.goalLabel}</span>
+                  <span>{getMasteryBadge(count)} · {mod.goalLabel}</span>
                 </button>
               );
             })}
@@ -155,7 +166,6 @@ export function SimulasiTab({
         </section>
       )}
 
-      {/* Baby 0-12m Tools */}
       {babyTools.length > 0 && (
         <section className="sim-group">
           <div className="sim-group-head">
@@ -168,11 +178,7 @@ export function SimulasiTab({
               const isFav = favoriteModules.includes(mod.key);
               const count = playCounts[mod.key] ?? 0;
               return (
-                <div
-                  key={mod.key}
-                  className="sim-tile-card"
-                  style={{ background: mod.surfaceTint }}
-                >
+                <div key={mod.key} className="sim-tile-card" style={{ background: mod.surfaceTint }}>
                   <div className="sim-tile-top">
                     <SimulationIcon moduleKey={mod.key} size={42} />
                     <button
@@ -184,19 +190,13 @@ export function SimulasiTab({
                       <HeartIcon size={16} filled={isFav} />
                     </button>
                   </div>
-
                   <h3>{mod.title}</h3>
                   <p className="sim-tile-sub">{mod.subtitle}</p>
-
                   <div className="sim-tile-bottom">
                     <span className="sim-age-tag">
                       {mod.ageTag}{count > 0 ? ` · ×${count}` : ''}
                     </span>
-                    <button
-                      type="button"
-                      className="btn-primary-calm small"
-                      onClick={() => onLaunchSimulation(mod.key)}
-                    >
+                    <button type="button" className="btn-primary-calm small" onClick={() => onLaunchSimulation(mod.key)}>
                       Buka
                     </button>
                   </div>
@@ -207,11 +207,10 @@ export function SimulasiTab({
         </section>
       )}
 
-      {/* Toddler 1-5y Simulations */}
       {toddlerGames.length > 0 && (
         <section className="sim-group">
           <div className="sim-group-head">
-            <h2>Permainan · 1–5 Thn</h2>
+            <h2>Modul Belajar & Game · 1–5 Thn</h2>
             <span className="muted-mini">{toddlerGames.length} modul</span>
           </div>
 
@@ -243,7 +242,7 @@ export function SimulasiTab({
 
                   <div className="sim-tile-bottom">
                     <span className="sim-age-tag">
-                      {mod.ageTag}{count > 0 ? ` · ×${count}` : ''}
+                      {getMasteryBadge(count)} · {mod.ageTag}
                     </span>
                     <button
                       type="button"
@@ -269,7 +268,8 @@ export function SimulasiTab({
 
       {babyTools.length === 0 && toddlerGames.length === 0 && (
         <section className="ed-card empty-state-card">
-          <p className="muted-copy">Tidak ada simulasi di filter ini.</p>
+          <EmptyStateIllustration size={56} />
+          <p className="muted-copy">Tidak ada modul di filter ini.</p>
           <button
             type="button"
             className="btn-outline small"
@@ -279,7 +279,7 @@ export function SimulasiTab({
               setPillarFilter('all');
             }}
           >
-            Reset Filter
+            Tampilkan Semua 21 Modul
           </button>
         </section>
       )}

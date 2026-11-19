@@ -1,7 +1,9 @@
-import { isValidIsoDate } from './development.ts';
+import { isValidIsoDate, type StimulationPillar } from './development.ts';
 import { todayKey } from './storage.ts';
 
 export type NoteMood = 'happy' | 'calm' | 'fussy';
+export type KpspStatus = 'sesuai' | 'meragukan' | 'penyimpangan';
+export type MpasiFoodStatus = 'ok' | 'reaction';
 
 export interface MilestoneRecord {
   checked: boolean;
@@ -13,7 +15,18 @@ export interface GrowthEntry {
   date: string;
   weightKg?: number;
   heightCm?: number;
+  headCircumferenceCm?: number;
   note?: string;
+}
+
+export interface KpspResult {
+  id: string;
+  date: string;
+  checkpointMonths: number;
+  yesCount: number;
+  totalCount: number;
+  status: KpspStatus;
+  weakPillars: StimulationPillar[];
 }
 
 export interface DailyNote {
@@ -31,6 +44,8 @@ export interface JournalData {
   savedTipIds: string[];
   completedRoutineIds: Record<string, string[]>;
   completedImmunizations: Record<string, string>;
+  kpspResults: KpspResult[];
+  triedMpasiFoods: Record<string, MpasiFoodStatus>;
 }
 
 const JOURNAL_KEY = 'kecilmain.journal.v1';
@@ -50,7 +65,9 @@ export function createEmptyJournal(): JournalData {
     dailyNotes: [],
     savedTipIds: [],
     completedRoutineIds: {},
-    completedImmunizations: {}
+    completedImmunizations: {},
+    kpspResults: [],
+    triedMpasiFoods: {}
   };
 }
 
@@ -80,7 +97,8 @@ export function parseJournalRaw(raw: string | null): JournalData {
             typeof g.date === 'string' &&
             (g.weightKg === undefined || isPositiveMeasurement(g.weightKg)) &&
             (g.heightCm === undefined || isPositiveMeasurement(g.heightCm)) &&
-            (g.weightKg !== undefined || g.heightCm !== undefined)
+            (g.headCircumferenceCm === undefined || isPositiveMeasurement(g.headCircumferenceCm)) &&
+            (g.weightKg !== undefined || g.heightCm !== undefined || g.headCircumferenceCm !== undefined)
         )
       : [];
 
@@ -132,13 +150,46 @@ export function parseJournalRaw(raw: string | null): JournalData {
       }
     }
 
+    const validKpspStatuses: KpspStatus[] = ['sesuai', 'meragukan', 'penyimpangan'];
+    const validPillars: StimulationPillar[] = ['motor-kasar', 'motor-halus', 'bahasa', 'kognitif'];
+    const kpspResults: KpspResult[] = Array.isArray(parsed.kpspResults)
+      ? parsed.kpspResults
+          .filter(
+            (r): r is KpspResult =>
+              Boolean(r) &&
+              typeof r.id === 'string' &&
+              typeof r.date === 'string' &&
+              typeof r.checkpointMonths === 'number' &&
+              typeof r.yesCount === 'number' &&
+              typeof r.totalCount === 'number' &&
+              validKpspStatuses.includes(r.status)
+          )
+          .map((r) => ({
+            ...r,
+            weakPillars: Array.isArray(r.weakPillars)
+              ? r.weakPillars.filter((p) => validPillars.includes(p))
+              : []
+          }))
+      : [];
+
+    const triedMpasiFoods: Record<string, MpasiFoodStatus> = {};
+    if (parsed.triedMpasiFoods && typeof parsed.triedMpasiFoods === 'object') {
+      for (const [foodId, st] of Object.entries(parsed.triedMpasiFoods)) {
+        if (st === 'ok' || st === 'reaction') {
+          triedMpasiFoods[foodId] = st;
+        }
+      }
+    }
+
     return {
       milestoneStatus,
       growthLogs,
       dailyNotes,
       savedTipIds,
       completedRoutineIds,
-      completedImmunizations
+      completedImmunizations,
+      kpspResults,
+      triedMpasiFoods
     };
   } catch {
     return createEmptyJournal();
@@ -181,24 +232,70 @@ export function toggleMilestone(
 
 export function addGrowthLog(
   data: JournalData,
-  input: { date: string; weightKg?: number; heightCm?: number; note?: string }
+  input: {
+    date: string;
+    weightKg?: number;
+    heightCm?: number;
+    headCircumferenceCm?: number;
+    note?: string;
+  }
 ): JournalData {
   const hasWeightInput = input.weightKg !== undefined;
   const hasHeightInput = input.heightCm !== undefined;
-  if (!hasWeightInput && !hasHeightInput) return data;
+  const hasHeadInput = input.headCircumferenceCm !== undefined;
+  if (!hasWeightInput && !hasHeightInput && !hasHeadInput) return data;
   if (hasWeightInput && !isPositiveMeasurement(input.weightKg)) return data;
   if (hasHeightInput && !isPositiveMeasurement(input.heightCm)) return data;
+  if (hasHeadInput && !isPositiveMeasurement(input.headCircumferenceCm)) return data;
 
   const entry: GrowthEntry = {
     id: makeId('g'),
     date: isValidIsoDate(input.date) ? input.date : todayKey(),
     ...(hasWeightInput ? { weightKg: Math.round(input.weightKg! * 100) / 100 } : {}),
     ...(hasHeightInput ? { heightCm: Math.round(input.heightCm! * 10) / 10 } : {}),
+    ...(hasHeadInput ? { headCircumferenceCm: Math.round(input.headCircumferenceCm! * 10) / 10 } : {}),
     ...(input.note?.trim() ? { note: input.note.trim().slice(0, 120) } : {})
   };
 
   const growthLogs = [entry, ...data.growthLogs].sort((a, b) => b.date.localeCompare(a.date));
   return { ...data, growthLogs };
+}
+
+export function addKpspResult(
+  data: JournalData,
+  input: Omit<KpspResult, 'id'>
+): JournalData {
+  const entry: KpspResult = {
+    id: makeId('kpsp'),
+    date: isValidIsoDate(input.date) ? input.date : todayKey(),
+    checkpointMonths: input.checkpointMonths,
+    yesCount: input.yesCount,
+    totalCount: input.totalCount,
+    status: input.status,
+    weakPillars: input.weakPillars
+  };
+  return {
+    ...data,
+    kpspResults: [entry, ...data.kpspResults].slice(0, 24)
+  };
+}
+
+export function toggleMpasiFood(
+  data: JournalData,
+  foodId: string,
+  status?: MpasiFoodStatus
+): JournalData {
+  const next = { ...data.triedMpasiFoods };
+  if (status) {
+    next[foodId] = status;
+  } else if (next[foodId] === 'ok') {
+    next[foodId] = 'reaction';
+  } else if (next[foodId] === 'reaction') {
+    delete next[foodId];
+  } else {
+    next[foodId] = 'ok';
+  }
+  return { ...data, triedMpasiFoods: next };
 }
 
 export function deleteGrowthLog(data: JournalData, id: string): JournalData {

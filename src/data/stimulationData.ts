@@ -15,7 +15,13 @@ export type SimulationKey =
   | 'motor'
   | 'coloring'
   | 'puzzle'
-  | 'balloon';
+  | 'balloon'
+  | 'words'
+  | 'body-emotions'
+  | 'size-sort'
+  | 'good-habits'
+  | 'syllables'
+  | 'math-patterns';
 
 export interface AgePhaseMeta {
   id: AgeBand;
@@ -677,5 +683,77 @@ export const SIMULATION_MODULES: SimulationModuleMeta[] = [
     isBabyTool: false,
     stickerId: 'sticker-balloon',
     surfaceTint: '#EFF6F9'
+  },
+  {
+    key: 'words',
+    title: 'Kata Pertama',
+    subtitle: 'Kartu kata benda, buah & kendaraan.',
+    goalLabel: 'Kosakata Awal',
+    pillar: 'bahasa',
+    ageBands: ['1-2y', '2-3y'],
+    ageTag: '1–3 Thn',
+    isBabyTool: false,
+    stickerId: 'sticker-alphabet',
+    surfaceTint: '#FFF7E8'
+  },
+  {
+    key: 'body-emotions',
+    title: 'Tubuh & Emosi',
+    subtitle: 'Kenali anggota tubuh dan ekspresi perasaan.',
+    goalLabel: 'Sosial Emosi',
+    pillar: 'bahasa',
+    ageBands: ['1-2y', '2-3y', '3-5y'],
+    ageTag: '1–4 Thn',
+    isBabyTool: false,
+    stickerId: 'sticker-peekaboo',
+    surfaceTint: '#FFEDF1'
+  },
+  {
+    key: 'size-sort',
+    title: 'Besar & Kecil',
+    subtitle: 'Bandingkan ukuran benda dan pasangan cocok.',
+    goalLabel: 'Logika Ukuran',
+    pillar: 'kognitif',
+    ageBands: ['2-3y', '3-5y'],
+    ageTag: '2–4 Thn',
+    isBabyTool: false,
+    stickerId: 'sticker-shapes',
+    surfaceTint: '#EAF7F0'
+  },
+  {
+    key: 'good-habits',
+    title: 'Kebiasaan Baik',
+    subtitle: 'Urutkan langkah sikat gigi & cuci tangan.',
+    goalLabel: 'Kemandirian',
+    pillar: 'motor-halus',
+    ageBands: ['2-3y', '3-5y'],
+    ageTag: '2–5 Thn',
+    isBabyTool: false,
+    stickerId: 'sticker-motor',
+    surfaceTint: '#E8F4FA'
+  },
+  {
+    key: 'syllables',
+    title: 'Suku Kata',
+    subtitle: 'Susun bunyi ba-bi-bu jadi kata sederhana.',
+    goalLabel: 'Siap Baca',
+    pillar: 'bahasa',
+    ageBands: ['3-5y'],
+    ageTag: '3–5 Thn',
+    isBabyTool: false,
+    stickerId: 'sticker-alphabet',
+    surfaceTint: '#F2EDFC'
+  },
+  {
+    key: 'math-patterns',
+    title: 'Hitung & Pola',
+    subtitle: 'Tambah visual 1–10 dan lengkapi pola ABAB.',
+    goalLabel: 'Pra-Matematika',
+    pillar: 'kognitif',
+    ageBands: ['3-5y'],
+    ageTag: '3–5 Thn',
+    isBabyTool: false,
+    stickerId: 'sticker-numbers',
+    surfaceTint: '#FFF5E0'
   }
 ];

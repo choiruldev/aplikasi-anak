@@ -6,7 +6,7 @@ import {
   type ChildProfile,
   type ProfileAvatarId
 } from '../lib/profilesStorage.ts';
-import type { AppSettings } from '../lib/storage.ts';
+import type { AppSettings, ChildGender } from '../lib/storage.ts';
 import { todayKey } from '../lib/storage.ts';
 import { AvatarIcon, MoonIcon } from './ModuleIcons.tsx';
 
@@ -23,7 +23,7 @@ interface ParentDrawerProps {
   activeAvatarId: ProfileAvatarId;
   settings: AppSettings;
   onSwitchProfile: (profileId: string) => void;
-  onAddProfile: (input: { childName: string; ageBand: AgeBand; avatarId: ProfileAvatarId }) => void;
+  onAddProfile: (input: { childName: string; gender: ChildGender; ageBand: AgeBand; avatarId: ProfileAvatarId }) => void;
   onDeleteProfile: (profileId: string) => void;
   onUpdateSettings: (next: AppSettings, avatarId?: ProfileAvatarId) => void;
   playedSeconds: number;
@@ -31,6 +31,7 @@ interface ParentDrawerProps {
   onResetTimer: () => void;
   onExportBackup: () => void;
   onImportBackup: (rawJson: string) => { ok: boolean; error?: string };
+  onOpenLegalPrivacy: () => void;
   installEvent: BeforeInstallPromptEvent | null;
   isIos: boolean;
   onOpenInstallGuide: () => void;
@@ -66,6 +67,7 @@ export function ParentDrawer({
   onResetTimer,
   onExportBackup,
   onImportBackup,
+  onOpenLegalPrivacy,
   installEvent,
   isIos,
   onOpenInstallGuide
@@ -77,6 +79,7 @@ export function ParentDrawer({
 
   const [addingKid, setAddingKid] = useState(false);
   const [newKidName, setNewKidName] = useState('');
+  const [newKidGender, setNewKidGender] = useState<ChildGender>('boy');
   const [newKidBand, setNewKidBand] = useState<AgeBand>('1-2y');
   const [newKidAvatar, setNewKidAvatar] = useState<ProfileAvatarId>('bunny');
   const [backupNotice, setBackupNotice] = useState<string | null>(null);
@@ -125,6 +128,7 @@ export function ParentDrawer({
     if (!newKidName.trim()) return;
     onAddProfile({
       childName: newKidName.trim(),
+      gender: newKidGender,
       ageBand: newKidBand,
       avatarId: newKidAvatar
     });
@@ -223,6 +227,22 @@ export function ParentDrawer({
                   ))}
                 </div>
                 <div className="chip-row">
+                  <button
+                    type="button"
+                    className={`pill-btn small ${newKidGender === 'boy' ? 'is-active' : ''}`}
+                    onClick={() => setNewKidGender('boy')}
+                  >
+                    Laki-laki
+                  </button>
+                  <button
+                    type="button"
+                    className={`pill-btn small ${newKidGender === 'girl' ? 'is-active' : ''}`}
+                    onClick={() => setNewKidGender('girl')}
+                  >
+                    Perempuan
+                  </button>
+                </div>
+                <div className="chip-row">
                   {AGE_PHASES.map((p) => (
                     <button
                       key={p.id}
@@ -256,6 +276,22 @@ export function ParentDrawer({
                     }
                   }}
                 />
+                <div className="chip-row">
+                  <button
+                    type="button"
+                    className={`pill-btn small ${settings.gender === 'boy' ? 'is-active' : ''}`}
+                    onClick={() => onUpdateSettings({ ...settings, gender: 'boy' })}
+                  >
+                    Laki-laki
+                  </button>
+                  <button
+                    type="button"
+                    className={`pill-btn small ${settings.gender === 'girl' ? 'is-active' : ''}`}
+                    onClick={() => onUpdateSettings({ ...settings, gender: 'girl' })}
+                  >
+                    Perempuan
+                  </button>
+                </div>
                 <div className="chip-row">
                   {PROFILE_AVATARS.map((av) => (
                     <button
@@ -484,6 +520,14 @@ export function ParentDrawer({
               />
             </div>
             {backupNotice && <p className="computed-age-note">{backupNotice}</p>}
+            <button
+              type="button"
+              className="text-action-btn"
+              onClick={onOpenLegalPrivacy}
+              style={{ marginTop: '8px' }}
+            >
+              Privasi, Referensi WHO/KPSP & Hapus Data →
+            </button>
           </section>
 
           {(installEvent || isIos) && (

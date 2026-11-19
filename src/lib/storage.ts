@@ -4,10 +4,14 @@ import {
   isValidIsoDate
 } from './development.ts';
 
+export type ChildGender = 'boy' | 'girl';
+
 export interface AppSettings {
   childName: string;
+  gender: ChildGender;
   birthDate?: string;
   ageBand: AgeBand;
+  onboardingCompleted: boolean;
   childLockExit: boolean;
   soundEnabled: boolean;
   voiceEnabled: boolean;
@@ -51,7 +55,9 @@ export function migrateLegacyAgeFilter(legacy?: string): AgeBand {
 
 export const DEFAULT_SETTINGS: AppSettings = {
   childName: 'Adik',
+  gender: 'boy',
   ageBand: '1-2y',
+  onboardingCompleted: false,
   childLockExit: false,
   soundEnabled: true,
   voiceEnabled: true,
@@ -71,14 +77,18 @@ export function parseSettingsRaw(raw: string | null): AppSettings {
       typeof parsed.birthDate === 'string' && isValidIsoDate(parsed.birthDate)
         ? parsed.birthDate
         : undefined;
+    const gender: ChildGender = parsed.gender === 'girl' ? 'girl' : 'boy';
 
     return {
       childName:
         typeof parsed.childName === 'string' && parsed.childName.trim()
           ? parsed.childName.trim().slice(0, 20)
           : DEFAULT_SETTINGS.childName,
+      gender,
       birthDate,
       ageBand,
+      onboardingCompleted:
+        typeof parsed.onboardingCompleted === 'boolean' ? parsed.onboardingCompleted : true,
       childLockExit:
         typeof parsed.childLockExit === 'boolean'
           ? parsed.childLockExit
