@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type JSX, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type JSX, type PointerEvent as ReactPointerEvent } from 'react';
 import { IconSpeaker } from '../components/Art';
 import {
   playSuccessChime,
@@ -13,30 +13,27 @@ import { fireConfetti, triggerHaptic } from '../lib/confetti';
 interface PuzzlePicture {
   id: string;
   title: string;
+  chipLabel: string;
   renderSvg: () => JSX.Element;
 }
 
 const PICTURES: PuzzlePicture[] = [
   {
     id: 'cat',
-    title: 'Kucing Oren Lucu',
+    title: 'Kucing Oren',
+    chipLabel: '🐱 Kucing',
     renderSvg: () => (
       <g>
         <rect width="280" height="280" rx="16" fill="#FCE9DF" />
-        {/* Cat ears */}
         <polygon points="60,110 50,40 120,70" fill="#E06B34" stroke="#182421" strokeWidth="5" />
         <polygon points="220,110 230,40 160,70" fill="#E06B34" stroke="#182421" strokeWidth="5" />
-        {/* Head */}
         <circle cx="140" cy="150" r="85" fill="#F08A4B" stroke="#182421" strokeWidth="6" />
-        {/* Eyes */}
         <circle cx="105" cy="135" r="14" fill="#FFFFFF" stroke="#182421" strokeWidth="4" />
         <circle cx="105" cy="135" r="7" fill="#182421" />
         <circle cx="175" cy="135" r="14" fill="#FFFFFF" stroke="#182421" strokeWidth="4" />
         <circle cx="175" cy="135" r="7" fill="#182421" />
-        {/* Nose & mouth */}
         <polygon points="134,160 146,160 140,170" fill="#D94848" />
         <path d="M140 170V182C130 190 118 186 112 180M140 182C150 190 162 186 168 180" stroke="#182421" strokeWidth="5" strokeLinecap="round" />
-        {/* Whiskers */}
         <path d="M50 145H90M50 160H90M190 145H230M190 160H230" stroke="#182421" strokeWidth="5" strokeLinecap="round" />
       </g>
     )
@@ -44,20 +41,16 @@ const PICTURES: PuzzlePicture[] = [
   {
     id: 'elephant',
     title: 'Gajah Biru',
+    chipLabel: '🐘 Gajah',
     renderSvg: () => (
       <g>
         <rect width="280" height="280" rx="16" fill="#E2EEF6" />
-        {/* Large ears */}
         <circle cx="68" cy="130" r="50" fill="#5D8AA8" stroke="#182421" strokeWidth="5" />
         <circle cx="212" cy="130" r="50" fill="#5D8AA8" stroke="#182421" strokeWidth="5" />
-        {/* Head */}
         <circle cx="140" cy="140" r="72" fill="#76A5C4" stroke="#182421" strokeWidth="6" />
-        {/* Eyes */}
         <circle cx="112" cy="120" r="10" fill="#182421" />
         <circle cx="168" cy="120" r="10" fill="#182421" />
-        {/* Trunk */}
         <path d="M140 150V210C140 230 162 230 168 215" fill="none" stroke="#5D8AA8" strokeWidth="26" strokeLinecap="round" />
-        {/* Tusks */}
         <path d="M116 190C110 205 100 205 95 195" fill="none" stroke="#FFFFFF" strokeWidth="8" strokeLinecap="round" />
         <path d="M164 190C170 205 180 205 185 195" fill="none" stroke="#FFFFFF" strokeWidth="8" strokeLinecap="round" />
       </g>
@@ -65,17 +58,14 @@ const PICTURES: PuzzlePicture[] = [
   },
   {
     id: 'watermelon',
-    title: 'Semangka Manis',
+    title: 'Semangka',
+    chipLabel: '🍉 Semangka',
     renderSvg: () => (
       <g>
         <rect width="280" height="280" rx="16" fill="#EBF6EA" />
-        {/* Green Outer Rind */}
         <path d="M30 140C30 220 90 250 140 250C190 250 250 220 250 140Z" fill="#2B9361" stroke="#182421" strokeWidth="6" />
-        {/* White Inner Rind */}
         <path d="M42 140C42 210 95 236 140 236C185 236 238 210 238 140Z" fill="#F0F6EE" />
-        {/* Red Flesh */}
         <path d="M52 140C52 200 100 224 140 224C180 224 228 200 228 140Z" fill="#E53935" stroke="#182421" strokeWidth="5" />
-        {/* Seeds */}
         <circle cx="95" cy="165" r="5" fill="#182421" />
         <circle cx="140" cy="180" r="5" fill="#182421" />
         <circle cx="185" cy="165" r="5" fill="#182421" />
@@ -86,7 +76,8 @@ const PICTURES: PuzzlePicture[] = [
   },
   {
     id: 'sun',
-    title: 'Matahari Ceria',
+    title: 'Matahari',
+    chipLabel: '☀️ Matahari',
     renderSvg: () => (
       <g>
         <rect width="280" height="280" rx="16" fill="#FFF9E6" />
@@ -114,6 +105,7 @@ const PICTURES: PuzzlePicture[] = [
   {
     id: 'boat',
     title: 'Perahu Layar',
+    chipLabel: '⛵ Perahu',
     renderSvg: () => (
       <g>
         <rect width="280" height="280" rx="16" fill="#EAF4FC" />
@@ -129,64 +121,118 @@ const PICTURES: PuzzlePicture[] = [
   }
 ];
 
-// Board is placed at x: 170, y: 10, width: 300, height: 300
-// 4 slots of 140x140 with 10px outer margin:
-const SLOTS: { id: number; col: number; row: number; x: number; y: number }[] = [
-  { id: 0, col: 0, row: 0, x: 180, y: 20 },
-  { id: 1, col: 1, row: 0, x: 320, y: 20 },
-  { id: 2, col: 0, row: 1, x: 180, y: 160 },
-  { id: 3, col: 1, row: 1, x: 320, y: 160 }
-];
+type GridMode = '2x2' | '3x2';
 
-// Tray positions (y: 334, height: 130)
-const TRAY_POINTS: Point[] = [
-  { x: 26, y: 334 },
-  { x: 176, y: 334 },
-  { x: 326, y: 334 },
-  { x: 476, y: 334 }
-];
+interface PuzzleSlot {
+  id: number;
+  col: number;
+  row: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  srcX: number;
+  srcY: number;
+  srcW: number;
+  srcH: number;
+}
 
 interface PieceState {
-  pieceId: number; // 0, 1, 2, 3 corresponding to matching slot
+  pieceId: number;
   pos: Point;
   home: Point;
   placedSlotId: number | null;
 }
 
+const BOARD_X = 70;
+const BOARD_Y = 14;
+const BOARD_SIZE = 280;
+
+function buildSlots(grid: GridMode): PuzzleSlot[] {
+  const cols = grid === '3x2' ? 3 : 2;
+  const rows = 2;
+  const cellW = BOARD_SIZE / cols;
+  const cellH = BOARD_SIZE / rows;
+  const slots: PuzzleSlot[] = [];
+  let id = 0;
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      slots.push({
+        id,
+        col,
+        row,
+        x: BOARD_X + col * cellW,
+        y: BOARD_Y + row * cellH,
+        w: cellW,
+        h: cellH,
+        srcX: col * (280 / cols),
+        srcY: row * (280 / rows),
+        srcW: 280 / cols,
+        srcH: 280 / rows
+      });
+      id++;
+    }
+  }
+  return slots;
+}
+
+function buildInitialPieces(grid: GridMode): PieceState[] {
+  const isSix = grid === '3x2';
+  const scramble = isSix ? [4, 1, 5, 0, 3, 2] : [2, 0, 3, 1];
+  const trayPoints: Point[] = isSix
+    ? [
+        { x: 34, y: 318 },
+        { x: 164, y: 318 },
+        { x: 294, y: 318 },
+        { x: 34, y: 416 },
+        { x: 164, y: 416 },
+        { x: 294, y: 416 }
+      ]
+    : [
+        { x: 18, y: 332 },
+        { x: 118, y: 332 },
+        { x: 218, y: 332 },
+        { x: 318, y: 332 }
+      ];
+
+  return scramble.map((origId, trayIdx) => ({
+    pieceId: origId,
+    home: { ...trayPoints[trayIdx] },
+    pos: { ...trayPoints[trayIdx] },
+    placedSlotId: null
+  }));
+}
+
 export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) => void }): JSX.Element {
   const [picIdx, setPicIdx] = useState(0);
+  const [grid, setGrid] = useState<GridMode>('2x2');
+  const [peekGhost, setPeekGhost] = useState(true);
   const [selectedPieceId, setSelectedPieceId] = useState<number | null>(null);
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const draggingIdRef = useRef<number | null>(null);
-  const [prompt, setPrompt] = useState('Pasang potongan gambar ke tempat yang pas!');
+  const [prompt, setPrompt] = useState('Seret atau ketuk keping ke kotak yang pas!');
   const svgRef = useRef<SVGSVGElement | null>(null);
 
   const picture = PICTURES[picIdx];
-
-  function initPieces(): PieceState[] {
-    const scramble = [2, 0, 3, 1];
-    return scramble.map((origId, traySlotIdx) => ({
-      pieceId: origId,
-      home: { ...TRAY_POINTS[traySlotIdx] },
-      pos: { ...TRAY_POINTS[traySlotIdx] },
-      placedSlotId: null
-    }));
-  }
-
-  const [pieces, setPieces] = useState<PieceState[]>(() => initPieces());
+  const slots = useMemo(() => buildSlots(grid), [grid]);
+  const [pieces, setPieces] = useState<PieceState[]>(() => buildInitialPieces('2x2'));
 
   useEffect(() => {
     preloadVoices(['puzzle-intro', 'puzzle-snap', 'puzzle-done', 'puzzle-new']);
     return () => stopVoice();
   }, []);
 
+  const svgHeight = grid === '3x2' ? 516 : 464;
+  const trayThumbW = grid === '3x2' ? 90 : 88;
+  const trayThumbH = grid === '3x2' ? 88 : 88;
+
   function toSvgCoords(clientX: number, clientY: number): Point {
     const svg = svgRef.current;
     if (!svg) return { x: 0, y: 0 };
     const rect = svg.getBoundingClientRect();
     return {
-      x: ((clientX - rect.left) / rect.width) * 640,
-      y: ((clientY - rect.top) / rect.height) * 480
+      x: ((clientX - rect.left) / rect.width) * 420,
+      y: ((clientY - rect.top) / rect.height) * svgHeight
     };
   }
 
@@ -194,24 +240,23 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
     playWoodClick();
     triggerHaptic('snap');
     setPieces((prev) => {
-      const targetSlot = SLOTS[slotId];
-      const boardPos: Point = { x: targetSlot.x, y: targetSlot.y };
+      const targetSlot = slots[slotId];
       const next = prev.map((p) =>
-        p.pieceId === pieceId ? { ...p, pos: boardPos, placedSlotId: slotId } : p
+        p.pieceId === pieceId ? { ...p, pos: { x: targetSlot.x, y: targetSlot.y }, placedSlotId: slotId } : p
       );
       const placedCount = next.filter((p) => p.placedSlotId !== null).length;
 
-      if (placedCount === 4) {
+      if (placedCount === slots.length) {
         triggerHaptic('success');
         fireConfetti();
         window.setTimeout(() => {
           playSuccessChime();
           onComplete('sticker-puzzle');
-          setPrompt('Hebat! Yeaaay! 🎉 Gambar tersusun rapi!');
-          playVoice('puzzle-done', 350);
-        }, 280);
+          setPrompt(`Yeaaay! Puzzle ${picture.title} selesai!`);
+          playVoice('puzzle-done', 300);
+        }, 240);
       } else {
-        setPrompt(`Klek! Pas! Keping ke-${placedCount} terpasang.`);
+        setPrompt(`Klek! ${placedCount}/${slots.length} keping pas!`);
         playVoice('puzzle-snap', 100);
       }
       return next;
@@ -223,22 +268,24 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
-      // Safe fallback when pointer capture is unsupported or synthetic
+      // Safe fallback
     }
     draggingIdRef.current = piece.pieceId;
     setDraggingId(piece.pieceId);
     setSelectedPieceId(piece.pieceId);
+    const slot = slots[piece.pieceId];
     const pt = toSvgCoords(e.clientX, e.clientY);
     setPieces((prev) =>
-      prev.map((p) => (p.pieceId === piece.pieceId ? { ...p, pos: { x: pt.x - 70, y: pt.y - 70 } } : p))
+      prev.map((p) => (p.pieceId === piece.pieceId ? { ...p, pos: { x: pt.x - slot.w / 2, y: pt.y - slot.h / 2 } } : p))
     );
   }
 
   function onPointerMovePiece(e: ReactPointerEvent<SVGGElement>, piece: PieceState): void {
     if (draggingIdRef.current !== piece.pieceId) return;
+    const slot = slots[piece.pieceId];
     const pt = toSvgCoords(e.clientX, e.clientY);
     setPieces((prev) =>
-      prev.map((p) => (p.pieceId === piece.pieceId ? { ...p, pos: { x: pt.x - 70, y: pt.y - 70 } } : p))
+      prev.map((p) => (p.pieceId === piece.pieceId ? { ...p, pos: { x: pt.x - slot.w / 2, y: pt.y - slot.h / 2 } } : p))
     );
   }
 
@@ -255,12 +302,14 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
     setDraggingId(null);
 
     const dropPt = toSvgCoords(e.clientX, e.clientY);
-    const matchingSlot = SLOTS[piece.pieceId];
-    // Center-to-center distance between drop pointer and slot
-    const slotCenter: Point = { x: matchingSlot.x + 69, y: matchingSlot.y + 69 };
+    const matchingSlot = slots[piece.pieceId];
+    const slotCenter: Point = {
+      x: matchingSlot.x + matchingSlot.w / 2,
+      y: matchingSlot.y + matchingSlot.h / 2
+    };
     const dist = distance(dropPt, slotCenter);
 
-    if (dist <= 95) {
+    if (dist <= 76) {
       setSelectedPieceId(null);
       snapPiece(piece.pieceId, matchingSlot.id);
     } else {
@@ -272,7 +321,7 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
 
   function handleSlotClick(slotId: number): void {
     if (selectedPieceId === null) {
-      setPrompt('Pilih salah satu keping di bawah terlebih dahulu ya.');
+      setPrompt('Pilih dulu salah satu keping di bawah ya!');
       return;
     }
     const piece = pieces.find((p) => p.pieceId === selectedPieceId);
@@ -282,132 +331,147 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
       setSelectedPieceId(null);
       snapPiece(piece.pieceId, slotId);
     } else {
-      setPrompt(`Keping ini belum pas di kotak ini, coba cari kotak yang cocok ya.`);
+      setPrompt('Belum pas di kotak ini, coba kotak sebelahnya ya!');
     }
   }
 
-  function handleNextPicture(): void {
-    const nextIdx = (picIdx + 1) % PICTURES.length;
-    setPicIdx(nextIdx);
-    setPieces(initPieces());
+  function resetPuzzle(nextPicIdx: number, nextGrid: GridMode): void {
+    setPicIdx(nextPicIdx);
+    setGrid(nextGrid);
+    setPieces(buildInitialPieces(nextGrid));
     setSelectedPieceId(null);
     draggingIdRef.current = null;
     setDraggingId(null);
-    setPrompt(`Gambar baru: ${PICTURES[nextIdx].title}. Ayo kita susun!`);
+    setPrompt(`Susun gambar ${PICTURES[nextPicIdx].title}!`);
     playVoice('puzzle-new');
   }
 
-  const allDone = pieces.every((p) => p.placedSlotId !== null);
+  const placedCount = pieces.filter((p) => p.placedSlotId !== null).length;
+  const allDone = placedCount === slots.length;
 
   return (
-    <section className="activity-stage" aria-labelledby="puzzle-title">
-      <div className="stage-header">
-        <div>
-          <h1 id="puzzle-title" className="stage-title">Puzzle Keping: {picture.title}</h1>
-          <p className="stage-subtitle">{prompt}</p>
-        </div>
-        <div className="stage-actions">
+    <section className="game-clean-stage" aria-label="Puzzle Gambar">
+      <div className="game-top-bar">
+        <div className="segmented-tabs" role="tablist" aria-label="Jumlah keping puzzle">
           <button
             type="button"
-            className="voice-btn"
-            onClick={() => playVoice(allDone ? 'puzzle-done' : 'puzzle-intro')}
-            aria-label="Dengar suara panduan"
+            role="tab"
+            aria-selected={grid === '2x2'}
+            className={`seg-tab touch-safe ${grid === '2x2' ? 'is-active' : ''}`}
+            onClick={() => resetPuzzle(picIdx, '2x2')}
           >
-            <IconSpeaker size={22} />
-            <span>Dengar</span>
+            2×2 Mudah
           </button>
-          <button type="button" className="secondary-btn" onClick={handleNextPicture}>
-            {allDone ? 'Gambar Berikutnya' : 'Ganti Gambar'}
+          <button
+            type="button"
+            role="tab"
+            aria-selected={grid === '3x2'}
+            className={`seg-tab touch-safe ${grid === '3x2' ? 'is-active' : ''}`}
+            onClick={() => resetPuzzle(picIdx, '3x2')}
+          >
+            3×2 Seru
+          </button>
+        </div>
+
+        <div className="game-top-tools">
+          <button
+            type="button"
+            className={`secondary-btn touch-safe ${peekGhost ? 'is-active-chip' : ''}`}
+            onClick={() => setPeekGhost((v) => !v)}
+            aria-pressed={peekGhost}
+          >
+            {peekGhost ? '👁️ Intip' : '🙈 Tanpa Intip'}
+          </button>
+          <button
+            type="button"
+            className="icon-tool-btn touch-safe"
+            onClick={() => playVoice(allDone ? 'puzzle-done' : 'puzzle-intro')}
+            aria-label="Dengar panduan"
+          >
+            <IconSpeaker size={20} />
           </button>
         </div>
       </div>
 
-      <div className="glyph-picker" role="tablist" aria-label="Pilih gambar puzzle">
+      <div className="game-chip-scroll" role="tablist" aria-label="Pilih gambar puzzle">
         {PICTURES.map((pic, idx) => (
           <button
             key={pic.id}
             type="button"
             role="tab"
             aria-selected={idx === picIdx}
-            className={`mode-tab ${idx === picIdx ? 'is-active' : ''}`}
-            onClick={() => {
-              if (idx === picIdx) return;
-              setPicIdx(idx);
-              setPieces(initPieces());
-              setSelectedPieceId(null);
-              draggingIdRef.current = null;
-              setDraggingId(null);
-              setPrompt(`Gambar baru: ${pic.title}. Ayo pasang kepingannya!`);
-              playVoice('puzzle-new');
-            }}
+            className={`mode-tab touch-safe ${idx === picIdx ? 'is-active' : ''}`}
+            onClick={() => idx !== picIdx && resetPuzzle(idx, grid)}
           >
-            {pic.title}
+            {pic.chipLabel}
           </button>
         ))}
       </div>
 
-      <div className="puzzle-board-wrap">
+      <p className="game-mini-status">
+        {prompt} ({placedCount}/{slots.length})
+      </p>
+
+      <div className="puzzle-board-wrap portrait-board">
         <svg
           ref={svgRef}
-          viewBox="0 0 640 480"
-          className="puzzle-svg"
+          viewBox={`0 0 420 ${svgHeight}`}
+          className="puzzle-svg portrait-svg"
           role="application"
           aria-label="Papan Puzzle Keping"
         >
           {/* Wooden Board Frame */}
           <rect
-            x="168"
-            y="8"
-            width="304"
-            height="304"
-            rx="28"
+            x={BOARD_X - 10}
+            y={BOARD_Y - 8}
+            width={BOARD_SIZE + 20}
+            height={BOARD_SIZE + 16}
+            rx="24"
             fill="#EFE8D8"
             stroke="#D5CBB4"
             strokeWidth="4"
             pointerEvents="none"
           />
 
-          {/* Guidelines and target slots on the board */}
-          <g>
-            {/* Ghost background outline for visual hint */}
-            <g opacity="0.22" transform="translate(180, 20)" pointerEvents="none">
+          {/* Ghost Preview */}
+          {peekGhost && (
+            <g opacity="0.24" transform={`translate(${BOARD_X}, ${BOARD_Y})`} pointerEvents="none">
               {picture.renderSvg()}
             </g>
+          )}
 
-            {/* 4 Quadrant Target Slots */}
-            {SLOTS.map((slot) => {
-              const isOccupied = pieces.some((p) => p.placedSlotId === slot.id);
-              return (
-                <rect
-                  key={slot.id}
-                  x={slot.x}
-                  y={slot.y}
-                  width="138"
-                  height="138"
-                  rx="10"
-                  fill={isOccupied ? 'none' : 'rgba(255, 255, 255, 0.45)'}
-                  stroke="#9EAFA5"
-                  strokeWidth="2.5"
-                  strokeDasharray={isOccupied ? 'none' : '6 5'}
-                  pointerEvents="all"
-                  onClick={() => handleSlotClick(slot.id)}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`Kotak nomor ${slot.id + 1}`}
-                  style={{ cursor: 'pointer' }}
-                />
-              );
-            })}
-          </g>
+          {/* Target Slots */}
+          {slots.map((slot) => {
+            const isOccupied = pieces.some((p) => p.placedSlotId === slot.id);
+            return (
+              <rect
+                key={slot.id}
+                x={slot.x + 1}
+                y={slot.y + 1}
+                width={slot.w - 2}
+                height={slot.h - 2}
+                rx="8"
+                fill={isOccupied ? 'none' : 'rgba(255, 255, 255, 0.42)'}
+                stroke="#9EAFA5"
+                strokeWidth="2.5"
+                strokeDasharray={isOccupied ? 'none' : '6 5'}
+                pointerEvents="all"
+                onClick={() => handleSlotClick(slot.id)}
+                tabIndex={0}
+                role="button"
+                aria-label={`Kotak nomor ${slot.id + 1}`}
+                style={{ cursor: 'pointer' }}
+              />
+            );
+          })}
 
-          {/* Golden completed frame if all done */}
           {allDone && (
             <rect
-              x="174"
-              y="14"
-              width="292"
-              height="292"
-              rx="24"
+              x={BOARD_X - 4}
+              y={BOARD_Y - 4}
+              width={BOARD_SIZE + 8}
+              height={BOARD_SIZE + 8}
+              rx="18"
               fill="none"
               stroke="#E89F1C"
               strokeWidth="6"
@@ -415,12 +479,12 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
             />
           )}
 
-          {/* Lower Tray Shelf */}
+          {/* Lower Tray */}
           <rect
-            x="14"
-            y="322"
-            width="612"
-            height="150"
+            x="10"
+            y="306"
+            width="400"
+            height={svgHeight - 314}
             rx="22"
             fill="#E6EDE3"
             pointerEvents="none"
@@ -431,14 +495,16 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
             const isSelected = selectedPieceId === piece.pieceId && piece.placedSlotId === null;
             const isDragging = draggingId === piece.pieceId;
             const isPlaced = piece.placedSlotId !== null;
-            const scale = isDragging ? 1.08 : 1;
+            const slot = slots[piece.pieceId];
+            if (!slot) return null;
 
-            const slot = SLOTS[piece.pieceId];
+            const drawW = isPlaced || isDragging ? slot.w - 2 : trayThumbW;
+            const drawH = isPlaced || isDragging ? slot.h - 2 : trayThumbH;
 
             return (
               <g
                 key={piece.pieceId}
-                transform={`translate(${piece.pos.x}, ${piece.pos.y}) scale(${scale})`}
+                transform={`translate(${piece.pos.x}, ${piece.pos.y})`}
                 onPointerDown={(e) => onPointerDownPiece(e, piece)}
                 onPointerMove={(e) => onPointerMovePiece(e, piece)}
                 onPointerUp={(e) => onPointerUpPiece(e, piece)}
@@ -447,14 +513,14 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
                   if (isPlaced) return;
                   playWoodClick();
                   setSelectedPieceId(piece.pieceId);
-                  setPrompt(`Keping bagian ${piece.pieceId + 1} dipilih. Sekarang ketuk kotak nomor ${piece.pieceId + 1} di papan!`);
+                  setPrompt(`Keping dipilih! Ketuk kotak yang cocok di papan atas.`);
                 }}
                 onKeyDown={(e) => {
                   if ((e.key === 'Enter' || e.key === ' ') && !isPlaced) {
                     e.preventDefault();
                     playWoodClick();
                     setSelectedPieceId(piece.pieceId);
-                    setPrompt(`Keping bagian ${piece.pieceId + 1} dipilih. Sekarang ketuk kotak nomor ${piece.pieceId + 1} di papan!`);
+                    setPrompt(`Keping dipilih! Ketuk kotak yang cocok di papan atas.`);
                   }
                 }}
                 tabIndex={isPlaced ? -1 : 0}
@@ -466,70 +532,56 @@ export function JigsawPuzzle({ onComplete }: { onComplete: (stickerId: string) =
                   pointerEvents: 'all'
                 }}
               >
-                {/* Visual piece background */}
                 <rect
                   x="0"
                   y="0"
-                  width="138"
-                  height="138"
-                  rx="12"
+                  width={drawW}
+                  height={drawH}
+                  rx="10"
                   fill="#FFFFFF"
                   stroke={isSelected ? '#1F7A5C' : '#182421'}
-                  strokeWidth={isSelected ? '4' : '2.5'}
+                  strokeWidth={isSelected ? '4' : '2.2'}
                   pointerEvents="all"
                 />
-
-                {/* Nested SVG cleanly showing the exact 140x140 quadrant! */}
                 <svg
                   x="0"
                   y="0"
-                  width="138"
-                  height="138"
-                  viewBox={`${slot.col * 140} ${slot.row * 140} 140 140`}
+                  width={drawW}
+                  height={drawH}
+                  viewBox={`${slot.srcX} ${slot.srcY} ${slot.srcW} ${slot.srcH}`}
+                  preserveAspectRatio="none"
                   pointerEvents="none"
                 >
                   {picture.renderSvg()}
                 </svg>
-
-                {/* Border overlay */}
                 <rect
                   x="0"
                   y="0"
-                  width="138"
-                  height="138"
-                  rx="12"
+                  width={drawW}
+                  height={drawH}
+                  rx="10"
                   fill="none"
                   stroke={isSelected ? '#1F7A5C' : '#182421'}
-                  strokeWidth={isSelected ? '4' : '2.5'}
+                  strokeWidth={isSelected ? '4' : '2.2'}
                   pointerEvents="none"
                 />
-
-                {/* Selected highlight indicator */}
-                {isSelected && (
-                  <rect
-                    x="2"
-                    y="2"
-                    width="134"
-                    height="134"
-                    rx="10"
-                    fill="none"
-                    stroke="#1F7A5C"
-                    strokeWidth="3.5"
-                    strokeDasharray="6 4"
-                  />
-                )}
               </g>
             );
           })}
         </svg>
       </div>
 
-      <div className="progress-strip" aria-live="polite">
-        <span>
-          Terpasang: {pieces.filter((p) => p.placedSlotId !== null).length} / 4 keping{' '}
-          {allDone ? 'Sempurna!' : ''}
-        </span>
-      </div>
+      {allDone && (
+        <div className="motor-finish-actions">
+          <button
+            type="button"
+            className="primary-btn touch-safe"
+            onClick={() => resetPuzzle((picIdx + 1) % PICTURES.length, grid)}
+          >
+            Gambar Berikutnya ➡
+          </button>
+        </div>
+      )}
     </section>
   );
 }

@@ -1,21 +1,22 @@
 import { useEffect, useRef, useState, type JSX, type PointerEvent as ReactPointerEvent } from 'react';
-import { TapHintFinger, VisualStarMeter } from '../components/Art';
+import { TapHintFinger, VisualStarMeter } from '../components/Art.tsx';
 import {
+  playBubblePop,
   playNote,
   playSuccessChime,
   playVoice,
   preloadVoices,
+  speakPhrase,
   stopVoice,
   type VoiceClipId
-} from '../lib/audio';
-import { fireConfetti, triggerHaptic } from '../lib/confetti';
-import { isColorDiscoveryComplete } from '../lib/toddler';
+} from '../lib/audio.ts';
+import { fireConfetti, triggerHaptic } from '../lib/confetti.ts';
+import { isColorDiscoveryComplete } from '../lib/toddler.ts';
 
 interface ToddlerColorItem {
   id: string;
   name: string;
   hex: string;
-  borderHex: string;
   lightHex: string;
   emoji: string;
   itemTitle: string;
@@ -24,391 +25,236 @@ interface ToddlerColorItem {
 }
 
 const TODDLER_COLORS: ToddlerColorItem[] = [
-  {
-    id: 'merah',
-    name: 'MERAH',
-    hex: '#FF3B30',
-    borderHex: '#D32F2F',
-    lightHex: '#FFEBEA',
-    emoji: '🍎',
-    itemTitle: 'Apel Merah',
-    voiceId: 'color-toddler-merah',
-    noteFreq: 261.63 // Do
-  },
-  {
-    id: 'kuning',
-    name: 'KUNING',
-    hex: '#FFCC00',
-    borderHex: '#F57F17',
-    lightHex: '#FFFBEA',
-    emoji: '🍌',
-    itemTitle: 'Pisang Kuning',
-    voiceId: 'color-toddler-kuning',
-    noteFreq: 329.63 // Mi
-  },
-  {
-    id: 'hijau',
-    name: 'HIJAU',
-    hex: '#34C759',
-    borderHex: '#2E7D32',
-    lightHex: '#EAF8EE',
-    emoji: '🐸',
-    itemTitle: 'Katak Hijau',
-    voiceId: 'color-toddler-hijau',
-    noteFreq: 392.0 // Sol
-  },
-  {
-    id: 'biru',
-    name: 'BIRU',
-    hex: '#007AFF',
-    borderHex: '#1565C0',
-    lightHex: '#EBF4FE',
-    emoji: '🐳',
-    itemTitle: 'Paus Biru',
-    voiceId: 'color-toddler-biru',
-    noteFreq: 440.0 // La
-  },
-  {
-    id: 'jingga',
-    name: 'JINGGA',
-    hex: '#FF9500',
-    borderHex: '#E65100',
-    lightHex: '#FFF4E5',
-    emoji: '🍊',
-    itemTitle: 'Jeruk Jingga',
-    voiceId: 'color-toddler-jingga',
-    noteFreq: 293.66 // Re
-  },
-  {
-    id: 'ungu',
-    name: 'UNGU',
-    hex: '#AF52DE',
-    borderHex: '#7B1FA2',
-    lightHex: '#F6EBFB',
-    emoji: '🍇',
-    itemTitle: 'Anggur Ungu',
-    voiceId: 'color-toddler-ungu',
-    noteFreq: 523.25 // Do tinggi
-  }
+  { id: 'merah', name: 'MERAH', hex: '#FF3B30', lightHex: '#FFEBEA', emoji: '🍎', itemTitle: 'Apel', voiceId: 'color-toddler-merah', noteFreq: 261.63 },
+  { id: 'kuning', name: 'KUNING', hex: '#F7B731', lightHex: '#FFFBEA', emoji: '🍌', itemTitle: 'Pisang', voiceId: 'color-toddler-kuning', noteFreq: 329.63 },
+  { id: 'hijau', name: 'HIJAU', hex: '#34C759', lightHex: '#EAF8EE', emoji: '🐸', itemTitle: 'Katak', voiceId: 'color-toddler-hijau', noteFreq: 392.0 },
+  { id: 'biru', name: 'BIRU', hex: '#007AFF', lightHex: '#EBF4FE', emoji: '🐳', itemTitle: 'Paus', voiceId: 'color-toddler-biru', noteFreq: 440.0 },
+  { id: 'jingga', name: 'JINGGA', hex: '#FF9500', lightHex: '#FFF4E5', emoji: '🍊', itemTitle: 'Jeruk', voiceId: 'color-toddler-jingga', noteFreq: 293.66 },
+  { id: 'ungu', name: 'UNGU', hex: '#AF52DE', lightHex: '#F6EBFB', emoji: '🍇', itemTitle: 'Anggur', voiceId: 'color-toddler-ungu', noteFreq: 523.25 }
 ];
 
-interface SplashDroplet {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  radius: number;
-  color: string;
-  alpha: number;
-}
-
-interface PaintSplash {
-  id: number;
-  x: number;
-  y: number;
-  color: string;
-  radius: number;
-  droplets: SplashDroplet[];
-  life: number;
-}
+const MIX_RECIPES = [
+  { a: 'merah', b: 'kuning', result: 'jingga', label: 'Merah + Kuning = Jingga' },
+  { a: 'biru', b: 'kuning', result: 'hijau', label: 'Biru + Kuning = Hijau' },
+  { a: 'merah', b: 'biru', result: 'ungu', label: 'Merah + Biru = Ungu' }
+];
 
 export function ColorGarden({
   onComplete
 }: {
   onComplete: (stickerId: string) => void;
 }): JSX.Element {
-  const [activeColorId, setActiveColorId] = useState<string | null>(null);
+  const [mode, setMode] = useState<'explore' | 'find' | 'mix'>('explore');
   const [visitedColors, setVisitedColors] = useState<Set<string>>(() => new Set());
   const [rewarded, setRewarded] = useState(false);
   const [featuredColor, setFeaturedColor] = useState<ToddlerColorItem>(TODDLER_COLORS[0]);
+  const [findIdx, setFindIdx] = useState(0);
+  const [findScore, setFindScore] = useState(0);
+  const [mixIdx, setMixIdx] = useState(0);
+  const [mixRevealed, setMixRevealed] = useState(false);
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const splashesRef = useRef<PaintSplash[]>([]);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const nextSplashId = useRef(1);
+  const targetFind = TODDLER_COLORS[findIdx % TODDLER_COLORS.length];
+  const recipe = MIX_RECIPES[mixIdx % MIX_RECIPES.length];
 
   useEffect(() => {
-    preloadVoices([
-      'color-toddler-intro',
-      'color-toddler-done',
-      ...TODDLER_COLORS.map((c) => c.voiceId)
-    ]);
+    preloadVoices(['color-toddler-intro', 'color-toddler-done', ...TODDLER_COLORS.map((c) => c.voiceId)]);
     playVoice('color-toddler-intro', 80);
     return () => stopVoice();
   }, []);
 
-  // 60FPS High performance splash particle canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let width = container.clientWidth || 360;
-    let height = container.clientHeight || 560;
-    const dpr = window.devicePixelRatio || 1;
-
-    function resize() {
-      if (!canvas || !container) return;
-      width = container.clientWidth || 360;
-      height = container.clientHeight || 560;
-      canvas.width = Math.floor(width * dpr);
-      canvas.height = Math.floor(height * dpr);
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
+  function rewardIfNeeded(count: number): void {
+    if (isColorDiscoveryComplete(count, 4) && !rewarded) {
+      setRewarded(true);
+      triggerHaptic('success');
+      fireConfetti();
+      window.setTimeout(() => {
+        playSuccessChime();
+        playVoice('color-toddler-done', 200);
+        onComplete('sticker-colors');
+      }, 450);
     }
-    resize();
-    window.addEventListener('resize', resize);
-
-    let animId: number;
-    let lastTime = performance.now();
-
-    const loop = (now: number) => {
-      const dt = Math.min(0.06, (now - lastTime) / 1000);
-      lastTime = now;
-
-      // Update splashes
-      const splashes = splashesRef.current;
-      for (let i = splashes.length - 1; i >= 0; i--) {
-        const s = splashes[i];
-        s.radius += dt * 80;
-        s.life -= dt * 1.8;
-
-        for (let j = 0; j < s.droplets.length; j++) {
-          const d = s.droplets[j];
-          d.x += d.vx * dt * 60;
-          d.y += d.vy * dt * 60;
-          d.vy += dt * 30; // soft gravity
-          d.alpha -= dt * 1.8;
-        }
-
-        if (s.life <= 0) {
-          splashes.splice(i, 1);
-        }
-      }
-
-      ctx.save();
-      ctx.scale(dpr, dpr);
-      ctx.clearRect(0, 0, width, height);
-
-      // Render splashes
-      for (let i = 0; i < splashes.length; i++) {
-        const s = splashes[i];
-        const alpha = Math.max(0, Math.min(1, s.life));
-
-        // Expanding soft color ring
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
-        ctx.fillStyle = s.color;
-        ctx.globalAlpha = alpha * 0.18;
-        ctx.fill();
-
-        // Droplets
-        ctx.globalAlpha = 1;
-        for (let j = 0; j < s.droplets.length; j++) {
-          const d = s.droplets[j];
-          if (d.alpha > 0) {
-            ctx.beginPath();
-            ctx.arc(d.x, d.y, d.radius, 0, Math.PI * 2);
-            ctx.fillStyle = d.color;
-            ctx.globalAlpha = Math.max(0, d.alpha);
-            ctx.fill();
-          }
-        }
-      }
-
-      ctx.restore();
-      animId = requestAnimationFrame(loop);
-    };
-
-    animId = requestAnimationFrame(loop);
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener('resize', resize);
-    };
-  }, []);
-
-  function spawnSplashAt(x: number, y: number, color: string): void {
-    const numDroplets = 12;
-    const droplets: SplashDroplet[] = [];
-    for (let i = 0; i < numDroplets; i++) {
-      const angle = (i / numDroplets) * Math.PI * 2 + Math.random() * 0.3;
-      const speed = 2.5 + Math.random() * 4.5;
-      droplets.push({
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        radius: 4 + Math.random() * 5,
-        color,
-        alpha: 0.95
-      });
-    }
-
-    splashesRef.current.push({
-      id: nextSplashId.current++,
-      x,
-      y,
-      color,
-      radius: 18,
-      droplets,
-      life: 1.0
-    });
   }
 
-  function handleSelectColor(color: ToddlerColorItem, e?: ReactPointerEvent): void {
+  function handleSelectColor(color: ToddlerColorItem): void {
     triggerHaptic('tap');
-    playNote(color.noteFreq, 0.5, 0.3);
-    playVoice(color.voiceId, 180);
-
-    setActiveColorId(color.id);
+    playNote(color.noteFreq, 0.45, 0.28);
+    playVoice(color.voiceId, 160);
     setFeaturedColor(color);
-
-    // Spawn splash at button or center
-    if (e && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      spawnSplashAt(e.clientX - rect.left, e.clientY - rect.top, color.hex);
-    } else if (containerRef.current) {
-      const w = containerRef.current.clientWidth || 360;
-      const h = containerRef.current.clientHeight || 560;
-      spawnSplashAt(w / 2, h / 2, color.hex);
-    }
-
-    // Track discovery
     setVisitedColors((prev) => {
       const next = new Set(prev);
       next.add(color.id);
-      if (isColorDiscoveryComplete(next.size, 5) && !rewarded) {
-        setRewarded(true);
-        triggerHaptic('success');
-        fireConfetti();
-        window.setTimeout(() => {
-          playSuccessChime();
-          playVoice('color-toddler-done', 200);
-          onComplete('sticker-colors');
-        }, 600);
-      }
+      rewardIfNeeded(next.size);
       return next;
     });
   }
 
   function handleBackdropTouch(e: ReactPointerEvent<HTMLDivElement>): void {
-    if (e.target !== containerRef.current && (e.target as HTMLElement).tagName === 'BUTTON') {
-      return;
-    }
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const px = e.clientX - rect.left;
-    const py = e.clientY - rect.top;
-
+    // Fixed: ignore any click inside buttons or interactive children
+    if ((e.target as HTMLElement).closest('button')) return;
     triggerHaptic('tap');
-    playNote(featuredColor.noteFreq, 0.4, 0.25);
-    spawnSplashAt(px, py, featuredColor.hex);
+    playNote(featuredColor.noteFreq, 0.35, 0.2);
   }
 
+  const findChoices = [
+    targetFind,
+    TODDLER_COLORS[(findIdx + 2) % TODDLER_COLORS.length],
+    TODDLER_COLORS[(findIdx + 4) % TODDLER_COLORS.length]
+  ].sort((a, b) => a.id.localeCompare(b.id));
+
+  function handleFindPick(picked: ToddlerColorItem): void {
+    if (picked.id === targetFind.id) {
+      triggerHaptic('success');
+      playSuccessChime();
+      fireConfetti({ count: 24 });
+      const next = findScore + 1;
+      setFindScore(next);
+      rewardIfNeeded(next + 1);
+      window.setTimeout(() => setFindIdx((i) => (i + 1) % TODDLER_COLORS.length), 850);
+    } else {
+      playBubblePop(240);
+      playVoice(targetFind.voiceId);
+    }
+  }
+
+  const colorById = (id: string) => TODDLER_COLORS.find((c) => c.id === id) ?? TODDLER_COLORS[0];
+
   return (
-    <div
+    <section
       ref={containerRef}
-      className="color-garden-stage"
+      className="game-clean-stage"
       onPointerDown={handleBackdropTouch}
-      style={{ backgroundColor: featuredColor.lightHex, touchAction: 'none' }}
-      role="region"
-      aria-label="Taman Warna Batita"
+      style={{ backgroundColor: mode === 'explore' ? featuredColor.lightHex : undefined, borderRadius: '20px' }}
+      aria-label="Taman Warna"
     >
-      {/* 60FPS Particle Canvas */}
-      <canvas
-        ref={canvasRef}
-        className="color-garden-canvas"
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          pointerEvents: 'none',
-          zIndex: 1
-        }}
-      />
-
-      {/* Top HUD: Star Meter & Clean Giant Color Title */}
-      <div className="color-garden-header" style={{ position: 'relative', zIndex: 3 }}>
-        <div className="color-meter-wrap">
-          <VisualStarMeter count={Math.min(5, visitedColors.size)} total={5} />
+      <div className="game-top-bar">
+        <div className="chip-row" role="tablist">
+          <button type="button" role="tab" aria-selected={mode === 'explore'} className={`pill-btn touch-safe ${mode === 'explore' ? 'is-active' : ''}`} onClick={() => setMode('explore')}>
+            Kenal
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === 'find'}
+            className={`pill-btn touch-safe ${mode === 'find' ? 'is-active' : ''}`}
+            onClick={() => {
+              setMode('find');
+              playVoice(targetFind.voiceId, 80);
+            }}
+          >
+            Cari ({findScore})
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === 'mix'}
+            className={`pill-btn touch-safe ${mode === 'mix' ? 'is-active' : ''}`}
+            onClick={() => {
+              setMode('mix');
+              setMixRevealed(false);
+            }}
+          >
+            Campur
+          </button>
         </div>
-        <div
-          className="color-live-badge"
-          style={{ backgroundColor: featuredColor.hex, color: '#ffffff' }}
-        >
-          <span className="color-live-emoji" aria-hidden="true">{featuredColor.emoji}</span>
-          <span className="color-live-text">{featuredColor.name}</span>
-        </div>
+        <VisualStarMeter count={Math.min(5, visitedColors.size + findScore)} total={5} />
       </div>
 
-      {/* Centerpiece: Cute Leaping Mascot Illustration */}
-      <div className="color-featured-area" style={{ position: 'relative', zIndex: 2 }}>
-        <div
-          key={featuredColor.id}
-          className="color-featured-balloon"
-          style={{
-            backgroundColor: featuredColor.hex,
-            boxShadow: `0 12px 32px ${featuredColor.hex}55`
-          }}
-          onPointerDown={(e) => handleSelectColor(featuredColor, e)}
-        >
-          <span className="color-mascot-emoji" aria-hidden="true">
-            {featuredColor.emoji}
-          </span>
-          <div className="color-balloon-shine" />
+      {mode === 'explore' && (
+        <>
+          <div className="color-hero-showcase" style={{ borderColor: featuredColor.hex }}>
+            <span className="word-card-emoji" aria-hidden="true">{featuredColor.emoji}</span>
+            <strong style={{ color: featuredColor.hex }}>{featuredColor.name}</strong>
+            <span>{featuredColor.itemTitle} {featuredColor.name.toLowerCase()}</span>
+          </div>
+
+          <div className="edu-cards-grid">
+            {TODDLER_COLORS.map((c, idx) => (
+              <button
+                key={c.id}
+                type="button"
+                className="color-big-tile"
+                style={{ backgroundColor: c.hex, color: '#ffffff' }}
+                onClick={() => handleSelectColor(c)}
+              >
+                {visitedColors.size === 0 && idx === 0 && (
+                  <span className="tile-tap-guide"><TapHintFinger size={32} /></span>
+                )}
+                <span style={{ fontSize: '1.8rem' }} aria-hidden="true">{c.emoji}</span>
+                <strong>{c.name}</strong>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {mode === 'find' && (
+        <div className="habit-visual-stage">
+          <h2 className="edu-prompt-title">
+            Ketuk benda warna <span style={{ color: targetFind.hex }}>{targetFind.name}</span>!
+          </h2>
+          <div className="edu-cards-grid">
+            {findChoices.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className="edu-word-card"
+                style={{ backgroundColor: c.lightHex, borderColor: c.hex }}
+                onClick={() => handleFindPick(c)}
+              >
+                <span className="word-card-emoji" aria-hidden="true">{c.emoji}</span>
+                <strong>{c.itemTitle}</strong>
+              </button>
+            ))}
+          </div>
         </div>
-        <span className="color-featured-label" style={{ color: featuredColor.borderHex }}>
-          {featuredColor.itemTitle}
-        </span>
-      </div>
+      )}
 
-      {/* 6 Giant Bouncy Color Pots (Touch-first for Batita) */}
-      <div className="color-pots-grid" style={{ position: 'relative', zIndex: 3 }}>
-        {TODDLER_COLORS.map((color, idx) => {
-          const isSelected = featuredColor.id === color.id;
-          const isStruck = activeColorId === color.id;
-
-          return (
+      {mode === 'mix' && (
+        <div className="habit-visual-stage">
+          <h2 className="edu-prompt-title">Campur 2 Warna!</h2>
+          <div className="mix-equation-row">
+            <span className="mix-blob" style={{ backgroundColor: colorById(recipe.a).hex }}>
+              {colorById(recipe.a).name}
+            </span>
+            <strong>+</strong>
+            <span className="mix-blob" style={{ backgroundColor: colorById(recipe.b).hex }}>
+              {colorById(recipe.b).name}
+            </span>
+            <strong>=</strong>
             <button
-              key={color.id}
               type="button"
-              className={`color-pot-btn ${isSelected ? 'is-selected' : ''} ${
-                isStruck ? 'is-struck' : ''
-              }`}
+              className="mix-result-btn"
               style={{
-                backgroundColor: color.hex,
-                borderColor: color.borderHex
+                backgroundColor: mixRevealed ? colorById(recipe.result).hex : 'var(--ground)',
+                color: mixRevealed ? '#ffffff' : 'var(--ink)'
               }}
-              onPointerDown={(e) => {
-                e.stopPropagation();
-                handleSelectColor(color, e);
+              onClick={() => {
+                setMixRevealed(true);
+                triggerHaptic('success');
+                playSuccessChime();
+                fireConfetti({ count: 24 });
+                speakPhrase(recipe.label);
+                rewardIfNeeded(4);
               }}
-              onAnimationEnd={() => setActiveColorId(null)}
-              aria-label={`Warna ${color.name}`}
             >
-              {/* Tap Hint Finger for the very first unvisited color */}
-              {visitedColors.size === 0 && idx === 0 && (
-                <div className="color-pot-tap-guide">
-                  <TapHintFinger size={38} />
-                </div>
-              )}
-
-              {/* Gloss Highlight */}
-              <div className="color-pot-glint" />
-
-              <span className="color-pot-emoji" aria-hidden="true">
-                {color.emoji}
-              </span>
-              <span className="color-pot-name">{color.name}</span>
+              {mixRevealed ? colorById(recipe.result).name : 'Ketuk!'}
             </button>
-          );
-        })}
-      </div>
-    </div>
+          </div>
+          {mixRevealed && (
+            <button
+              type="button"
+              className="btn-primary-calm"
+              onClick={() => {
+                setMixRevealed(false);
+                setMixIdx((i) => (i + 1) % MIX_RECIPES.length);
+              }}
+            >
+              Campuran Berikutnya →
+            </button>
+          )}
+        </div>
+      )}
+    </section>
   );
 }

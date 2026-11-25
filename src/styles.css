@@ -6630,3 +6630,935 @@ html[data-theme='night'] .spotlight-tile {
   border: 2px dashed var(--amber);
   color: var(--amber);
 }
+
+
+/* =====================================================================
+ * Cilukba Game Audit & Upgrade — Wave 1–4 Clean Game UI & Mobile First
+ * ===================================================================== */
+
+.touch-safe {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.game-clean-stage {
+  width: min(100%, 660px);
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 8px 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+  overflow-x: clip;
+}
+
+.game-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.game-top-bar .segmented-tabs {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+}
+
+.game-top-bar .seg-tab {
+  white-space: nowrap;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.86rem;
+}
+
+.balloon-target-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  display: inline-block;
+  flex-shrink: 0;
+  border: 2px solid rgba(0, 0, 0, 0.14);
+}
+
+.game-top-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.game-mini-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.game-mini-status {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.35;
+}
+
+.icon-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 120ms ease, border-color 150ms ease, background-color 150ms ease;
+}
+
+.icon-tool-btn:hover {
+  border-color: var(--sage);
+}
+
+.icon-tool-btn:active {
+  transform: scale(0.95);
+}
+
+.primary-btn,
+.secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+
+.primary-btn {
+  border: 2px solid var(--sage);
+  background: var(--sage);
+  color: #ffffff;
+}
+
+.secondary-btn {
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.secondary-btn.is-active-chip {
+  border-color: var(--sage);
+  background: var(--sage-soft);
+  color: var(--ink);
+}
+
+.primary-btn:active,
+.secondary-btn:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.game-chip-scroll {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  max-width: 100%;
+  padding: 4px 2px 6px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.game-chip-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.game-chip-scroll > button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* --- Baby Tools Upgrades --- */
+.hc-card-stage.is-fullfocus {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  border-radius: 0;
+  border: none;
+  margin: 0;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+}
+
+.hc-card-stage.is-fullfocus.is-inverted {
+  background: #111111;
+}
+
+.tummy-lure-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 2px solid #182421;
+  width: min(220px, 100%);
+  margin: 0 auto 8px;
+}
+
+.soother-vol-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.soother-vol-row input[type='range'] {
+  flex: 1;
+  min-width: 100px;
+  accent-color: var(--sage);
+}
+
+/* --- ColoringBook & TraceCanvas Shared --- */
+.doodle-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.doodle-music-canvas {
+  width: 100%;
+  max-width: 480px;
+  aspect-ratio: 480 / 340;
+  margin: 0 auto;
+  position: relative;
+  border-radius: 22px;
+  border: 3px solid var(--border);
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  touch-action: none;
+}
+
+.doodle-music-canvas canvas,
+.doodle-music-canvas svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.color-palette-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.color-palette-bar.compact {
+  gap: 6px;
+}
+
+.palette-swatch-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 0 2px var(--border);
+  cursor: pointer;
+  transition: transform 130ms ease, box-shadow 150ms ease;
+}
+
+.palette-swatch-btn.is-active {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 3px var(--ink);
+}
+
+.trace-big-chip {
+  min-width: 48px;
+  min-height: 48px;
+  padding: 6px 12px;
+  border-radius: 14px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.trace-big-chip.is-active {
+  background: var(--sage);
+  border-color: var(--sage);
+  color: #ffffff;
+}
+
+/* --- NumberGarden Mobile-Safe --- */
+.number-grid-bar {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.num-chip-btn {
+  min-height: 46px;
+  border-radius: 14px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--ink);
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.num-chip-btn.is-active {
+  background: var(--sage);
+  border-color: var(--sage);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.num-chip-btn.is-done::after {
+  content: '✓';
+  position: absolute;
+  top: 2px;
+  right: 5px;
+  font-size: 0.68rem;
+  color: #2b9361;
+}
+
+.num-chip-btn.is-active.is-done::after {
+  color: #ffffff;
+}
+
+.number-play-card {
+  border-radius: 24px;
+  border: 2.5px solid var(--border);
+  background: var(--surface);
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.number-play-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.number-item-tap {
+  min-width: 68px;
+  min-height: 76px;
+  padding: 8px;
+  border-radius: 18px;
+  border: 2px solid var(--border);
+  background: var(--ground);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: transform 140ms ease, border-color 150ms ease, background-color 150ms ease;
+}
+
+.number-item-tap.is-counted {
+  background: #fff9e6;
+  border-color: var(--amber);
+  transform: scale(1.04);
+}
+
+.num-item-badge {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--sage);
+}
+
+.num-quiz-icons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px;
+}
+
+.num-quiz-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.num-quiz-option {
+  min-height: 60px;
+  border-radius: 18px;
+  border: 2.5px solid var(--sage);
+  background: var(--surface);
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: 900;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.num-quiz-option.is-correct {
+  background: var(--sage);
+  color: #ffffff;
+}
+
+/* --- AlphabetGarden Packed Mobile-Safe --- */
+.alpha-pack-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.alpha-big-chip {
+  min-height: 52px;
+  border-radius: 16px;
+  border: 2.5px solid var(--border);
+  background: var(--surface);
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alpha-big-chip.is-active {
+  background: var(--sage);
+  border-color: var(--sage);
+  color: #ffffff;
+  transform: scale(1.04);
+}
+
+.alpha-focus-card {
+  border-radius: 24px;
+  border: 2.5px solid var(--border);
+  background: var(--surface);
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.alpha-letter-hero {
+  border: none;
+  border-radius: 22px;
+  padding: 14px 28px;
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 3.4rem;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.alpha-word-hero {
+  width: 100%;
+  max-width: 360px;
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  background: var(--ground);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.alpha-hero-emoji {
+  font-size: 2.8rem;
+  line-height: 1;
+}
+
+.alpha-quiz-box {
+  border-radius: 24px;
+  border: 2.5px solid var(--sage);
+  background: var(--surface);
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* --- Visual Play Stages (GoodHabits, BodyEmotions, SizeSorter, FirstWords, Syllables, Math) --- */
+.habit-visual-stage {
+  border-radius: 24px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.habit-svg-arena {
+  width: min(100%, 340px);
+  height: auto;
+  display: block;
+  touch-action: manipulation;
+}
+
+.tidy-toys-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tidy-toy-btn {
+  min-width: 84px;
+  min-height: 84px;
+  padding: 10px;
+  border-radius: 20px;
+  border: 2.5px solid var(--amber);
+  background: #fff9ec;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 2rem;
+  cursor: pointer;
+  color: #182421;
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+
+.tidy-toy-btn span {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.tidy-toy-btn.is-collected {
+  opacity: 0.35;
+  transform: scale(0.88);
+  border-color: var(--sage);
+}
+
+.toy-box-visual {
+  width: min(100%, 280px);
+  padding: 14px;
+  border-radius: 20px;
+  border: 3px dashed var(--sage);
+  background: var(--sage-soft);
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.body-character-svg {
+  width: min(100%, 280px);
+  height: auto;
+  display: block;
+}
+
+.story-prompt-card {
+  width: 100%;
+  border-radius: 20px;
+  border: 2px solid var(--border);
+  background: var(--ground);
+  padding: 14px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.order-three-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.word-card-emoji {
+  font-size: 2.4rem;
+  line-height: 1.1;
+}
+
+.syllable-clue-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+}
+
+.syllable-clue-emoji {
+  font-size: 2.8rem;
+  line-height: 1;
+}
+
+.math-fruit-emoji {
+  font-size: 1.75rem;
+  line-height: 1.1;
+}
+
+/* --- Studio Musik (SensoryPlay) --- */
+.xylo-rack-clean {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 5px;
+  align-items: end;
+  padding: 12px 8px;
+  border-radius: 22px;
+  background: #f5efe4;
+  border: 2.5px solid #dfd4be;
+  min-height: 210px;
+}
+
+.xylo-bar-clean {
+  min-width: 0;
+  width: 100%;
+  border: 2px solid rgba(0, 0, 0, 0.14);
+  border-bottom-width: 5px;
+  border-radius: 14px;
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-weight: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 2px;
+  cursor: pointer;
+  transition: transform 110ms ease, box-shadow 140ms ease;
+  touch-action: manipulation;
+}
+
+.xylo-bar-clean.is-hit {
+  transform: translateY(3px) scale(0.96);
+}
+
+.xylo-bar-clean.is-guided {
+  box-shadow: 0 0 0 4px #ffd166, 0 0 18px rgba(255, 209, 102, 0.85);
+  transform: translateY(-6px);
+}
+
+.xylo-num {
+  font-size: 0.72rem;
+  opacity: 0.9;
+}
+
+.percussion-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.percussion-pad {
+  min-height: 68px;
+  border-radius: 18px;
+  border: 2.5px solid var(--border);
+  border-bottom-width: 5px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 800;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.percussion-pad:active {
+  transform: translateY(2px) scale(0.97);
+}
+
+/* --- Cilukba Hewan (PeekabooAnimals) --- */
+.peekaboo-clean-card {
+  width: min(100%, 340px);
+  min-height: 270px;
+  margin: 0 auto;
+  border-radius: 28px;
+  border: 3px solid var(--border);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 16px;
+}
+
+.peekaboo-clean-card.habitat-semak {
+  background: linear-gradient(180deg, #e7f6ea 0%, #c8e9cf 100%);
+}
+
+.peekaboo-clean-card.habitat-kolam {
+  background: linear-gradient(180deg, #e4f4fc 0%, #bae0f5 100%);
+}
+
+.peekaboo-clean-card.habitat-padang {
+  background: linear-gradient(180deg, #fff5dc 0%, #f9e2a9 100%);
+}
+
+.peekaboo-stage-center {
+  position: relative;
+  width: 190px;
+  height: 185px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.peekaboo-actor {
+  position: relative;
+  z-index: 2;
+  transition: transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.peekaboo-clean-card.stage-hidden .peekaboo-actor {
+  transform: translateY(38px) scale(0.74);
+}
+
+.peekaboo-clean-card.stage-peeking .peekaboo-actor {
+  transform: translateY(8px) scale(0.92);
+}
+
+.peekaboo-clean-card.stage-popped .peekaboo-actor {
+  transform: translateY(-10px) scale(1.08);
+}
+
+.peekaboo-cover {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  transition: transform 280ms ease, opacity 240ms ease;
+  pointer-events: none;
+}
+
+.peekaboo-clean-card.stage-peeking .peekaboo-cover {
+  transform: translateX(-50%) translateY(20px) scale(0.95);
+}
+
+.peekaboo-clean-card.stage-popped .peekaboo-cover {
+  transform: translateX(-50%) translateY(64px) scale(0.85);
+  opacity: 0.25;
+}
+
+/* --- BalloonCatch Mission Sky --- */
+.balloon-target-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 2.5px solid var(--sage);
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.balloon-sky-arena {
+  position: relative;
+  width: 100%;
+  height: min(62vh, 460px);
+  min-height: 340px;
+  border-radius: 26px;
+  border: 3px solid #cfe4f5;
+  background: linear-gradient(180deg, #dff1ff 0%, #f2f9ff 72%, #e6f4e8 100%);
+  overflow: hidden;
+  touch-action: none;
+}
+
+.balloon-done-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(255, 255, 255, 0.88);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  text-align: center;
+}
+
+/* --- ColorGarden Showcase & Mixer --- */
+.color-hero-showcase {
+  width: 100%;
+  border-radius: 22px;
+  border: 2.5px solid var(--border);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #182421;
+}
+
+.color-big-tile {
+  min-height: 92px;
+  border-radius: 20px;
+  border: 3px solid rgba(0, 0, 0, 0.12);
+  border-bottom-width: 5px;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: transform 130ms ease;
+}
+
+.color-big-tile:active {
+  transform: scale(0.96);
+}
+
+.mix-equation-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 0;
+}
+
+.mix-blob {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.78rem;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.mix-result-btn {
+  min-height: 64px;
+  min-width: 112px;
+  padding: 10px 16px;
+  border-radius: 20px;
+  border: 3px solid rgba(0, 0, 0, 0.14);
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+/* --- Portrait Boards (ShapeSorter & JigsawPuzzle) & Compact GrossMotor --- */
+.sorter-board-wrap.portrait-board,
+.puzzle-board-wrap.portrait-board {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.sorter-svg.portrait-svg,
+.puzzle-svg.portrait-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  touch-action: none;
+}
+
+.motor-arena.compact-motor {
+  padding: 14px;
+  gap: 14px;
+}
+
+/* --- Night Mode Polish for New Components --- */
+[data-theme='night'] .xylo-rack-clean {
+  background: #222926;
+  border-color: #36423d;
+}
+
+[data-theme='night'] .balloon-sky-arena {
+  background: linear-gradient(180deg, #1b2d3e 0%, #22384b 75%, #1d3228 100%);
+  border-color: #314b63;
+}
+
+[data-theme='night'] .balloon-done-overlay {
+  background: rgba(20, 27, 24, 0.9);
+}
+
+[data-theme='night'] .tidy-toy-btn {
+  background: #27322d;
+  color: var(--ink);
+}

@@ -19,7 +19,7 @@ import {
 import { setAudioPreferences, stopVoice, unlockAudio } from './lib/audio.ts';
 import { addBabyCareEntry, deleteBabyCareEntry, type BabyCareType } from './lib/babyCareStorage.ts';
 import { createBackupJson, parseAndValidateBackup } from './lib/backup.ts';
-import { isLullabyPlaying, startLullabyBgm, stopLullabyBgm } from './lib/bgm.ts';
+import { isLullabyPlaying, startBgm, stopLullabyBgm } from './lib/bgm.ts';
 import {
   computeAgeInfo,
   isModuleLockedByLimit,
@@ -185,16 +185,16 @@ export function App(): JSX.Element {
   }, [toastMessage]);
 
   useEffect(() => {
-    if (
-      settings.bgmEnabled &&
-      activeSimulation !== null &&
-      activeSimulation !== 'baby-soother'
-    ) {
-      if (!isLullabyPlaying()) startLullabyBgm();
-    } else if (activeSimulation !== 'baby-soother') {
-      if (isLullabyPlaying()) stopLullabyBgm();
+    if (activeSimulation === 'baby-soother' || activeSimulation === 'motor') {
+      return;
     }
-  }, [settings.bgmEnabled, activeSimulation]);
+    if (settings.bgmEnabled && activeSimulation !== null) {
+      const mood = activeSimMeta?.isBabyTool ? 'lullaby' : 'playful';
+      startBgm(mood);
+    } else if (isLullabyPlaying()) {
+      stopLullabyBgm();
+    }
+  }, [settings.bgmEnabled, activeSimulation, activeSimMeta]);
 
   useEffect(() => {
     const checkRollover = () => {

@@ -387,13 +387,13 @@ export const STIMULATION_MISSIONS: StimulationMission[] = [
     id: 'mis-23y-4',
     ageBand: '2-3y',
     pillar: 'bahasa',
-    title: 'Eksplorasi Bunyi Hewan & Instrumen',
+    title: 'Eksplorasi Irama Xilofon & Perkusi',
     durationLabel: '5 mnt',
-    summary: 'Asah diskriminasi bunyi dan nyanyian sederhana.',
+    summary: 'Asah diskriminasi nada, ritme, dan nyanyian anak Indonesia.',
     steps: [
-      'Buka Musik & Hewan lalu minta anak menebak suara apa yang muncul.',
-      'Ciptakan irama pelan-cepat di papan xilofon bersama.',
-      'Ajak anak bercerita tentang hewan favoritnya.'
+      'Buka Studio Musik lalu coba mode Ikuti Lampu bersama anak.',
+      'Ciptakan irama pelan-cepat memakai drum kayu & marakas.',
+      'Nyanyikan bersama lagu favorit anak.'
     ],
     linkedSimulation: 'sensory'
   },
@@ -509,7 +509,7 @@ export const SIMULATION_MODULES: SimulationModuleMeta[] = [
     goalLabel: 'Fokus Visual',
     pillar: 'kognitif',
     ageBands: ['0-3m', '3-6m'],
-    ageTag: '0–6 Bln',
+    ageTag: '0–4 Bln',
     isBabyTool: true,
     stickerId: 'sticker-newborn',
     surfaceTint: '#F4F4F2'
@@ -543,7 +543,7 @@ export const SIMULATION_MODULES: SimulationModuleMeta[] = [
   {
     key: 'peekaboo',
     title: 'Cilukba Hewan',
-    subtitle: 'Ketuk semak & tebak suara.',
+    subtitle: '10 hewan bersembunyi & tebak suara.',
     goalLabel: 'Sebab-Akibat',
     pillar: 'kognitif',
     ageBands: ['6-12m', '1-2y'],
@@ -567,7 +567,7 @@ export const SIMULATION_MODULES: SimulationModuleMeta[] = [
   {
     key: 'colors',
     title: 'Taman Warna',
-    subtitle: 'Kenali warna objek taman.',
+    subtitle: 'Kenali, cari & campur warna dasar.',
     goalLabel: 'Warna',
     pillar: 'bahasa',
     ageBands: ['1-2y', '2-3y'],
@@ -578,12 +578,12 @@ export const SIMULATION_MODULES: SimulationModuleMeta[] = [
   },
   {
     key: 'sensory',
-    title: 'Suara & Xilofon',
-    subtitle: 'Hewan & bilah 8 nada.',
-    goalLabel: 'Sensori',
+    title: 'Studio Musik',
+    subtitle: 'Xilofon 8 nada, drum & ikuti lampu lagu.',
+    goalLabel: 'Musik',
     pillar: 'bahasa',
-    ageBands: ['1-2y', '2-3y'],
-    ageTag: '1–3 Thn',
+    ageBands: ['1-2y', '2-3y', '3-5y'],
+    ageTag: '1–5 Thn',
     isBabyTool: false,
     stickerId: 'sticker-sensory',
     surfaceTint: '#FFF4EE'
@@ -591,7 +591,7 @@ export const SIMULATION_MODULES: SimulationModuleMeta[] = [
   {
     key: 'numbers',
     title: 'Kebun Angka',
-    subtitle: 'Berhitung visual 1 sampai 10.',
+    subtitle: 'Berhitung visual 1–10 & kuis hitung.',
     goalLabel: 'Angka',
     pillar: 'kognitif',
     ageBands: ['2-3y', '3-5y'],
@@ -603,11 +603,11 @@ export const SIMULATION_MODULES: SimulationModuleMeta[] = [
   {
     key: 'alphabet',
     title: 'Taman Huruf A–Z',
-    subtitle: 'Huruf & bunyi kata awal.',
+    subtitle: 'Huruf berpaket & kuis cari huruf.',
     goalLabel: 'Pra-Baca',
     pillar: 'bahasa',
-    ageBands: ['2-3y', '3-5y'],
-    ageTag: '2–5 Thn',
+    ageBands: ['3-5y'],
+    ageTag: '3–5 Thn',
     isBabyTool: false,
     stickerId: 'sticker-alphabet',
     surfaceTint: '#F5F2FB'
@@ -663,7 +663,7 @@ export const SIMULATION_MODULES: SimulationModuleMeta[] = [
   {
     key: 'puzzle',
     title: 'Puzzle Gambar',
-    subtitle: 'Susun potongan hewan & objek.',
+    subtitle: 'Susun keping 2×2 & 3×2 dengan intip gambar.',
     goalLabel: 'Problem Solving',
     pillar: 'kognitif',
     ageBands: ['3-5y'],
@@ -675,11 +675,11 @@ export const SIMULATION_MODULES: SimulationModuleMeta[] = [
   {
     key: 'balloon',
     title: 'Tangkap Balon',
-    subtitle: 'Ketuk balon gerak pelan.',
+    subtitle: 'Misi warna balon & mode gerak kamera.',
     goalLabel: 'Fokus',
     pillar: 'motor-halus',
-    ageBands: ['2-3y', '3-5y'],
-    ageTag: '2–5 Thn',
+    ageBands: ['3-5y'],
+    ageTag: '3–5 Thn',
     isBabyTool: false,
     stickerId: 'sticker-balloon',
     surfaceTint: '#EFF6F9'
@@ -687,7 +687,7 @@ export const SIMULATION_MODULES: SimulationModuleMeta[] = [
   {
     key: 'words',
     title: 'Kata Pertama',
-    subtitle: 'Kartu kata benda, buah & kendaraan.',
+    subtitle: '18 kartu kata ID/EN & kuis cari benda.',
     goalLabel: 'Kosakata Awal',
     pillar: 'bahasa',
     ageBands: ['1-2y', '2-3y'],
@@ -699,7 +699,7 @@ export const SIMULATION_MODULES: SimulationModuleMeta[] = [
   {
     key: 'body-emotions',
     title: 'Tubuh & Emosi',
-    subtitle: 'Kenali anggota tubuh dan ekspresi perasaan.',
+    subtitle: 'Sentuh bagian tubuh & tebak cerita emosi.',
     goalLabel: 'Sosial Emosi',
     pillar: 'bahasa',
     ageBands: ['1-2y', '2-3y', '3-5y'],
@@ -711,7 +711,7 @@ export const SIMULATION_MODULES: SimulationModuleMeta[] = [
   {
     key: 'size-sort',
     title: 'Besar & Kecil',
-    subtitle: 'Bandingkan ukuran benda dan pasangan cocok.',
+    subtitle: 'Bandingkan hewan & urutkan 3 ukuran.',
     goalLabel: 'Logika Ukuran',
     pillar: 'kognitif',
     ageBands: ['2-3y', '3-5y'],
@@ -723,7 +723,7 @@ export const SIMULATION_MODULES: SimulationModuleMeta[] = [
   {
     key: 'good-habits',
     title: 'Kebiasaan Baik',
-    subtitle: 'Urutkan langkah sikat gigi & cuci tangan.',
+    subtitle: 'Cuci tangan, sikat gigi & rapikan mainan.',
     goalLabel: 'Kemandirian',
     pillar: 'motor-halus',
     ageBands: ['2-3y', '3-5y'],

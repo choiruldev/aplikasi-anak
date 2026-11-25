@@ -30,25 +30,45 @@ const ALL_SHAPES: ShapeDef[] = [
   { kind: 'heart', label: 'Hati', colorName: 'Toska', fill: '#1D9A9E', okVoice: 'shape-ok-heart', hintVoice: 'shape-hint-heart' }
 ];
 
-const ROUND_SETS: number[][] = [
+const ROUND_SETS_4: number[][] = [
   [0, 1, 2, 3],
   [2, 4, 5, 0],
   [1, 3, 4, 5]
 ];
 
-const SLOT_POSITIONS: Point[] = [
-  { x: 110, y: 92 },
-  { x: 250, y: 92 },
-  { x: 390, y: 92 },
-  { x: 530, y: 92 }
+const SLOT_POS_4: Point[] = [
+  { x: 130, y: 74 },
+  { x: 290, y: 74 },
+  { x: 130, y: 158 },
+  { x: 290, y: 158 }
 ];
 
-const TRAY_POSITIONS: Point[] = [
-  { x: 110, y: 268 },
-  { x: 250, y: 268 },
-  { x: 390, y: 268 },
-  { x: 530, y: 268 }
+const TRAY_POS_4: Point[] = [
+  { x: 130, y: 274 },
+  { x: 290, y: 274 },
+  { x: 130, y: 358 },
+  { x: 290, y: 358 }
 ];
+
+const SLOT_POS_6: Point[] = [
+  { x: 96, y: 74 },
+  { x: 210, y: 74 },
+  { x: 324, y: 74 },
+  { x: 96, y: 158 },
+  { x: 210, y: 158 },
+  { x: 324, y: 158 }
+];
+
+const TRAY_POS_6: Point[] = [
+  { x: 96, y: 274 },
+  { x: 210, y: 274 },
+  { x: 324, y: 274 },
+  { x: 96, y: 358 },
+  { x: 210, y: 358 },
+  { x: 324, y: 358 }
+];
+
+type LevelMode = 'easy4' | 'mix6';
 
 interface PieceState {
   id: string;
@@ -58,22 +78,31 @@ interface PieceState {
   placedSlotId: string | null;
 }
 
-function buildRound(roundIdx: number): { slots: (SnapSlot & { shape: ShapeDef })[]; pieces: PieceState[] } {
-  const indices = ROUND_SETS[roundIdx % ROUND_SETS.length];
+function buildRound(
+  roundIdx: number,
+  level: LevelMode
+): { slots: (SnapSlot & { shape: ShapeDef })[]; pieces: PieceState[] } {
+  const isSix = level === 'mix6';
+  const indices = isSix ? [0, 1, 2, 3, 4, 5] : ROUND_SETS_4[roundIdx % ROUND_SETS_4.length];
   const chosen = indices.map((i) => ALL_SHAPES[i]);
+  const slotPos = isSix ? SLOT_POS_6 : SLOT_POS_4;
+  const trayPos = isSix ? TRAY_POS_6 : TRAY_POS_4;
 
   const slots = chosen.map((shape, idx) => ({
     id: `slot-${idx}`,
     kind: shape.kind,
-    x: SLOT_POSITIONS[idx].x,
-    y: SLOT_POSITIONS[idx].y,
+    x: slotPos[idx].x,
+    y: slotPos[idx].y,
     shape
   }));
 
-  const shuffledOrder = [2, 0, 3, 1];
-  const pieces = shuffledOrder.map((sourceIdx, trayIdx) => {
+  const order = isSix
+    ? [(roundIdx + 3) % 6, (roundIdx + 1) % 6, (roundIdx + 5) % 6, (roundIdx + 0) % 6, (roundIdx + 4) % 6, (roundIdx + 2) % 6]
+    : [2, 0, 3, 1];
+
+  const pieces = order.map((sourceIdx, trayIdx) => {
     const shape = chosen[sourceIdx];
-    const home = TRAY_POSITIONS[trayIdx];
+    const home = trayPos[trayIdx];
     return {
       id: `piece-${sourceIdx}`,
       shape,
@@ -87,12 +116,13 @@ function buildRound(roundIdx: number): { slots: (SnapSlot & { shape: ShapeDef })
 }
 
 export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) => void }): JSX.Element {
+  const [level, setLevel] = useState<LevelMode>('easy4');
   const [roundIdx, setRoundIdx] = useState(0);
-  const [board, setBoard] = useState(() => buildRound(0));
+  const [board, setBoard] = useState(() => buildRound(0, 'easy4'));
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const draggingIdRef = useRef<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [prompt, setPrompt] = useState('Cocokkan bentuk ke bayangan yang pas!');
+  const [prompt, setPrompt] = useState('Seret atau ketuk bentuk ke bayangan yang pas!');
   const [currentClip, setCurrentClip] = useState<VoiceClipId>('shapes-intro');
   const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -112,8 +142,8 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
     if (!svg) return { x: 0, y: 0 };
     const rect = svg.getBoundingClientRect();
     return {
-      x: ((clientX - rect.left) / rect.width) * 640,
-      y: ((clientY - rect.top) / rect.height) * 360
+      x: ((clientX - rect.left) / rect.width) * 420,
+      y: ((clientY - rect.top) / rect.height) * 420
     };
   }
 
@@ -125,8 +155,7 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
       );
       const placedCount = updated.filter((p) => p.placedSlotId !== null).length;
       playStepNote(placedCount + 1);
-      const msg = `Hebat! Bentuk ${slot.shape.label} pas!`;
-      setPrompt(msg);
+      setPrompt(`Hebat! ${slot.shape.label} pas!`);
 
       if (placedCount === updated.length) {
         triggerHaptic('success');
@@ -136,9 +165,9 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
         window.setTimeout(() => {
           playSuccessChime();
           onComplete('sticker-shapes');
-          setPrompt('Hebat! Yeaaay! 🎉 Semua bentuk terpasang!');
-          playVoice('shapes-done', 380);
-        }, 1250);
+          setPrompt('Yeaaay! Semua bentuk terpasang rapi!');
+          playVoice('shapes-done', 360);
+        }, 1100);
       } else {
         setCurrentClip(slot.shape.okVoice);
         playVoice(slot.shape.okVoice, 140);
@@ -152,7 +181,7 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
-      // Safe fallback when pointer capture is unsupported or synthetic
+      // Safe fallback
     }
     playGentlePop();
     draggingIdRef.current = piece.id;
@@ -190,7 +219,7 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
     const occupied = new Set(
       board.pieces.map((p) => p.placedSlotId).filter((id): id is string => id !== null)
     );
-    const hit = findSnapTarget(pt, board.slots, piece.shape.kind, occupied, 68);
+    const hit = findSnapTarget(pt, board.slots, piece.shape.kind, occupied, 58);
     if (hit) {
       const fullSlot = board.slots.find((s) => s.id === hit.id)!;
       setSelectedId(null);
@@ -215,72 +244,109 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
       setSelectedId(null);
       finishPlacement(piece.id, slot);
     } else {
-      const hint = `Ini bentuk ${slot.shape.label}. Cari keping ${slot.shape.label} ya!`;
-      setPrompt(hint);
+      setPrompt(`Ini lubang ${slot.shape.label}. Cari bentuk yang sama ya!`);
       setCurrentClip(slot.shape.hintVoice);
       playVoice(slot.shape.hintVoice);
     }
   }
 
-  function nextRound(): void {
-    const next = roundIdx + 1;
-    setRoundIdx(next);
-    setBoard(buildRound(next));
+  function switchLevel(nextLevel: LevelMode): void {
+    setLevel(nextLevel);
+    setRoundIdx(0);
+    setBoard(buildRound(0, nextLevel));
     setSelectedId(null);
     draggingIdRef.current = null;
     setDraggingId(null);
-    setPrompt('Pasang keempat bentuk ke bayangannya!');
+    setPrompt(nextLevel === 'mix6' ? 'Tantangan 6 bentuk! Pasang semuanya!' : 'Pasang keempat bentuk ke bayangannya!');
     setCurrentClip('shapes-new-board');
     playVoice('shapes-new-board');
   }
 
-  const allPlaced = board.pieces.every((p) => p.placedSlotId !== null);
+  function nextRound(): void {
+    const next = roundIdx + 1;
+    setRoundIdx(next);
+    setBoard(buildRound(next, level));
+    setSelectedId(null);
+    draggingIdRef.current = null;
+    setDraggingId(null);
+    setPrompt('Papan baru siap! Ayo cocokkan lagi!');
+    setCurrentClip('shapes-new-board');
+    playVoice('shapes-new-board');
+  }
+
+  const placedCount = board.pieces.filter((p) => p.placedSlotId !== null).length;
+  const allPlaced = placedCount === board.pieces.length;
+  const glyphSize = level === 'mix6' ? 68 : 76;
+  const half = glyphSize / 2;
 
   return (
-    <section className="activity-stage" aria-labelledby="sorter-title">
-      <div className="stage-header">
-        <div>
-          <div className="stage-title-row">
-            <h1 id="sorter-title" className="stage-title">Bentuk Kayu</h1>
-            <VisualStarMeter count={roundIdx} total={3} />
-          </div>
-          <p className="stage-subtitle">{allPlaced ? '🎉 Pas sekali!' : prompt}</p>
-        </div>
-        <div className="stage-actions">
-          <button type="button" className="voice-btn" onClick={() => playVoice(currentClip)}>
-            <IconSpeaker size={22} />
-            <span>Dengar</span>
+    <section className="game-clean-stage" aria-label="Kotak Bentuk">
+      <div className="game-top-bar">
+        <div className="segmented-tabs" role="tablist" aria-label="Level bentuk">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={level === 'easy4'}
+            className={`seg-tab touch-safe ${level === 'easy4' ? 'is-active' : ''}`}
+            onClick={() => switchLevel('easy4')}
+          >
+            4 Bentuk
           </button>
-          <button type="button" className="secondary-btn" onClick={nextRound}>
-            {allPlaced ? 'Lagi 🔄' : 'Acak 🎲'}
+          <button
+            type="button"
+            role="tab"
+            aria-selected={level === 'mix6'}
+            className={`seg-tab touch-safe ${level === 'mix6' ? 'is-active' : ''}`}
+            onClick={() => switchLevel('mix6')}
+          >
+            6 Campur
+          </button>
+        </div>
+
+        <div className="game-top-tools">
+          <VisualStarMeter count={placedCount} total={board.pieces.length} />
+          <button
+            type="button"
+            className="icon-tool-btn touch-safe"
+            onClick={() => playVoice(currentClip)}
+            aria-label="Dengar suara"
+          >
+            <IconSpeaker size={20} />
+          </button>
+          <button type="button" className="secondary-btn touch-safe" onClick={nextRound}>
+            {allPlaced ? 'Lagi 🔄' : 'Acak'}
           </button>
         </div>
       </div>
 
-      <div className="sorter-board-wrap">
+      <p className="game-mini-status">{prompt}</p>
+
+      <div className="sorter-board-wrap portrait-board">
         <svg
           ref={svgRef}
-          viewBox="0 0 640 360"
-          className="sorter-svg"
+          viewBox="0 0 420 420"
+          className="sorter-svg portrait-svg"
           role="application"
           aria-label="Papan pasang bentuk"
         >
+          {/* Upper wooden slots board */}
           <rect
-            x="24"
-            y="20"
-            width="592"
-            height="146"
+            x="14"
+            y="14"
+            width="392"
+            height="196"
             rx="24"
             fill="#EFE8D8"
             stroke="#D5CBB4"
             strokeWidth="3"
             pointerEvents="none"
           />
+          {/* Lower tray */}
           <rect
-            x="24"
-            y="190"
-            width="592"
-            height="150"
+            x="14"
+            y="222"
+            width="392"
+            height="186"
             rx="24"
             fill="#E4ECE0"
             pointerEvents="none"
@@ -289,7 +355,7 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
           {board.slots.map((slot) => (
             <g
               key={slot.id}
-              transform={`translate(${slot.x - 42}, ${slot.y - 42})`}
+              transform={`translate(${slot.x - half}, ${slot.y - half})`}
               onClick={() => handleSlotClick(slot)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -302,7 +368,7 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
               aria-label={`Lubang ${slot.shape.label}`}
               style={{ cursor: 'pointer' }}
             >
-              <ShapeGlyph shape={slot.shape.kind} fill={slot.shape.fill} size={84} cutout />
+              <ShapeGlyph shape={slot.shape.kind} fill={slot.shape.fill} size={glyphSize} cutout />
             </g>
           ))}
 
@@ -313,7 +379,7 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
             return (
               <g
                 key={piece.id}
-                transform={`translate(${piece.pos.x}, ${piece.pos.y}) scale(${scale}) translate(-42, -42)`}
+                transform={`translate(${piece.pos.x}, ${piece.pos.y}) scale(${scale}) translate(${-half}, ${-half})`}
                 onPointerDown={(e) => handlePointerDown(e, piece)}
                 onPointerMove={(e) => handlePointerMove(e, piece)}
                 onPointerUp={(e) => handlePointerUp(e, piece)}
@@ -322,14 +388,14 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
                   if (piece.placedSlotId) return;
                   playGentlePop();
                   setSelectedId(piece.id);
-                  setPrompt(`Keping ${piece.shape.label} dipilih. Ketuk lubang yang cocok di atas!`);
+                  setPrompt(`${piece.shape.label} dipilih. Ketuk lubang yang cocok di atas!`);
                 }}
                 onKeyDown={(e) => {
                   if ((e.key === 'Enter' || e.key === ' ') && !piece.placedSlotId) {
                     e.preventDefault();
                     playGentlePop();
                     setSelectedId(piece.id);
-                    setPrompt(`Keping ${piece.shape.label} dipilih. Ketuk lubang yang cocok di atas!`);
+                    setPrompt(`${piece.shape.label} dipilih. Ketuk lubang yang cocok di atas!`);
                   }
                 }}
                 tabIndex={piece.placedSlotId ? -1 : 0}
@@ -341,17 +407,21 @@ export function ShapeSorter({ onComplete }: { onComplete: (stickerId: string) =>
                 }}
               >
                 {isSelected && (
-                  <circle cx="42" cy="42" r="46" fill="none" stroke="#1F7A5C" strokeWidth="3.5" strokeDasharray="6 4" />
+                  <circle
+                    cx={half}
+                    cy={half}
+                    r={half + 5}
+                    fill="none"
+                    stroke="#1F7A5C"
+                    strokeWidth="3.5"
+                    strokeDasharray="6 4"
+                  />
                 )}
-                <ShapeGlyph shape={piece.shape.kind} fill={piece.shape.fill} size={84} />
+                <ShapeGlyph shape={piece.shape.kind} fill={piece.shape.fill} size={glyphSize} />
               </g>
             );
           })}
         </svg>
-      </div>
-
-      <div className="progress-strip" aria-live="polite">
-        <span>Terpasang: {board.pieces.filter((p) => p.placedSlotId !== null).length} / {board.pieces.length} bentuk</span>
       </div>
     </section>
   );

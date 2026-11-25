@@ -50,6 +50,7 @@ export function TummyTimeGuide({
   const [secondsLeft, setSecondsLeft] = useState<number>(180);
   const [running, setRunning] = useState(false);
   const [finished, setFinished] = useState(false);
+  const [showLureFace, setShowLureFace] = useState(false);
   const [promptIndex, setPromptIndex] = useState(0);
   const onCompleteRef = useRef(onComplete);
   const onAddSecondsRef = useRef(onAddSeconds);
@@ -140,7 +141,7 @@ export function TummyTimeGuide({
         </div>
         <button
           type="button"
-          className="btn-outline btn-compact"
+          className="btn-outline touch-safe"
           onClick={() => {
             playGentlePop();
             onAddSeconds?.(60);
@@ -155,13 +156,33 @@ export function TummyTimeGuide({
           <button
             key={mins}
             type="button"
-            className={`pill-btn ${presetMinutes === mins ? 'is-active' : ''}`}
+            className={`pill-btn touch-safe ${presetMinutes === mins ? 'is-active' : ''}`}
             onClick={() => handleSelectPreset(mins)}
           >
             {mins} Menit
           </button>
         ))}
+        <button
+          type="button"
+          className={`pill-btn touch-safe ${showLureFace ? 'is-active' : ''}`}
+          onClick={() => setShowLureFace((v) => !v)}
+        >
+          {showLureFace ? 'Tutup Wajah' : 'Wajah Fokus'}
+        </button>
       </div>
+
+      {showLureFace && (
+        <div className="tummy-lure-box" aria-label="Wajah kontras pemancing tatapan bayi">
+          <svg viewBox="0 0 180 120" width="160" height="106" aria-hidden="true">
+            <rect width="180" height="120" rx="18" fill="#FFFFFF" stroke="#111111" strokeWidth="4" />
+            <circle cx="62" cy="48" r="12" fill="#111111" />
+            <circle cx="118" cy="48" r="12" fill="#111111" />
+            <circle cx="58" cy="44" r="3.5" fill="#FFFFFF" />
+            <circle cx="114" cy="44" r="3.5" fill="#FFFFFF" />
+            <path d="M58 80 Q90 106 122 80" stroke="#E53935" strokeWidth="10" strokeLinecap="round" fill="none" />
+          </svg>
+        </div>
+      )}
 
       <div className="tummy-timer-card">
         <div className="tummy-clock tabular" aria-live="polite">
@@ -178,10 +199,10 @@ export function TummyTimeGuide({
               : 'Matras rata · Bayi siap tengkurap'}
         </p>
         <div className="baby-tool-controls">
-          <button type="button" className="btn-primary-calm" onClick={toggleRun}>
+          <button type="button" className="btn-primary-calm touch-safe" onClick={toggleRun}>
             {running ? 'Jeda' : finished ? 'Ulangi' : 'Mulai'}
           </button>
-          <button type="button" className="btn-outline" onClick={handleReset}>
+          <button type="button" className="btn-outline touch-safe" onClick={handleReset}>
             Reset
           </button>
         </div>
@@ -195,7 +216,7 @@ export function TummyTimeGuide({
               <button
                 key={p.id}
                 type="button"
-                className={`mini-tab ${idx === promptIndex ? 'is-active' : ''}`}
+                className={`pill-btn touch-safe ${idx === promptIndex ? 'is-active' : ''}`}
                 onClick={() => setPromptIndex(idx)}
                 aria-label={`Ide ${idx + 1}`}
               >

@@ -202,6 +202,7 @@ export function HighContrastCards({ onComplete }: Props): JSX.Element {
   const [index, setIndex] = useState(0);
   const [inverted, setInverted] = useState(false);
   const [autoSlide, setAutoSlide] = useState(false);
+  const [fullFocus, setFullFocus] = useState(false);
   const [seenIds, setSeenIds] = useState<string[]>(['concentric']);
   const touchStartXRef = useRef<number | null>(null);
   const completedRef = useRef(false);
@@ -237,13 +238,24 @@ export function HighContrastCards({ onComplete }: Props): JSX.Element {
 
   return (
     <div className="baby-tool-wrap">
-      <div className="baby-tool-banner" role="note">
-        Jarak 20–30 cm · Geser atau ketuk · {index + 1}/{CARDS.length}
-      </div>
+      {!fullFocus && (
+        <div className="soother-top-strip">
+          <div className="baby-tool-banner" role="note">
+            Jarak 20–30 cm · {index + 1}/{CARDS.length}
+          </div>
+          <button
+            type="button"
+            className="btn-outline touch-safe"
+            onClick={() => setFullFocus(true)}
+          >
+            Layar Penuh
+          </button>
+        </div>
+      )}
 
       <button
         type="button"
-        className={`hc-card-stage ${inverted ? 'is-dark' : 'is-light'}`}
+        className={`hc-card-stage ${inverted ? 'is-dark' : 'is-light'} ${fullFocus ? 'is-fullfocus' : ''}`}
         onClick={() => stepCard(1)}
         onTouchStart={(e) => {
           touchStartXRef.current = e.changedTouches[0]?.clientX ?? null;
@@ -264,44 +276,56 @@ export function HighContrastCards({ onComplete }: Props): JSX.Element {
         {card.renderGraphic(inverted)}
       </button>
 
-      <div className="hc-card-meta">
-        <h3>{card.title}</h3>
-        <p>{card.tip}</p>
-      </div>
-
-      <div className="baby-tool-controls">
-        <button type="button" className="btn-outline" onClick={() => stepCard(-1)} aria-label="Kartu sebelumnya">
-          ← Mundur
-        </button>
+      {fullFocus ? (
         <button
           type="button"
-          className="btn-outline"
-          onClick={() => setInverted((v) => !v)}
-          aria-pressed={inverted}
+          className="btn-outline touch-safe"
+          onClick={() => setFullFocus(false)}
         >
-          {inverted ? 'Terang' : 'Gelap'}
+          Tampilkan Kontrol
         </button>
-        <button
-          type="button"
-          className={`btn-outline ${autoSlide ? 'is-selected' : ''}`}
-          onClick={() => setAutoSlide((v) => !v)}
-          aria-pressed={autoSlide}
-        >
-          {autoSlide ? 'Auto 15d ✓' : 'Auto 15d'}
-        </button>
-        <button type="button" className="btn-primary-calm" onClick={() => stepCard(1)} aria-label="Kartu berikutnya">
-          Lanjut →
-        </button>
-      </div>
+      ) : (
+        <>
+          <div className="hc-card-meta">
+            <h3>{card.title}</h3>
+            <p>{card.tip}</p>
+          </div>
 
-      <div className="hc-dots" aria-hidden="true">
-        {CARDS.map((c, idx) => (
-          <span
-            key={c.id}
-            className={`hc-dot ${idx === index ? 'is-active' : seenIds.includes(c.id) ? 'is-seen' : ''}`}
-          />
-        ))}
-      </div>
+          <div className="baby-tool-controls">
+            <button type="button" className="btn-outline touch-safe" onClick={() => stepCard(-1)} aria-label="Kartu sebelumnya">
+              ← Mundur
+            </button>
+            <button
+              type="button"
+              className="btn-outline touch-safe"
+              onClick={() => setInverted((v) => !v)}
+              aria-pressed={inverted}
+            >
+              {inverted ? 'Terang' : 'Gelap'}
+            </button>
+            <button
+              type="button"
+              className={`btn-outline touch-safe ${autoSlide ? 'is-selected' : ''}`}
+              onClick={() => setAutoSlide((v) => !v)}
+              aria-pressed={autoSlide}
+            >
+              {autoSlide ? 'Auto ✓' : 'Auto 15d'}
+            </button>
+            <button type="button" className="btn-primary-calm touch-safe" onClick={() => stepCard(1)} aria-label="Kartu berikutnya">
+              Lanjut →
+            </button>
+          </div>
+
+          <div className="hc-dots" aria-hidden="true">
+            {CARDS.map((c, idx) => (
+              <span
+                key={c.id}
+                className={`hc-dot ${idx === index ? 'is-active' : seenIds.includes(c.id) ? 'is-seen' : ''}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

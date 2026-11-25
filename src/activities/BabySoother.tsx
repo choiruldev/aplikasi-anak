@@ -33,6 +33,8 @@ function formatMMSS(totalSeconds: number): string {
 
 export function BabySoother({ onComplete }: Props): JSX.Element {
   const [activeSound, setActiveSound] = useState<SootherSound>('off');
+  const [sootherTab, setSootherTab] = useState<'sleep' | 'rattle'>('sleep');
+  const [volumePct, setVolumePct] = useState<number>(70);
   const [timerMinutes, setTimerMinutes] = useState<number>(10);
   const [secondsLeft, setSecondsLeft] = useState<number>(600);
   const [rattlePulse, setRattlePulse] = useState(false);
@@ -317,100 +319,140 @@ export function BabySoother({ onComplete }: Props): JSX.Element {
         ? 'Tarik napas...'
         : 'Hembus pelan...';
 
+  useEffect(() => {
+    if (gainRef.current && ctxRef.current) {
+      gainRef.current.gain.setTargetAtTime(0.18 * (volumePct / 100), ctxRef.current.currentTime, 0.08);
+    }
+  }, [volumePct]);
+
   return (
     <div className={`baby-tool-wrap ${dimmerOn ? 'is-dimmed-stage' : ''}`}>
       <div className="soother-top-strip">
-        <span className="baby-tool-banner" role="note">
-          Volume pelan · Jarak ≥ 1m
-        </span>
+        <div className="chip-row" role="tablist" aria-label="Mode penenang bayi">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={sootherTab === 'sleep'}
+            className={`pill-btn touch-safe ${sootherTab === 'sleep' ? 'is-active' : ''}`}
+            onClick={() => setSootherTab('sleep')}
+          >
+            Suara Tidur
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={sootherTab === 'rattle'}
+            className={`pill-btn touch-safe ${sootherTab === 'rattle' ? 'is-active' : ''}`}
+            onClick={() => setSootherTab('rattle')}
+          >
+            Kerincingan
+          </button>
+        </div>
         <button
           type="button"
-          className={`btn-outline btn-compact ${dimmerOn ? 'is-selected' : ''}`}
+          className={`btn-outline touch-safe ${dimmerOn ? 'is-selected' : ''}`}
           onClick={() => setDimmerOn((v) => !v)}
           aria-pressed={dimmerOn}
         >
-          <MoonIcon size={14} /> {dimmerOn ? 'Terangkan' : 'Redupkan'}
+          <MoonIcon size={14} /> {dimmerOn ? 'Terang' : 'Redup'}
         </button>
       </div>
 
-      <div className="soother-sound-grid">
-        {SOUND_OPTIONS.map((opt) => {
-          const isActive = activeSound === opt.id;
-          return (
-            <button
-              key={opt.id}
-              type="button"
-              className={`soother-option ${isActive ? 'is-active' : ''}`}
-              onClick={() => handleToggleSound(opt.id)}
-              aria-pressed={isActive}
-            >
-              <div className="soother-option-head">
-                <strong>{opt.title}</strong>
-                <span className="pill-badge">{isActive ? 'Aktif' : 'Putar'}</span>
-              </div>
-              <p>{opt.desc}</p>
-            </button>
-          );
-        })}
-      </div>
+      {sootherTab === 'sleep' ? (
+        <>
+          <label className="soother-vol-row">
+            <span>Volume Lembut: <strong>{volumePct}%</strong></span>
+            <input
+              type="range"
+              min={15}
+              max={100}
+              value={volumePct}
+              onChange={(e) => setVolumePct(Number(e.target.value))}
+            />
+          </label>
 
-      <div className="soother-timer-box">
-        <div className="soother-timer-row">
-          <div>
-            <span className="eyebrow">Auto-Off</span>
-            <div className="soother-countdown tabular">
-              {activeSound === 'off' ? `${timerMinutes}:00` : formatMMSS(secondsLeft)}
+          <div className="soother-sound-grid">
+            {SOUND_OPTIONS.map((opt) => {
+              const isActive = activeSound === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  className={`soother-option ${isActive ? 'is-active' : ''}`}
+                  onClick={() => handleToggleSound(opt.id)}
+                  aria-pressed={isActive}
+                >
+                  <div className="soother-option-head">
+                    <strong>{opt.title}</strong>
+                    <span className="pill-badge">{isActive ? 'Aktif' : 'Putar'}</span>
+                  </div>
+                  <p>{opt.desc}</p>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="soother-timer-box">
+            <div className="soother-timer-row">
+              <div>
+                <span className="eyebrow">Auto-Off</span>
+                <div className="soother-countdown tabular">
+                  {activeSound === 'off' ? `${timerMinutes}:00` : formatMMSS(secondsLeft)}
+                </div>
+              </div>
+              <div className="tummy-preset-row" role="group" aria-label="Durasi mati otomatis">
+                {TIMER_OPTIONS.map((mins) => (
+                  <button
+                    key={mins}
+                    type="button"
+                    className={`pill-btn touch-safe ${timerMinutes === mins ? 'is-active' : ''}`}
+                    onClick={() => handleSelectTimer(mins)}
+                  >
+                    {mins}m
+                  </button>
+                ))}
+              </div>
+            </div>
+            {activeSound !== 'off' && (
+              <button type="button" className="btn-outline touch-safe" onClick={handleStopSound}>
+                Matikan Suara
+              </button>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="soother-stereo-box">
+            <div className="soother-stereo-head">
+              <strong>Kerincingan Stereo</strong>
+              <span>Latih respons menoleh</span>
+            </div>
+            <div className="soother-pan-row">
+              <button type="button" className={`pill-btn touch-safe ${rattlePulse ? 'is-active' : ''}`} onClick={() => playRattle(-0.9)}>
+                ← Kiri
+              </button>
+              <button type="button" className={`pill-btn touch-safe ${rattlePulse ? 'is-active' : ''}`} onClick={() => playRattle(0)}>
+                Tengah
+              </button>
+              <button type="button" className={`pill-btn touch-safe ${rattlePulse ? 'is-active' : ''}`} onClick={() => playRattle(0.9)}>
+                Kanan →
+              </button>
             </div>
           </div>
-          <div className="tummy-preset-row" role="group" aria-label="Durasi mati otomatis">
-            {TIMER_OPTIONS.map((mins) => (
-              <button
-                key={mins}
-                type="button"
-                className={`pill-btn ${timerMinutes === mins ? 'is-active' : ''}`}
-                onClick={() => handleSelectTimer(mins)}
-              >
-                {mins}m
-              </button>
-            ))}
-          </div>
-        </div>
-        {activeSound !== 'off' && (
-          <button type="button" className="btn-outline" onClick={handleStopSound}>
-            Matikan Suara
-          </button>
-        )}
-      </div>
 
-      <div className="soother-stereo-box">
-        <div className="soother-stereo-head">
-          <strong>Kerincingan Stereo</strong>
-          <span>Latih respons menoleh</span>
-        </div>
-        <div className="soother-pan-row">
-          <button type="button" className={`pill-btn ${rattlePulse ? 'is-active' : ''}`} onClick={() => playRattle(-0.9)}>
-            ← Kiri
+          <button
+            type="button"
+            className={`soother-breath-btn ${breathSeconds > 0 ? 'is-active' : ''}`}
+            onClick={() => setBreathSeconds((s) => (s > 0 ? 0 : 30))}
+          >
+            <span className={`soother-breath-orb ${breathSeconds > 0 && breathSeconds % 6 >= 3 ? 'is-inhale' : ''}`} />
+            <div>
+              <strong>Napas Tenang Orang Tua</strong>
+              <span>{breathSeconds > 0 ? `${breathPhase} (${breathSeconds}d)` : 'Ketuk untuk panduan 30 detik'}</span>
+            </div>
           </button>
-          <button type="button" className={`pill-btn ${rattlePulse ? 'is-active' : ''}`} onClick={() => playRattle(0)}>
-            Tengah
-          </button>
-          <button type="button" className={`pill-btn ${rattlePulse ? 'is-active' : ''}`} onClick={() => playRattle(0.9)}>
-            Kanan →
-          </button>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        className={`soother-breath-btn ${breathSeconds > 0 ? 'is-active' : ''}`}
-        onClick={() => setBreathSeconds((s) => (s > 0 ? 0 : 30))}
-      >
-        <span className={`soother-breath-orb ${breathSeconds > 0 && breathSeconds % 6 >= 3 ? 'is-inhale' : ''}`} />
-        <div>
-          <strong>Napas Tenang Orang Tua</strong>
-          <span>{breathSeconds > 0 ? `${breathPhase} (${breathSeconds}d)` : 'Ketuk untuk panduan 30 detik'}</span>
-        </div>
-      </button>
+        </>
+      )}
     </div>
   );
 }

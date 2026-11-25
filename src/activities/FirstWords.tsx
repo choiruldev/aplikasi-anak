@@ -1,106 +1,42 @@
-import { useState, type JSX } from 'react';
-import { VisualStarMeter } from '../components/Art.tsx';
-import { playGentlePop, playSuccessChime, speakPhrase } from '../lib/audio.ts';
+import { useMemo, useState, type JSX } from 'react';
+import { IconSpeaker, VisualStarMeter } from '../components/Art.tsx';
+import { playBubblePop, playGentlePop, playSuccessChime, speakPhrase } from '../lib/audio.ts';
 import { fireConfetti, triggerHaptic } from '../lib/confetti.ts';
 
-interface WordItem {
+type WordCategory = 'Buah' | 'Rumah' | 'Kendaraan';
+
+interface WordCard {
   id: string;
   idLabel: string;
   enLabel: string;
-  category: 'Buah' | 'Benda' | 'Kendaraan';
+  category: WordCategory;
   tint: string;
-  renderArt: () => JSX.Element;
+  color: string;
+  emoji: string;
 }
 
-const WORDS: WordItem[] = [
-  {
-    id: 'apel',
-    idLabel: 'Apel',
-    enLabel: 'Apple',
-    category: 'Buah',
-    tint: '#FFE8E8',
-    renderArt: () => (
-      <svg viewBox="0 0 80 80" width="76" height="76" aria-hidden="true">
-        <path d="M40 20c5-7 13-7 13-2s-8 6-13 2Z" fill="#2B6E4F" />
-        <path d="M40 16v8" stroke="#6B4423" strokeWidth="3.5" strokeLinecap="round" />
-        <path d="M40 26c15-4 24 8 20 24s-14 18-20 15c-6 3-16 1-20-15s5-28 20-24Z" fill="#E84848" />
-        <ellipse cx="31" cy="36" rx="4" ry="7" fill="#FF8A8A" opacity="0.6" />
-      </svg>
-    )
-  },
-  {
-    id: 'pisang',
-    idLabel: 'Pisang',
-    enLabel: 'Banana',
-    category: 'Buah',
-    tint: '#FFF7DB',
-    renderArt: () => (
-      <svg viewBox="0 0 80 80" width="76" height="76" aria-hidden="true">
-        <path d="M18 52c14 14 42 4 46-28 1-4-4-7-6-3-4 18-22 28-38 22-4-1-5 6-2 9Z" fill="#F7B731" stroke="#D98A00" strokeWidth="2.5" />
-      </svg>
-    )
-  },
-  {
-    id: 'bola',
-    idLabel: 'Bola',
-    enLabel: 'Ball',
-    category: 'Benda',
-    tint: '#E8F3FF',
-    renderArt: () => (
-      <svg viewBox="0 0 80 80" width="76" height="76" aria-hidden="true">
-        <circle cx="40" cy="40" r="24" fill="#2D8CF0" />
-        <path d="M22 25c10 10 26 10 36 0M22 55c10-10 26-10 36 0" stroke="#FFFDF7" strokeWidth="4" fill="none" />
-        <circle cx="40" cy="40" r="24" fill="none" stroke="#182421" strokeWidth="2.5" />
-      </svg>
-    )
-  },
-  {
-    id: 'buku',
-    idLabel: 'Buku',
-    enLabel: 'Book',
-    category: 'Benda',
-    tint: '#EAF8EE',
-    renderArt: () => (
-      <svg viewBox="0 0 80 80" width="76" height="76" aria-hidden="true">
-        <rect x="16" y="20" width="48" height="40" rx="5" fill="#2B6E4F" />
-        <rect x="20" y="24" width="18" height="32" rx="2" fill="#FFFDF7" />
-        <rect x="42" y="24" width="18" height="32" rx="2" fill="#FFFDF7" />
-        <line x1="24" y1="32" x2="34" y2="32" stroke="#95B5A4" strokeWidth="2.5" strokeLinecap="round" />
-        <line x1="46" y1="32" x2="56" y2="32" stroke="#95B5A4" strokeWidth="2.5" strokeLinecap="round" />
-      </svg>
-    )
-  },
-  {
-    id: 'mobil',
-    idLabel: 'Mobil',
-    enLabel: 'Car',
-    category: 'Kendaraan',
-    tint: '#FFF0E5',
-    renderArt: () => (
-      <svg viewBox="0 0 80 80" width="76" height="76" aria-hidden="true">
-        <path d="M16 42l8-14h28l10 14H16Z" fill="#E07A18" />
-        <rect x="12" y="40" width="56" height="14" rx="6" fill="#E07A18" />
-        <circle cx="24" cy="56" r="7" fill="#182421" />
-        <circle cx="56" cy="56" r="7" fill="#182421" />
-        <circle cx="24" cy="56" r="3" fill="#FFFDF7" />
-        <circle cx="56" cy="56" r="3" fill="#FFFDF7" />
-      </svg>
-    )
-  },
-  {
-    id: 'sepeda',
-    idLabel: 'Sepeda',
-    enLabel: 'Bicycle',
-    category: 'Kendaraan',
-    tint: '#F2ECFF',
-    renderArt: () => (
-      <svg viewBox="0 0 80 80" width="76" height="76" aria-hidden="true">
-        <circle cx="22" cy="52" r="12" fill="none" stroke="#8045D9" strokeWidth="4" />
-        <circle cx="58" cy="52" r="12" fill="none" stroke="#8045D9" strokeWidth="4" />
-        <path d="M22 52l14-20h14l8 20M36 32l4 20h18" fill="none" stroke="#2B6E4F" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    )
-  }
+const WORDS: WordCard[] = [
+  // Buah (6)
+  { id: 'apel', idLabel: 'Apel', enLabel: 'Apple', category: 'Buah', tint: '#FFEAEA', color: '#D94848', emoji: '🍎' },
+  { id: 'pisang', idLabel: 'Pisang', enLabel: 'Banana', category: 'Buah', tint: '#FFF8DC', color: '#D98A00', emoji: '🍌' },
+  { id: 'jeruk', idLabel: 'Jeruk', enLabel: 'Orange', category: 'Buah', tint: '#FFF1E2', color: '#E07A18', emoji: '🍊' },
+  { id: 'semangka', idLabel: 'Semangka', enLabel: 'Watermelon', category: 'Buah', tint: '#E8F7EE', color: '#2B6E4F', emoji: '🍉' },
+  { id: 'anggur', idLabel: 'Anggur', enLabel: 'Grapes', category: 'Buah', tint: '#F3EBFF', color: '#8045D9', emoji: '🍇' },
+  { id: 'stroberi', idLabel: 'Stroberi', enLabel: 'Strawberry', category: 'Buah', tint: '#FFEAEE', color: '#D8435E', emoji: '🍓' },
+  // Rumah (6)
+  { id: 'bola', idLabel: 'Bola', enLabel: 'Ball', category: 'Rumah', tint: '#E7F3FF', color: '#2D6CDF', emoji: '⚽' },
+  { id: 'buku', idLabel: 'Buku', enLabel: 'Book', category: 'Rumah', tint: '#EAF7EE', color: '#2B6E4F', emoji: '📖' },
+  { id: 'gelas', idLabel: 'Gelas', enLabel: 'Cup', category: 'Rumah', tint: '#E6F7FA', color: '#12899C', emoji: '🥛' },
+  { id: 'sendok', idLabel: 'Sendok', enLabel: 'Spoon', category: 'Rumah', tint: '#F2F4F7', color: '#53645B', emoji: '🥄' },
+  { id: 'bantal', idLabel: 'Bantal', enLabel: 'Pillow', category: 'Rumah', tint: '#F5EEFF', color: '#7E57C2', emoji: '🛏️' },
+  { id: 'sepatu', idLabel: 'Sepatu', enLabel: 'Shoes', category: 'Rumah', tint: '#FFF2E6', color: '#D95E32', emoji: '👟' },
+  // Kendaraan (6)
+  { id: 'mobil', idLabel: 'Mobil', enLabel: 'Car', category: 'Kendaraan', tint: '#FFF0E5', color: '#E07A18', emoji: '🚗' },
+  { id: 'sepeda', idLabel: 'Sepeda', enLabel: 'Bicycle', category: 'Kendaraan', tint: '#F2ECFF', color: '#8045D9', emoji: '🚲' },
+  { id: 'bus', idLabel: 'Bus', enLabel: 'Bus', category: 'Kendaraan', tint: '#FFF7DB', color: '#C68500', emoji: '🚌' },
+  { id: 'kereta', idLabel: 'Kereta', enLabel: 'Train', category: 'Kendaraan', tint: '#E7F5EE', color: '#2B6E4F', emoji: '🚂' },
+  { id: 'pesawat', idLabel: 'Pesawat', enLabel: 'Airplane', category: 'Kendaraan', tint: '#E7F3FF', color: '#1982C4', emoji: '✈️' },
+  { id: 'kapal', idLabel: 'Kapal', enLabel: 'Boat', category: 'Kendaraan', tint: '#E6F6F9', color: '#12899C', emoji: '⛵' }
 ];
 
 export function FirstWords({
@@ -108,20 +44,31 @@ export function FirstWords({
 }: {
   onComplete: (stickerId: string) => void;
 }): JSX.Element {
+  const [mode, setMode] = useState<'explore' | 'quiz'>('explore');
+  const [category, setCategory] = useState<WordCategory>('Buah');
   const [bilingual, setBilingual] = useState(false);
   const [tappedIds, setTappedIds] = useState<string[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [quizTarget, setQuizTarget] = useState<WordCard>(WORDS[0]);
+  const [quizScore, setQuizScore] = useState(0);
+  const [quizMsg, setQuizMsg] = useState('Ketuk gambar sesuai kata!');
   const [rewarded, setRewarded] = useState(false);
 
-  const handleTap = (word: WordItem) => {
+  const visibleWords = WORDS.filter((w) => w.category === category);
+
+  function speakCard(w: WordCard): void {
+    speakPhrase(bilingual ? w.enLabel : w.idLabel, bilingual ? 'en-US' : 'id-ID');
+  }
+
+  function handleTap(word: WordCard): void {
     triggerHaptic('tap');
     playGentlePop();
     setActiveId(word.id);
-    speakPhrase(bilingual ? word.enLabel : word.idLabel, bilingual ? 'en-US' : 'id-ID');
+    speakCard(word);
     if (!tappedIds.includes(word.id)) {
       const next = [...tappedIds, word.id];
       setTappedIds(next);
-      if (next.length >= 5 && !rewarded) {
+      if (next.length >= 6 && !rewarded) {
         setRewarded(true);
         triggerHaptic('success');
         fireConfetti();
@@ -129,39 +76,139 @@ export function FirstWords({
         onComplete('sticker-alphabet');
       }
     }
-  };
+  }
+
+  function nextQuiz(cat: WordCategory = category): void {
+    const list = WORDS.filter((w) => w.category === cat);
+    const chosen = list[Math.floor(Math.random() * list.length)] ?? WORDS[0];
+    setQuizTarget(chosen);
+    setQuizMsg(`Mana ${bilingual ? chosen.enLabel : chosen.idLabel}?`);
+    speakCard(chosen);
+  }
+
+  const quizChoices = useMemo(() => {
+    const list = WORDS.filter((w) => w.category === quizTarget.category);
+    const arr = [quizTarget];
+    for (const item of list) {
+      if (arr.length >= 3) break;
+      if (!arr.some((x) => x.id === item.id)) arr.push(item);
+    }
+    return arr.sort((a, b) => a.id.localeCompare(b.id));
+  }, [quizTarget]);
+
+  function answerQuiz(choice: WordCard): void {
+    if (choice.id === quizTarget.id) {
+      triggerHaptic('success');
+      playSuccessChime();
+      fireConfetti({ count: 24 });
+      const next = quizScore + 1;
+      setQuizScore(next);
+      setQuizMsg(`Hebat! Ini ${bilingual ? choice.enLabel : choice.idLabel}!`);
+      if (next >= 3 && !rewarded) {
+        setRewarded(true);
+        onComplete('sticker-alphabet');
+      }
+      window.setTimeout(() => nextQuiz(), 1000);
+    } else {
+      playBubblePop(250);
+      speakCard(quizTarget);
+    }
+  }
 
   return (
-    <div className="edu-stage">
-      <div className="edu-stage-top">
-        <VisualStarMeter count={Math.min(tappedIds.length, 5)} total={5} />
-        <button
-          type="button"
-          className={`pill-btn small ${bilingual ? 'is-active' : ''}`}
-          onClick={() => setBilingual((v) => !v)}
-        >
-          {bilingual ? 'EN · English' : 'ID · Indonesia'}
-        </button>
+    <section className="game-clean-stage" aria-label="Kata Pertama">
+      <div className="game-top-bar">
+        <div className="chip-row">
+          <button
+            type="button"
+            className={`pill-btn touch-safe ${mode === 'explore' ? 'is-active' : ''}`}
+            onClick={() => setMode('explore')}
+          >
+            Kartu (18)
+          </button>
+          <button
+            type="button"
+            className={`pill-btn touch-safe ${mode === 'quiz' ? 'is-active' : ''}`}
+            onClick={() => {
+              setMode('quiz');
+              nextQuiz();
+            }}
+          >
+            Cari ({quizScore})
+          </button>
+        </div>
+
+        <div className="game-top-tools">
+          <button
+            type="button"
+            className={`pill-btn touch-safe ${bilingual ? 'is-active' : ''}`}
+            onClick={() => setBilingual((v) => !v)}
+          >
+            {bilingual ? 'EN' : 'ID'}
+          </button>
+          {mode === 'quiz' && (
+            <button type="button" className="icon-tool-btn" onClick={() => speakCard(quizTarget)} aria-label="Ulangi kata">
+              <IconSpeaker size={18} />
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="edu-cards-grid">
-        {WORDS.map((word) => {
-          const isSelected = activeId === word.id;
-          return (
+      <div className="chip-row" role="tablist" aria-label="Kategori kata">
+        {(['Buah', 'Rumah', 'Kendaraan'] as WordCategory[]).map((cat) => (
+          <button
+            key={cat}
+            type="button"
+            role="tab"
+            aria-selected={category === cat}
+            className={`pill-btn touch-safe ${category === cat ? 'is-active' : ''}`}
+            onClick={() => {
+              setCategory(cat);
+              if (mode === 'quiz') nextQuiz(cat);
+            }}
+          >
+            {cat}
+          </button>
+        ))}
+        <div style={{ marginLeft: 'auto' }}>
+          <VisualStarMeter count={Math.min(5, tappedIds.length)} total={5} />
+        </div>
+      </div>
+
+      {mode === 'explore' ? (
+        <div className="edu-cards-grid">
+          {visibleWords.map((word) => (
             <button
               key={word.id}
               type="button"
-              className={`edu-word-card ${isSelected ? 'is-active' : ''}`}
+              className={`edu-word-card ${activeId === word.id ? 'is-active' : ''}`}
               style={{ backgroundColor: word.tint }}
               onClick={() => handleTap(word)}
             >
-              {word.renderArt()}
-              <strong>{bilingual ? word.enLabel : word.idLabel}</strong>
-              <span>{word.category}</span>
+              <span className="word-card-emoji" aria-hidden="true">{word.emoji}</span>
+              <strong style={{ color: word.color }}>{bilingual ? word.enLabel : word.idLabel}</strong>
             </button>
-          );
-        })}
-      </div>
-    </div>
+          ))}
+        </div>
+      ) : (
+        <div className="habit-visual-stage">
+          <h2 className="edu-prompt-title">{quizMsg}</h2>
+          <div className="edu-cards-grid">
+            {quizChoices.map((choice) => (
+              <button
+                key={choice.id}
+                type="button"
+                className="edu-word-card"
+                style={{ backgroundColor: choice.tint }}
+                onClick={() => answerQuiz(choice)}
+              >
+                <span className="word-card-emoji" aria-hidden="true">{choice.emoji}</span>
+                <strong>{bilingual ? choice.enLabel : choice.idLabel}</strong>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
   );
 }

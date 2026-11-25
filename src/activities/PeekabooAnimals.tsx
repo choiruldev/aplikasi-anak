@@ -1,125 +1,79 @@
-import { useEffect, useRef, useState, type JSX } from 'react';
-import { AnimalIllustration, TapHintFinger, VisualStarMeter, type AnimalId } from '../components/Art';
+import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
+import { AnimalIllustration, IconSpeaker, TapHintFinger, VisualStarMeter, type AnimalId } from '../components/Art.tsx';
 import {
   playAnimalMotif,
   playBoingSound,
+  playBubblePop,
   playRustleSound,
   playSuccessChime,
   playVoice,
   preloadVoices,
+  speakPhrase,
   stopVoice,
   type VoiceClipId
-} from '../lib/audio';
-import { fireConfetti, triggerHaptic } from '../lib/confetti';
-import { getNextAnimalIndex } from '../lib/toddler';
+} from '../lib/audio.ts';
+import { fireConfetti, triggerHaptic } from '../lib/confetti.ts';
+import { getNextAnimalIndex } from '../lib/toddler.ts';
 
 interface PeekabooAnimal {
-  id: AnimalId;
+  id: string;
+  artId?: AnimalId;
+  emoji?: string;
   name: string;
   soundWord: string;
-  voiceId: VoiceClipId;
+  voiceId?: VoiceClipId;
+  habitat: 'semak' | 'kolam' | 'padang';
   bgTint: string;
   accent: string;
 }
 
 const PEEKABOO_ANIMALS: PeekabooAnimal[] = [
-  { id: 'cat', name: 'Kucing', soundWord: 'Meong!', voiceId: 'animal-cat', bgTint: '#FFF3E8', accent: '#E06B34' },
-  { id: 'duck', name: 'Bebek', soundWord: 'Kwek kwek!', voiceId: 'animal-duck', bgTint: '#FFFBE6', accent: '#E89F1C' },
-  { id: 'cow', name: 'Sapi', soundWord: 'Moo!', voiceId: 'animal-cow', bgTint: '#F0F7F4', accent: '#2B9361' },
-  { id: 'frog', name: 'Katak', soundWord: 'Krok krok!', voiceId: 'animal-frog', bgTint: '#ECF8F0', accent: '#1F7A5C' },
-  { id: 'elephant', name: 'Gajah', soundWord: 'Tuut!', voiceId: 'animal-elephant', bgTint: '#EEF6FB', accent: '#2978B5' },
-  { id: 'bird', name: 'Burung', soundWord: 'Cuit cuit!', voiceId: 'animal-bird', bgTint: '#F3EEFB', accent: '#7C4DFF' }
+  { id: 'cat', artId: 'cat', name: 'Kucing', soundWord: 'Meong!', voiceId: 'animal-cat', habitat: 'semak', bgTint: '#FFF3E8', accent: '#E06B34' },
+  { id: 'duck', artId: 'duck', name: 'Bebek', soundWord: 'Kwek kwek!', voiceId: 'animal-duck', habitat: 'kolam', bgTint: '#FFFBE6', accent: '#C68500' },
+  { id: 'cow', artId: 'cow', name: 'Sapi', soundWord: 'Mooo!', voiceId: 'animal-cow', habitat: 'padang', bgTint: '#F0F7F4', accent: '#2B9361' },
+  { id: 'frog', artId: 'frog', name: 'Katak', soundWord: 'Krok krok!', voiceId: 'animal-frog', habitat: 'kolam', bgTint: '#ECF8F0', accent: '#1F7A5C' },
+  { id: 'elephant', artId: 'elephant', name: 'Gajah', soundWord: 'Tuut!', voiceId: 'animal-elephant', habitat: 'padang', bgTint: '#EEF6FB', accent: '#2978B5' },
+  { id: 'bird', artId: 'bird', name: 'Burung', soundWord: 'Cuit cuit!', voiceId: 'animal-bird', habitat: 'semak', bgTint: '#F3EEFB', accent: '#7C4DFF' },
+  { id: 'chicken', emoji: '🐔', name: 'Ayam', soundWord: 'Kukuruyuk!', habitat: 'padang', bgTint: '#FFF4E5', accent: '#D95E32' },
+  { id: 'sheep', emoji: '🐑', name: 'Domba', soundWord: 'Mbeeek!', habitat: 'padang', bgTint: '#EEF4F8', accent: '#5D8AA8' },
+  { id: 'lion', emoji: '🦁', name: 'Singa', soundWord: 'Roaaar!', habitat: 'semak', bgTint: '#FFF2DC', accent: '#C68500' },
+  { id: 'whale', emoji: '🐳', name: 'Paus', soundWord: 'Byuuur!', habitat: 'kolam', bgTint: '#E6F4FC', accent: '#1982C4' }
 ];
 
 type Stage = 'hidden' | 'peeking' | 'popped';
-
-interface LeafParticle {
-  id: number;
-  x: number;
-  y: number;
-  rot: number;
-  color: string;
-}
 
 export function PeekabooAnimals({
   onComplete
 }: {
   onComplete: (stickerId: string) => void;
 }): JSX.Element {
+  const [mode, setMode] = useState<'peekaboo' | 'guess'>('peekaboo');
   const [animalIndex, setAnimalIndex] = useState(0);
   const [stage, setStage] = useState<Stage>('hidden');
   const [discoveredCount, setDiscoveredCount] = useState(0);
+  const [guessTargetIdx, setGuessTargetIdx] = useState(0);
+  const [guessScore, setGuessScore] = useState(0);
+  const [guessMsg, setGuessMsg] = useState('Dengarkan suara, pilih hewannya!');
   const [rewarded, setRewarded] = useState(false);
-  const [particles, setParticles] = useState<LeafParticle[]>([]);
   const autoNextTimerRef = useRef<number | null>(null);
 
   const currentAnimal = PEEKABOO_ANIMALS[animalIndex];
+  const guessTarget = PEEKABOO_ANIMALS[guessTargetIdx];
 
   useEffect(() => {
-    preloadVoices(PEEKABOO_ANIMALS.map((a) => a.voiceId));
+    preloadVoices(
+      PEEKABOO_ANIMALS.map((a) => a.voiceId).filter((v): v is VoiceClipId => Boolean(v))
+    );
     return () => {
       stopVoice();
-      if (autoNextTimerRef.current !== null) {
-        window.clearTimeout(autoNextTimerRef.current);
-      }
+      if (autoNextTimerRef.current !== null) window.clearTimeout(autoNextTimerRef.current);
     };
   }, []);
 
-  function spawnLeaves(): void {
-    const leafColors = ['#4CAF50', '#81C784', '#FFD54F', '#FF8A65'];
-    const newLeaves: LeafParticle[] = Array.from({ length: 6 }).map((_, i) => ({
-      id: Date.now() + i,
-      x: 35 + Math.random() * 30, // 35% .. 65%
-      y: 50 + Math.random() * 15,
-      rot: Math.random() * 360,
-      color: leafColors[i % leafColors.length]
-    }));
-    setParticles(newLeaves);
-    window.setTimeout(() => setParticles([]), 750);
-  }
-
-  function handleInteraction(): void {
-    if (stage === 'hidden') {
-      // First tap: Bush shakes and animal peeks!
-      triggerHaptic('tap');
-      playRustleSound();
-      spawnLeaves();
-      setStage('peeking');
-    } else if (stage === 'peeking') {
-      // Second tap: Surprise BOING! Animal leaps up!
-      triggerHaptic('success');
-      playBoingSound();
-      fireConfetti();
-      setStage('popped');
-
-      // Play synthesized animal motif + voice clip
-      playAnimalMotif(currentAnimal.id);
-      playVoice(currentAnimal.voiceId, 320);
-
-      // Check discovery progress
-      setDiscoveredCount((prev) => {
-        const next = prev + 1;
-        if (next >= 5 && !rewarded) {
-          setRewarded(true);
-          window.setTimeout(() => {
-            playSuccessChime();
-            onComplete('sticker-peekaboo');
-          }, 800);
-        }
-        return next;
-      });
-
-      // Optional gentle auto-next after 4 seconds if child doesn't tap
-      if (autoNextTimerRef.current !== null) {
-        window.clearTimeout(autoNextTimerRef.current);
-      }
-      autoNextTimerRef.current = window.setTimeout(() => {
-        advanceToNext();
-      }, 4200);
-    } else {
-      // Tapped while popped: advance immediately to next animal!
-      advanceToNext();
-    }
+  function playAnimalSound(animal: PeekabooAnimal): void {
+    if (animal.artId) playAnimalMotif(animal.artId);
+    if (animal.voiceId) playVoice(animal.voiceId, 260);
+    else speakPhrase(`${animal.soundWord} Ini ${animal.name}!`);
   }
 
   function advanceToNext(): void {
@@ -132,123 +86,182 @@ export function PeekabooAnimals({
     setAnimalIndex((prev) => getNextAnimalIndex(prev, PEEKABOO_ANIMALS.length));
   }
 
+  function handlePeekInteraction(): void {
+    if (stage === 'hidden') {
+      triggerHaptic('tap');
+      playRustleSound();
+      setStage('peeking');
+    } else if (stage === 'peeking') {
+      triggerHaptic('success');
+      playBoingSound();
+      fireConfetti({ count: 28 });
+      setStage('popped');
+      playAnimalSound(currentAnimal);
+
+      setDiscoveredCount((prev) => {
+        const next = prev + 1;
+        if (next >= 5 && !rewarded) {
+          setRewarded(true);
+          window.setTimeout(() => {
+            playSuccessChime();
+            onComplete('sticker-peekaboo');
+          }, 700);
+        }
+        return next;
+      });
+
+      if (autoNextTimerRef.current !== null) window.clearTimeout(autoNextTimerRef.current);
+      autoNextTimerRef.current = window.setTimeout(advanceToNext, 4200);
+    } else {
+      advanceToNext();
+    }
+  }
+
+  function setupNextGuess(): void {
+    const nextIdx = Math.floor(Math.random() * PEEKABOO_ANIMALS.length);
+    setGuessTargetIdx(nextIdx);
+    const target = PEEKABOO_ANIMALS[nextIdx];
+    setGuessMsg(`Siapa yang bunyi "${target.soundWord}"?`);
+    playAnimalSound(target);
+  }
+
+  const guessOptions = useMemo(() => {
+    const arr = [guessTarget];
+    for (let i = 0; i < PEEKABOO_ANIMALS.length && arr.length < 3; i++) {
+      const cand = PEEKABOO_ANIMALS[(guessTargetIdx + i * 3 + 1) % PEEKABOO_ANIMALS.length];
+      if (!arr.some((x) => x.id === cand.id)) arr.push(cand);
+    }
+    return arr.sort((a, b) => a.name.localeCompare(b.name));
+  }, [guessTarget, guessTargetIdx]);
+
+  function answerGuess(choice: PeekabooAnimal): void {
+    if (choice.id === guessTarget.id) {
+      triggerHaptic('success');
+      playSuccessChime();
+      fireConfetti({ count: 26 });
+      setGuessMsg(`Betul! Itu ${choice.name} (${choice.soundWord})!`);
+      const next = guessScore + 1;
+      setGuessScore(next);
+      if (next >= 3 && !rewarded) {
+        setRewarded(true);
+        onComplete('sticker-peekaboo');
+      }
+      window.setTimeout(setupNextGuess, 1200);
+    } else {
+      playBubblePop(250);
+      setGuessMsg(`Itu ${choice.name}. Yuk dengar lagi!`);
+      playAnimalSound(guessTarget);
+    }
+  }
+
+  function renderAnimalGraphic(animal: PeekabooAnimal, size = 120): JSX.Element {
+    if (animal.artId) return <AnimalIllustration id={animal.artId} size={size} />;
+    return <span style={{ fontSize: `${Math.round(size * 0.72)}px`, lineHeight: 1 }} aria-hidden="true">{animal.emoji}</span>;
+  }
+
   return (
-    <div
-      className="peekaboo-container"
-      style={{ backgroundColor: currentAnimal.bgTint, touchAction: 'manipulation' }}
-      onPointerDown={(e) => {
-        if ((e.target as HTMLElement).closest('.peekaboo-action-btn')) return;
-        handleInteraction();
-      }}
-      role="region"
-      aria-label="Cilukba Hewan"
-    >
-      {/* Top HUD: Star coins & minimal joyful title */}
-      <div className="peekaboo-header">
-        <div className="peekaboo-hud-row">
-          <VisualStarMeter count={Math.min(discoveredCount, 5)} total={5} />
-          {rewarded && <span className="peekaboo-trophy" aria-hidden="true">🏆</span>}
+    <section className="game-clean-stage" aria-label="Cilukba Hewan">
+      <div className="game-top-bar">
+        <div className="chip-row" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === 'peekaboo'}
+            className={`pill-btn touch-safe ${mode === 'peekaboo' ? 'is-active' : ''}`}
+            onClick={() => setMode('peekaboo')}
+          >
+            Cilukba (10)
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === 'guess'}
+            className={`pill-btn touch-safe ${mode === 'guess' ? 'is-active' : ''}`}
+            onClick={() => {
+              setMode('guess');
+              setupNextGuess();
+            }}
+          >
+            Tebak Suara ({guessScore})
+          </button>
         </div>
 
-        <h2 className="peekaboo-title">
-          {stage === 'popped' ? (
-            <span className="peekaboo-shout" style={{ color: currentAnimal.accent }}>
-              🎉 {currentAnimal.soundWord}
-            </span>
-          ) : stage === 'peeking' ? (
-            <span className="peekaboo-subtle">🙈 Ciluk...</span>
-          ) : (
-            <span className="peekaboo-subtle">🌿 Cilukba!</span>
+        <div className="game-top-tools">
+          <VisualStarMeter count={Math.min(5, mode === 'peekaboo' ? discoveredCount : guessScore)} total={5} />
+          {mode === 'guess' && (
+            <button type="button" className="icon-tool-btn" onClick={() => playAnimalSound(guessTarget)} aria-label="Putar suara hewan">
+              <IconSpeaker size={18} />
+            </button>
           )}
-        </h2>
+        </div>
       </div>
 
-      {/* Center Stage: The Hiding Spot & Animal */}
-      <div className="peekaboo-stage">
-        {/* The Animal */}
+      {mode === 'peekaboo' ? (
         <div
-          className={`peekaboo-animal-wrapper stage-${stage}`}
-          style={{ '--animal-color': currentAnimal.accent } as React.CSSProperties}
+          className="peekaboo-clean-card"
+          style={{ backgroundColor: currentAnimal.bgTint }}
+          onPointerDown={handlePeekInteraction}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') handlePeekInteraction();
+          }}
         >
-          <div className="peekaboo-animal-inner">
-            <AnimalIllustration id={currentAnimal.id} size={150} className="animal-svg-alive" />
-            {stage === 'popped' && (
-              <div className="peekaboo-animal-tag" style={{ backgroundColor: currentAnimal.accent }}>
-                <span className="tag-emoji">🐾</span> {currentAnimal.name}
-              </div>
-            )}
+          <h2 className="edu-prompt-title" style={{ color: currentAnimal.accent }}>
+            {stage === 'popped'
+              ? `${currentAnimal.soundWord} ${currentAnimal.name}`
+              : stage === 'peeking'
+                ? 'Ciluk...'
+                : 'Ketuk semaknya!'}
+          </h2>
+
+          <div className="peekaboo-stage-center">
+            <div className={`peekaboo-actor stage-${stage}`}>
+              {renderAnimalGraphic(currentAnimal, 132)}
+            </div>
+            <div className={`peekaboo-cover habitat-${currentAnimal.habitat} stage-${stage}`}>
+              {discoveredCount === 0 && stage === 'hidden' && (
+                <span className="tile-tap-guide"><TapHintFinger size={36} /></span>
+              )}
+              <svg viewBox="0 0 260 110" width="240" height="102" aria-hidden="true">
+                {currentAnimal.habitat === 'kolam' ? (
+                  <path d="M10 60 Q50 30 90 60 T170 60 T250 60 V106 H10 Z" fill="#4BA3E3" />
+                ) : currentAnimal.habitat === 'padang' ? (
+                  <path d="M12 104 Q70 28 130 56 Q190 22 248 104 Z" fill="#7AC77A" />
+                ) : (
+                  <>
+                    <circle cx="70" cy="68" r="42" fill="#3DA57A" />
+                    <circle cx="130" cy="52" r="48" fill="#2B6E4F" />
+                    <circle cx="190" cy="68" r="42" fill="#3DA57A" />
+                  </>
+                )}
+              </svg>
+            </div>
+          </div>
+
+          <span className="muted-mini">
+            {stage === 'popped' ? 'Ketuk lagi untuk hewan berikutnya' : 'Ketuk di mana saja'}
+          </span>
+        </div>
+      ) : (
+        <div className="habit-visual-stage">
+          <h2 className="edu-prompt-title">{guessMsg}</h2>
+          <div className="edu-cards-grid">
+            {guessOptions.map((choice) => (
+              <button
+                key={choice.id}
+                type="button"
+                className="edu-word-card"
+                style={{ backgroundColor: choice.bgTint }}
+                onClick={() => answerGuess(choice)}
+              >
+                {renderAnimalGraphic(choice, 70)}
+                <strong>{choice.name}</strong>
+              </button>
+            ))}
           </div>
         </div>
-
-        {/* Big Bush / Hiding Spot */}
-        <div className={`peekaboo-bush ${stage === 'peeking' ? 'is-peeking' : stage === 'popped' ? 'is-popped' : 'is-hidden'}`}>
-          <svg viewBox="0 0 320 180" className="bush-svg" fill="none" aria-hidden="true">
-            {/* Soft shadows */}
-            <ellipse cx="160" cy="165" rx="140" ry="14" fill="#000000" fillOpacity="0.12" />
-
-            {/* Back foliage */}
-            <circle cx="80" cy="110" r="65" fill="#2E7D32" />
-            <circle cx="240" cy="110" r="65" fill="#2E7D32" />
-            <circle cx="160" cy="70" r="75" fill="#388E3C" />
-
-            {/* Front bright foliage */}
-            <circle cx="105" cy="115" r="55" fill="#43A047" />
-            <circle cx="215" cy="115" r="55" fill="#43A047" />
-            <circle cx="160" cy="100" r="65" fill="#4CAF50" />
-
-            {/* Cute flower accents */}
-            <circle cx="110" cy="85" r="9" fill="#FFEB3B" />
-            <circle cx="110" cy="85" r="4.5" fill="#FF9800" />
-            <circle cx="210" cy="90" r="9" fill="#FF4081" />
-            <circle cx="210" cy="90" r="4.5" fill="#FFEB3B" />
-          </svg>
-
-          {/* Visual Tap Pointer Hint for Toddlers */}
-          {stage === 'hidden' && (
-            <div className="bush-tap-hint">
-              <TapHintFinger size={44} />
-            </div>
-          )}
-        </div>
-
-        {/* Popping Leaf Particles */}
-        {particles.map((p) => (
-          <div
-            key={p.id}
-            className="leaf-particle"
-            style={{
-              left: `${p.x}%`,
-              top: `${p.y}%`,
-              backgroundColor: p.color,
-              transform: `rotate(${p.rot}deg)`
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Bottom Action Prompt: Large tactile button */}
-      <div className="peekaboo-footer">
-        <button
-          type="button"
-          className="peekaboo-action-btn"
-          style={{ backgroundColor: currentAnimal.accent, touchAction: 'manipulation' }}
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            handleInteraction();
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-          }}
-        >
-          {stage === 'popped' ? (
-            <span>Lagi! 🔄</span>
-          ) : stage === 'peeking' ? (
-            <span>Buka! 🎁</span>
-          ) : (
-            <span>Sentuh! 🌿</span>
-          )}
-        </button>
-      </div>
-    </div>
+      )}
+    </section>
   );
 }
