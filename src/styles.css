@@ -7896,3 +7896,180 @@ html[data-theme='night'] .save-tip-btn.is-saved {
   border-color: #5bc290;
   color: #a6efd0;
 }
+
+
+/* =====================================================================
+ * Production Hardening: ErrorBoundary, Night Mode Fixes, Offline & Trust Footer
+ * ===================================================================== */
+
+html[data-theme='night'] {
+  color-scheme: dark;
+}
+
+.spotlight-tile,
+.sim-tile-card {
+  background: var(--tile-tint, var(--surface));
+}
+
+html[data-theme='night'] .spotlight-tile,
+html[data-theme='night'] .sim-tile-card {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--ink);
+}
+
+html[data-theme='night'] .spotlight-tile strong,
+html[data-theme='night'] .sim-tile-card h3 {
+  color: var(--ink);
+}
+
+html[data-theme='night'] .spotlight-tile span,
+html[data-theme='night'] .sim-tile-sub,
+html[data-theme='night'] .sim-age-tag {
+  color: var(--ink-muted);
+}
+
+html[data-theme='night'] .fav-icon-btn {
+  background: #232d28;
+  border-color: #36453d;
+  color: var(--ink-muted);
+}
+
+.sticker-card {
+  background-color: var(--sticker-bg, #f4f5f6);
+  border-color: var(--sticker-border, #d1d5db);
+}
+
+html[data-theme='night'] .sticker-progress-box {
+  background: linear-gradient(135deg, #212c26 0%, #2a2417 100%);
+  border-color: #6b5324;
+}
+
+html[data-theme='night'] .sticker-progress-track {
+  background-color: #161d19;
+}
+
+html[data-theme='night'] .sticker-card {
+  background-color: #212a25;
+  border-color: #36453d;
+}
+
+html[data-theme='night'] .sticker-card.is-unlocked {
+  background-color: #1d3528;
+  border-color: #4ea57a;
+}
+
+html[data-theme='night'] .sticker-card.is-locked {
+  opacity: 0.85;
+  filter: none;
+}
+
+html[data-theme='night'] .sticker-locked-icon {
+  background-color: #2b3530;
+  border-color: #53665d;
+  color: #a4b5ac;
+}
+
+html[data-theme='night'] .locked-hint {
+  color: #a9b8b0;
+}
+
+html[data-theme='night'] .unlocked-tag {
+  background-color: #1a4732;
+  color: #b4f5d2;
+}
+
+/* ErrorBoundary Recovery Screen */
+.error-boundary-shell {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--ground);
+  color: var(--ink);
+}
+
+.error-boundary-card {
+  width: min(100%, 440px);
+  padding: 24px;
+  border-radius: 24px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+}
+
+.error-boundary-card h1 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.error-boundary-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* Offline & Backup Reminder Strips */
+.offline-status-bar,
+.backup-reminder-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.offline-status-bar {
+  background: #fff5df;
+  border: 1px solid var(--amber);
+  color: #5c3c00;
+  margin-bottom: 12px;
+}
+
+.backup-reminder-bar {
+  background: var(--sage-soft);
+  border: 1px solid var(--sage);
+  color: var(--ink);
+}
+
+html[data-theme='night'] .offline-status-bar {
+  background: #382c14;
+  border-color: #c8942d;
+  color: #ffebc2;
+}
+
+html[data-theme='night'] .backup-reminder-bar {
+  background: #1b3629;
+  border-color: #4ea57a;
+  color: #d6f5e5;
+}
+
+/* Public Trust Footer */
+.public-trust-footer {
+  margin-top: 20px;
+  padding: 14px 4px 8px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}
+
+.public-trust-links {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}

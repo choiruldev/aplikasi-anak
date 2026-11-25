@@ -25,7 +25,8 @@ import {
   formatElapsedShort,
   getTodayCareSummary
 } from '../lib/babyCareStorage.ts';
-import { buildCalendarIcs } from '../lib/calendarIcs.ts';
+import { buildCalendarIcs, computeTargetDateFromBirth } from '../lib/calendarIcs.ts';
+import { shouldSuggestBackup } from '../lib/backup.ts';
 import type { AgeBand, AgeInfo, StimulationPillar } from '../lib/development.ts';
 import { buildDoctorReportPdfBytes } from '../lib/doctorReport.ts';
 import { getDefaultMonthsForBand } from '../lib/growthReference.ts';
@@ -74,6 +75,8 @@ interface Props {
   onAddBabyCare: (type: BabyCareType) => void;
   onDeleteBabyCare: (id: string) => void;
   onOpenSimulation: (key: SimulationKey) => void;
+  lastBackupDate: string | null;
+  onExportBackup: () => void;
 }
 
 type SectionView = 'growth' | 'kpsp' | 'milestone' | 'immunization' | 'notes';
@@ -108,7 +111,9 @@ export function CatatanTab({
   onDeleteNote,
   onAddBabyCare,
   onDeleteBabyCare,
-  onOpenSimulation
+  onOpenSimulation,
+  lastBackupDate,
+  onExportBackup
 }: Props): JSX.Element {
   const monthsForRef = ageInfo?.months ?? getDefaultMonthsForBand(activeBand);
   const defaultCheckpoint = getNearestKpspCheckpoint(monthsForRef);
@@ -317,9 +322,20 @@ export function CatatanTab({
     Boolean(journal.completedImmunizations[i.id])
   ).length;
   const latestKpsp = journal.kpspResults[0];
+  const totalSavedRecords =
+    journal.growthLogs.length + journal.dailyNotes.length + journal.kpspResults.length;
+  const showBackupHint = shouldSuggestBackup(totalSavedRecords, lastBackupDate);
 
   return (
     <div className="tab-stack">
+      {showBackupHint && (
+        <div className="backup-reminder-bar" role="status">
+          <span>Amankan catatan si kecil ke file cadangan lokal.</span>
+          <button type="button" className="btn-outline small" onClick={onExportBackup}>
+            Cadangkan JSON
+          </button>
+        </div>
+      )}
       {/* Header Metrics & Actions */}
       <section className="ed-card">
         <div className="cat-head-row">
@@ -743,13 +759,18 @@ export function CatatanTab({
                     <button
                       type="button"
                       className="btn-outline small"
-                      onClick={() =>
+                      onClick={() => {
+                        const targetIso = computeTargetDateFromBirth(
+                          birthDate,
+                          imm.dueMonths,
+                          todayKey()
+                        );
                         handleDownloadIcsReminder(
                           `${imm.name} (${childName})`,
-                          todayKey(),
+                          targetIso,
                           `Jadwal ${imm.name} (${imm.ageLabel}): ${imm.note}`
-                        )
-                      }
+                        );
+                      }}
                     >
                       + Kalender
                     </button>

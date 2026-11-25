@@ -153,7 +153,7 @@ export function SimulasiTab({
                   key={mod.key}
                   type="button"
                   className={`spotlight-tile ${locked ? 'is-locked' : ''}`}
-                  style={{ background: mod.surfaceTint }}
+                  style={{ ['--tile-tint' as string]: mod.surfaceTint }}
                   onClick={() => onLaunchSimulation(mod.key)}
                 >
                   <SimulationIcon moduleKey={mod.key} size={38} />
@@ -178,7 +178,7 @@ export function SimulasiTab({
               const isFav = favoriteModules.includes(mod.key);
               const count = playCounts[mod.key] ?? 0;
               return (
-                <div key={mod.key} className="sim-tile-card" style={{ background: mod.surfaceTint }}>
+                <div key={mod.key} className="sim-tile-card" style={{ ['--tile-tint' as string]: mod.surfaceTint }}>
                   <div className="sim-tile-top">
                     <SimulationIcon moduleKey={mod.key} size={42} />
                     <button
@@ -223,7 +223,7 @@ export function SimulasiTab({
                 <div
                   key={mod.key}
                   className={`sim-tile-card ${locked ? 'is-locked' : ''}`}
-                  style={{ background: mod.surfaceTint }}
+                  style={{ ['--tile-tint' as string]: mod.surfaceTint }}
                 >
                   <div className="sim-tile-top">
                     <SimulationIcon moduleKey={mod.key} size={42} />

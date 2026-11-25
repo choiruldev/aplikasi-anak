@@ -322,7 +322,15 @@ export function StickerAlbumModal({
   }
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="sticker-modal-title">
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="sticker-modal-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="modal-sheet sticker-album-sheet">
         <div className="modal-top">
           <div>
@@ -367,8 +375,8 @@ export function StickerAlbumModal({
                 role="listitem"
                 className={`sticker-card ${isUnlocked ? 'is-unlocked' : 'is-locked'}`}
                 style={{
-                  backgroundColor: isUnlocked ? sticker.bgColor : '#F4F5F6',
-                  borderColor: isUnlocked ? sticker.borderColor : '#D1D5DB'
+                  ['--sticker-bg' as string]: isUnlocked ? sticker.bgColor : undefined,
+                  ['--sticker-border' as string]: isUnlocked ? sticker.borderColor : undefined
                 }}
                 onClick={() => handleStickerClick(sticker, isUnlocked)}
               >

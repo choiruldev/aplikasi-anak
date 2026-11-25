@@ -2,10 +2,12 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';"
     />
+    <meta name="referrer" content="no-referrer" />
     <meta name="theme-color" content="#2B6E4F" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -13,24 +15,32 @@
     <meta name="apple-mobile-web-app-title" content="Cilukba" />
     <meta
       name="description"
-      content="Cilukba — Pantau tumbuh kembang WHO & KPSP, catatan MPASI, tips parenting, serta modul belajar & permainan anak 0–5 tahun. Bebas iklan dan bisa offline."
+      content="Cilukba — Pantau tumbuh kembang WHO & KPSP, catatan MPASI, tips parenting, serta 21 modul belajar & permainan anak 0–5 tahun. Bebas iklan dan bisa offline."
     />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://choiruldev.github.io/aplikasi-anak/" />
     <meta property="og:title" content="Cilukba — Pantau Tumbuh Kembang &amp; Belajar Anak 0–5 Tahun" />
     <meta
       property="og:description"
-      content="Analisa kurva WHO, skrining KPSP, tracker MPASI, dan 21 modul stimulasi &amp; permainan anak bebas iklan."
+      content="Analisa kurva KMS WHO, skrining KPSP, tracker MPASI, dan 21 modul stimulasi &amp; permainan anak bebas iklan."
     />
-    <meta property="og:image" content="/pwa-512x512.png" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:image" content="https://choiruldev.github.io/aplikasi-anak/pwa-512x512.png" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Cilukba — Tumbuh Kembang &amp; Belajar Anak 0–5 Thn" />
+    <meta
+      name="twitter:description"
+      content="Kurva KMS WHO, skrining KPSP, MPASI, dan 21 permainan edukatif anak. Bebas iklan & bisa offline."
+    />
+    <meta name="twitter:image" content="https://choiruldev.github.io/aplikasi-anak/pwa-512x512.png" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <title>Cilukba — Stimulasi &amp; Simulasi Anak 0–5 Tahun</title>
+    <title>Cilukba — Stimulasi &amp; Tumbuh Kembang Anak 0–5 Tahun</title>
   </head>
   <body>
     <div id="root"></div>

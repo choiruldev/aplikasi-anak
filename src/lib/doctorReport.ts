@@ -11,6 +11,25 @@ function sanitizePdfAscii(text: string): string {
     .replaceAll(')', '\\)');
 }
 
+function wrapLine(text: string, maxChars = 82): string[] {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [''];
+  const lines: string[] = [];
+  let current = '';
+  for (const w of words) {
+    if (!current) {
+      current = w;
+    } else if (current.length + 1 + w.length <= maxChars) {
+      current = `${current} ${w}`;
+    } else {
+      lines.push(current);
+      current = w;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
 /**
  * Generates a self-contained single-page PDF 1.4 summary report for doctors / posyandu.
  * Zero external libraries or network calls required.
@@ -37,12 +56,19 @@ export function buildDoctorReportPdfBytes(params: {
     '/F1 11 Tf'
   ];
 
-  for (const line of params.summaryLines.slice(0, 28)) {
-    commands.push(`(${sanitizePdfAscii(line).slice(0, 88)}) Tj`);
-    commands.push('0 -16 Td');
+  const wrapped: string[] = [];
+  for (const rawLine of params.summaryLines) {
+    for (const part of wrapLine(rawLine, 82)) {
+      if (wrapped.length < 36) wrapped.push(part);
+    }
   }
 
-  commands.push('0 -14 Td');
+  for (const line of wrapped) {
+    commands.push(`(${sanitizePdfAscii(line)}) Tj`);
+    commands.push('0 -15 Td');
+  }
+
+  commands.push('0 -12 Td');
   commands.push('/F1 9 Tf');
   commands.push('(Catatan: Informasi referensi ini bersifat edukatif & bukan pengganti diagnosis dokter.) Tj');
   commands.push('ET');

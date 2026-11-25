@@ -18,7 +18,12 @@ import {
 } from './data/stimulationData.ts';
 import { setAudioPreferences, stopVoice, unlockAudio } from './lib/audio.ts';
 import { addBabyCareEntry, deleteBabyCareEntry, type BabyCareType } from './lib/babyCareStorage.ts';
-import { createBackupJson, parseAndValidateBackup } from './lib/backup.ts';
+import {
+  createBackupJson,
+  getLastBackupDate,
+  parseAndValidateBackup,
+  recordBackupTimestamp
+} from './lib/backup.ts';
 import { isLullabyPlaying, startBgm, stopLullabyBgm } from './lib/bgm.ts';
 import {
   computeAgeInfo,
@@ -148,6 +153,10 @@ export function App(): JSX.Element {
 
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [isIos, setIsIos] = useState(false);
+  const [isOffline, setIsOffline] = useState(() =>
+    typeof navigator !== 'undefined' ? !navigator.onLine : false
+  );
+  const [lastBackupDate, setLastBackupDate] = useState<string | null>(() => getLastBackupDate());
 
   const activeProfile = getActiveProfile(profilesState);
   const { settings, progress, journal, babyCare, avatarId } = activeProfile;
@@ -244,8 +253,22 @@ export function App(): JSX.Element {
       e.preventDefault();
       setInstallEvent(e as BeforeInstallPromptEvent);
     };
+    const onOnline = () => setIsOffline(false);
+    const onOffline = () => setIsOffline(true);
     window.addEventListener('beforeinstallprompt', onBeforeInstall);
-    return () => window.removeEventListener('beforeinstallprompt', onBeforeInstall);
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+
+    // Ask browser to protect offline child data from automatic storage eviction
+    if (navigator.storage && typeof navigator.storage.persist === 'function') {
+      void navigator.storage.persist().catch(() => {});
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onBeforeInstall);
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+    };
   }, []);
 
   const showRewardIfNewSticker = (prevStickers: string[], nextStickers: string[]) => {
@@ -412,9 +435,13 @@ export function App(): JSX.Element {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `cilukba-cadangan-${todayKey()}.json`;
+    const dateStr = todayKey();
+    a.download = `cilukba-cadangan-${dateStr}.json`;
     a.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    recordBackupTimestamp(dateStr);
+    setLastBackupDate(dateStr);
+    setToastMessage('Cadangan JSON berhasil diunduh.');
   };
 
   const handleImportBackup = (rawJson: string): { ok: boolean; error?: string } => {
@@ -562,6 +589,11 @@ export function App(): JSX.Element {
       </header>
 
       <main className="companion-main">
+        {isOffline && (
+          <div className="offline-status-bar" role="status">
+            Mode Offline aktif — seluruh catatan &amp; 21 permainan tetap berjalan lancar.
+          </div>
+        )}
         {activeTab === 'stimulasi' && (
           <StimulasiTab
             childName={displayChildName}
@@ -686,6 +718,8 @@ export function App(): JSX.Element {
               )
             }
             onOpenSimulation={handleLaunchSimulation}
+            lastBackupDate={lastBackupDate}
+            onExportBackup={handleExportBackup}
           />
         )}
 
@@ -712,6 +746,17 @@ export function App(): JSX.Element {
             }
           />
         )}
+        <footer className="public-trust-footer" aria-label="Informasi privasi dan pemasangan">
+          <span>Cilukba · 100% Lokal &amp; Bebas Iklan</span>
+          <div className="public-trust-links">
+            <button type="button" className="text-action-btn" onClick={() => setLegalOpen(true)}>
+              Privasi &amp; Rujukan WHO/KIA
+            </button>
+            <button type="button" className="text-action-btn" onClick={() => setInstallModalOpen(true)}>
+              Pasang di HP
+            </button>
+          </div>
+        </footer>
       </main>
 
       <nav className="mobile-bottom-nav" aria-label="Navigasi seluler">

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://choiruldev.github.io/aplikasi-anak/sitemap.xml
