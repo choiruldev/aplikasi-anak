@@ -1,11 +1,12 @@
 import { useState, type JSX } from 'react';
-import { IconCheck } from '../components/Art.tsx';
+import { IconCheck, IconShare } from '../components/Art.tsx';
 import {
   AvatarIcon,
   FlameIcon,
   PillarIcon,
   SimulationIcon
 } from '../components/ModuleIcons.tsx';
+import { ShareCardModal } from '../components/ShareCardModal.tsx';
 import {
   AGE_PHASES,
   MILESTONES,
@@ -61,6 +62,7 @@ export function StimulasiTab({
 }: Props): JSX.Element {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAllMissions, setShowAllMissions] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const today = todayKey();
   const activePhase = AGE_PHASES.find((p) => p.id === activeBand) ?? AGE_PHASES[3];
@@ -279,9 +281,14 @@ export function StimulasiTab({
       <section className="ed-card">
         <div className="section-head-compact">
           <h2>Rutinitas & Keseimbangan</h2>
-          <button type="button" className="text-action-btn" onClick={onOpenTabCatatan}>
-            Milestone {milestoneDone}/{phaseMilestones.length} →
-          </button>
+          <div className="hero-badges-row">
+            <button type="button" className="btn-outline small" onClick={() => setShareOpen(true)}>
+              <IconShare size={13} /> Kartu WA
+            </button>
+            <button type="button" className="text-action-btn" onClick={onOpenTabCatatan}>
+              Milestone {milestoneDone}/{phaseMilestones.length} →
+            </button>
+          </div>
         </div>
 
         <div className="routine-grid">
@@ -318,6 +325,27 @@ export function StimulasiTab({
           ))}
         </div>
       </section>
+
+      <ShareCardModal
+        open={shareOpen}
+        cardParams={{
+          childName,
+          ageLabel: ageInfo?.label ?? activePhase.rangeLabel,
+          phaseLabel: activePhase.shortLabel,
+          achievedCount: milestoneDone,
+          totalMilestones: phaseMilestones.length,
+          stickersCount: progress.stickers.length,
+          streakDays,
+          whoSummary: insights.cards.find((c) => c.id === 'who-wfa')?.title.split('·')[1]?.trim(),
+          pillarPercents: pillarBalance.map((p) => ({
+            label: PILLAR_LABELS[p.pillar],
+            percent: p.percent
+          })),
+          dateLabel: today
+        }}
+        shareText={`Pencapaian ${childName} (${ageInfo?.label ?? activePhase.shortLabel}) di Cilukba: Milestone ${milestoneDone}/${phaseMilestones.length}, Stiker ${progress.stickers.length}/14, Streak ${streakDays} hari!`}
+        onClose={() => setShareOpen(false)}
+      />
     </div>
   );
 }

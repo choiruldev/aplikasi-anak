@@ -1,5 +1,7 @@
-import { useState, type JSX } from 'react';
+import { useMemo, useState, type JSX } from 'react';
 import { IconCheck, IconDownload, IconShare, IconStar } from '../components/Art.tsx';
+import { KmsWhoChart } from '../components/KmsWhoChart.tsx';
+import { KpspRadarChart, type PillarScore } from '../components/KpspRadarChart.tsx';
 import {
   CareIcon,
   EmptyStateIllustration,
@@ -7,6 +9,7 @@ import {
   PillarIcon,
   SyringeIcon
 } from '../components/ModuleIcons.tsx';
+import { ShareCardModal } from '../components/ShareCardModal.tsx';
 import { IMMUNIZATION_SCHEDULE } from '../data/immunizationData.ts';
 import { evaluateKpspAnswers, getNearestKpspCheckpoint, KPSP_CHECKPOINTS } from '../data/kpspData.ts';
 import {
@@ -25,26 +28,25 @@ import {
 import { buildCalendarIcs } from '../lib/calendarIcs.ts';
 import type { AgeBand, AgeInfo, StimulationPillar } from '../lib/development.ts';
 import { buildDoctorReportPdfBytes } from '../lib/doctorReport.ts';
-import {
-  buildSparklinePoints,
-  getDefaultMonthsForBand
-} from '../lib/growthReference.ts';
+import { getDefaultMonthsForBand } from '../lib/growthReference.ts';
 import {
   formatJournalSummary,
   type JournalData,
   type KpspStatus,
   type NoteMood
 } from '../lib/journalStorage.ts';
-import { buildWhatsAppShareUrl, generateMilestoneCardPng } from '../lib/shareCard.ts';
-import { todayKey, type ChildGender } from '../lib/storage.ts';
-import { computeWhoCurveBand, evaluateChildGrowthWho } from '../lib/whoGrowth.ts';
+import { computePillarBalance } from '../lib/stats.ts';
+import { todayKey, type ChildGender, type DailyProgress } from '../lib/storage.ts';
+import { evaluateChildGrowthWho } from '../lib/whoGrowth.ts';
 
 interface Props {
   childName: string;
   gender: ChildGender;
+  birthDate?: string;
   ageLabel: string;
   ageInfo: AgeInfo | null;
   activeBand: AgeBand;
+  progress: DailyProgress;
   stickersCount: number;
   streakDays: number;
   journal: JournalData;
@@ -88,9 +90,11 @@ const QUICK_TAGS = ['Motorik', 'Bicara', 'Makan', 'Tidur', 'Sosial'];
 export function CatatanTab({
   childName,
   gender,
+  birthDate,
   ageLabel,
   ageInfo,
   activeBand,
+  progress,
   stickersCount,
   streakDays,
   journal,
@@ -114,6 +118,8 @@ export function CatatanTab({
   const [milestoneFilter, setMilestoneFilter] = useState<MilestoneFilter>('all');
   const [chartMetric, setChartMetric] = useState<'weightKg' | 'heightCm' | 'headCircumferenceCm'>('weightKg');
   const [copied, setCopied] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [kpspWarning, setKpspWarning] = useState<string | null>(null);
 
   const [weightInput, setWeightInput] = useState('');
   const [heightInput, setHeightInput] = useState('');
@@ -156,17 +162,7 @@ export function CatatanTab({
     headCircumferenceCm: latestGrowth?.headCircumferenceCm
   });
 
-  const indicatorKey = chartMetric === 'weightKg' ? 'wfa' : chartMetric === 'heightCm' ? 'hfa' : 'hcfa';
-  const whoCurveBand = computeWhoCurveBand(gender, indicatorKey, 0, Math.max(24, monthsForRef + 6));
-  const currentBandRow = whoCurveBand[whoCurveBand.length - 1] ?? { sdMinus2: 6, median: 10, sdPlus2: 14 };
-
-  const chartSeries = buildSparklinePoints(
-    journal.growthLogs,
-    chartMetric as 'weightKg' | 'heightCm',
-    260,
-    92,
-    { min: currentBandRow.sdMinus2, max: currentBandRow.sdPlus2 }
-  );
+  const pillarBalance = computePillarBalance(progress, journal, activeBand);
 
   const summaryText = formatJournalSummary({
     childName,
@@ -186,25 +182,6 @@ export function CatatanTab({
     } catch {
       setCopied(false);
     }
-  };
-
-  const handleDownloadCard = async () => {
-    const blob = await generateMilestoneCardPng({
-      childName,
-      ageLabel,
-      phaseLabel: activePhase?.shortLabel ?? activeBand,
-      achievedCount: achievedInActiveBand,
-      totalMilestones: totalInActiveBand,
-      stickersCount,
-      streakDays
-    });
-    if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `cilukba-${childName.toLowerCase().replace(/\s+/g, '-')}.png`;
-    a.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const handleDownloadPdfReport = () => {
@@ -288,7 +265,28 @@ export function CatatanTab({
   const activeKpspCp =
     KPSP_CHECKPOINTS.find((c) => c.months === kpspMonths) ?? KPSP_CHECKPOINTS[0];
 
+  const answeredKpspCount = activeKpspCp.questions.filter(
+    (q) => typeof kpspAnswers[q.id] === 'boolean'
+  ).length;
+
+  const kpspPillarScores: PillarScore[] = useMemo(() => {
+    const pillars: StimulationPillar[] = ['motor-kasar', 'motor-halus', 'bahasa', 'kognitif'];
+    return pillars.map((pillar) => {
+      const qs = activeKpspCp.questions.filter((q) => q.pillar === pillar);
+      const yes = qs.filter((q) => kpspAnswers[q.id] === true).length;
+      const total = Math.max(1, qs.length);
+      return { pillar, yes, total: qs.length, percent: Math.round((yes / total) * 100) };
+    });
+  }, [activeKpspCp, kpspAnswers]);
+
   const handleSaveKpsp = () => {
+    if (answeredKpspCount < activeKpspCp.questions.length) {
+      setKpspWarning(
+        `Masih ada ${activeKpspCp.questions.length - answeredKpspCount} pertanyaan belum dijawab. Lengkapi dulu ya agar analisa KPSP akurat.`
+      );
+      return;
+    }
+    setKpspWarning(null);
     const ansArray = activeKpspCp.questions.map((q) => Boolean(kpspAnswers[q.id]));
     const evaluated = evaluateKpspAnswers(activeKpspCp.months, ansArray);
     onAddKpspResult({
@@ -335,20 +333,12 @@ export function CatatanTab({
             <button type="button" className="btn-primary-calm small" onClick={handleDownloadPdfReport}>
               <IconDownload size={14} /> PDF Dokter
             </button>
-            <button type="button" className="btn-outline small" onClick={handleDownloadCard}>
-              PNG
+            <button type="button" className="btn-outline small" onClick={() => setShareModalOpen(true)}>
+              <IconShare size={14} /> Kartu WA
             </button>
             <button type="button" className="btn-outline small" onClick={handleCopySummary}>
-              <IconShare size={14} /> {copied ? '✓' : 'Salin'}
+              {copied ? '✓ Tersalin' : 'Salin'}
             </button>
-            <a
-              className="btn-outline small"
-              href={buildWhatsAppShareUrl(summaryText)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              WA
-            </a>
           </div>
         </div>
 
@@ -499,48 +489,13 @@ export function CatatanTab({
             </div>
           )}
 
-          <div className="growth-chart-box">
-            {chartSeries.points.length > 0 ? (
-              <svg viewBox="0 0 260 92" className="growth-svg" role="img" aria-label="Grafik WHO">
-                {chartSeries.bandTopY !== undefined && chartSeries.bandBottomY !== undefined && (
-                  <rect
-                    x="12"
-                    y={Math.min(chartSeries.bandTopY, chartSeries.bandBottomY)}
-                    width="236"
-                    height={Math.max(8, Math.abs(chartSeries.bandBottomY - chartSeries.bandTopY))}
-                    fill="var(--sage-soft)"
-                    rx="4"
-                  />
-                )}
-                {chartSeries.points.length > 1 && (
-                  <polyline
-                    fill="none"
-                    stroke="var(--sage)"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    points={chartSeries.polyline}
-                  />
-                )}
-                {chartSeries.points.map((pt, idx) => (
-                  <g key={idx}>
-                    <circle cx={pt.x} cy={pt.y} r="4.5" fill="var(--amber)" stroke="var(--sage)" strokeWidth="2" />
-                    <text x={pt.x} y={Math.max(11, pt.y - 7)} textAnchor="middle" fontSize="9" fontWeight="700" fill="var(--ink)">
-                      {pt.value}
-                    </text>
-                  </g>
-                ))}
-              </svg>
-            ) : (
-              <div className="empty-state-inline">
-                <EmptyStateIllustration size={48} />
-                <p className="muted-mini">Catat pengukuran pertama di bawah untuk melihat grafik & Z-Score WHO.</p>
-              </div>
-            )}
-            <span className="growth-ref-note">
-              Pita hijau = rentang normal WHO -2 SD s/d +2 SD ({currentBandRow.sdMinus2}–{currentBandRow.sdPlus2}). Non-diagnostik.
-            </span>
-          </div>
+          <KmsWhoChart
+            gender={gender}
+            metric={chartMetric}
+            currentMonths={monthsForRef}
+            birthDate={birthDate}
+            entries={journal.growthLogs}
+          />
 
           <form className="growth-form" onSubmit={handleGrowthSubmit}>
             <div className="form-grid-4">
@@ -644,6 +599,12 @@ export function CatatanTab({
             </div>
           )}
 
+          <KpspRadarChart
+            scores={kpspPillarScores}
+            answeredCount={answeredKpspCount}
+            totalCount={activeKpspCp.questions.length}
+          />
+
           <div className="kpsp-question-list">
             {activeKpspCp.questions.map((question, idx) => {
               const val = kpspAnswers[question.id];
@@ -659,14 +620,20 @@ export function CatatanTab({
                     <button
                       type="button"
                       className={`pill-btn small ${val === true ? 'is-active' : ''}`}
-                      onClick={() => setKpspAnswers((p) => ({ ...p, [question.id]: true }))}
+                      onClick={() => {
+                        setKpspWarning(null);
+                        setKpspAnswers((p) => ({ ...p, [question.id]: true }));
+                      }}
                     >
                       Ya
                     </button>
                     <button
                       type="button"
                       className={`pill-btn small ${val === false ? 'is-danger-active' : ''}`}
-                      onClick={() => setKpspAnswers((p) => ({ ...p, [question.id]: false }))}
+                      onClick={() => {
+                        setKpspWarning(null);
+                        setKpspAnswers((p) => ({ ...p, [question.id]: false }));
+                      }}
                     >
                       Belum
                     </button>
@@ -676,13 +643,19 @@ export function CatatanTab({
             })}
           </div>
 
+          {kpspWarning && (
+            <p className="kpsp-warn-note" role="alert">
+              {kpspWarning}
+            </p>
+          )}
+
           <button
             type="button"
             className="btn-primary-calm"
             style={{ marginTop: '12px', width: '100%' }}
             onClick={handleSaveKpsp}
           >
-            Simpan & Analisa Skrining
+            Simpan & Analisa Skrining ({answeredKpspCount}/{activeKpspCp.questions.length})
           </button>
           <p className="muted-mini" style={{ marginTop: '8px' }}>
             Acuan edukatif KPSP/KIA Kemenkes. Bukan pengganti evaluasi medis langsung dokter anak.
@@ -870,6 +843,27 @@ export function CatatanTab({
           )}
         </section>
       )}
+      <ShareCardModal
+        open={shareModalOpen}
+        cardParams={{
+          childName,
+          ageLabel,
+          phaseLabel: activePhase?.shortLabel ?? activeBand,
+          achievedCount: achievedInActiveBand,
+          totalMilestones: totalInActiveBand,
+          stickersCount,
+          streakDays,
+          whoSummary: whoEval.wfa?.status,
+          kpspSummary: latestKpsp ? `${latestKpsp.yesCount}/${latestKpsp.totalCount} Ya` : undefined,
+          pillarPercents: pillarBalance.map((p) => ({
+            label: PILLAR_LABELS[p.pillar],
+            percent: p.percent
+          })),
+          dateLabel: todayKey()
+        }}
+        shareText={summaryText}
+        onClose={() => setShareModalOpen(false)}
+      />
     </div>
   );
 }

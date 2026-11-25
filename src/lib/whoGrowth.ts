@@ -25,6 +25,17 @@ export interface WhoCurvePoint {
   sdPlus2: number;
 }
 
+export interface WhoKmsBandPoint {
+  x: number;
+  sdMinus3: number;
+  sdMinus2: number;
+  sdMinus1: number;
+  median: number;
+  sdPlus1: number;
+  sdPlus2: number;
+  sdPlus3: number;
+}
+
 export interface WhoChildEvaluation {
   wfa?: WhoAssessment;
   hfa?: WhoAssessment;
@@ -247,4 +258,55 @@ export function computeWhoCurveBand(
       median: Math.round(r.M * 10) / 10,
       sdPlus2: valueFromZScore(2, r.L, r.M, r.S)
     }));
+}
+
+export function computeWhoKmsBands(
+  gender: ChildGender,
+  indicator: 'wfa' | 'hfa' | 'hcfa',
+  minMonth = 0,
+  maxMonth = 24
+): WhoKmsBandPoint[] {
+  const table = getTable(gender, indicator);
+  const clampedMin = Math.max(0, Math.min(54, Math.floor(minMonth)));
+  const clampedMax = Math.max(clampedMin + 6, Math.min(60, Math.ceil(maxMonth)));
+  const step = clampedMax - clampedMin <= 24 ? 2 : 3;
+  const points: WhoKmsBandPoint[] = [];
+
+  for (let m = clampedMin; m <= clampedMax; m += step) {
+    const row = interpolateLms(table, m);
+    points.push({
+      x: m,
+      sdMinus3: valueFromZScore(-3, row.L, row.M, row.S),
+      sdMinus2: valueFromZScore(-2, row.L, row.M, row.S),
+      sdMinus1: valueFromZScore(-1, row.L, row.M, row.S),
+      median: Math.round(row.M * 10) / 10,
+      sdPlus1: valueFromZScore(1, row.L, row.M, row.S),
+      sdPlus2: valueFromZScore(2, row.L, row.M, row.S),
+      sdPlus3: valueFromZScore(3, row.L, row.M, row.S)
+    });
+  }
+  if (points[points.length - 1]?.x !== clampedMax) {
+    const row = interpolateLms(table, clampedMax);
+    points.push({
+      x: clampedMax,
+      sdMinus3: valueFromZScore(-3, row.L, row.M, row.S),
+      sdMinus2: valueFromZScore(-2, row.L, row.M, row.S),
+      sdMinus1: valueFromZScore(-1, row.L, row.M, row.S),
+      median: Math.round(row.M * 10) / 10,
+      sdPlus1: valueFromZScore(1, row.L, row.M, row.S),
+      sdPlus2: valueFromZScore(2, row.L, row.M, row.S),
+      sdPlus3: valueFromZScore(3, row.L, row.M, row.S)
+    });
+  }
+  return points;
+}
+
+export function computeAgeMonthsAtDate(birthDateIso: string | undefined, targetDateIso: string): number | null {
+  if (!birthDateIso) return null;
+  const b = new Date(`${birthDateIso}T00:00:00`);
+  const t = new Date(`${targetDateIso}T00:00:00`);
+  if (Number.isNaN(b.getTime()) || Number.isNaN(t.getTime())) return null;
+  const diffDays = (t.getTime() - b.getTime()) / (1000 * 60 * 60 * 24);
+  if (diffDays < -7) return null;
+  return Math.max(0, Math.min(60, Math.round((diffDays / 30.4375) * 10) / 10));
 }

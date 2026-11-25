@@ -132,6 +132,15 @@ export function TipsTab({
         </div>
       </section>
 
+      {filter !== 'MPASI' && qLower && visibleMpasi.length > 0 && (
+        <div className="mpasi-search-hint">
+          <span>Ada <strong>{visibleMpasi.length}</strong> bahan MPASI cocok dengan &ldquo;{query.trim()}&rdquo;</span>
+          <button type="button" className="text-action-btn" onClick={() => setFilter('MPASI')}>
+            Lihat di MPASI →
+          </button>
+        </div>
+      )}
+
       {filter === 'MPASI' ? (
         <>
           <section className="ed-card">

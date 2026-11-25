@@ -607,9 +607,11 @@ export function App(): JSX.Element {
           <CatatanTab
             childName={displayChildName}
             gender={settings.gender}
+            birthDate={settings.birthDate}
             ageLabel={ageInfo?.label ?? activePhase.rangeLabel}
             ageInfo={ageInfo}
             activeBand={activeBand}
+            progress={progress}
             stickersCount={progress.stickers.length}
             streakDays={streakInfo.streakDays}
             journal={journal}
