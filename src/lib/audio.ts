@@ -620,3 +620,40 @@ export function playRustleSound(): void {
   osc1.stop(now + 0.16);
   osc2.stop(now + 0.16);
 }
+
+/**
+ * Playful rising anticipation slide for "Ciluk..." peek phase.
+ */
+export function playPeekAnticipation(): void {
+  if (!soundOn) return;
+  const m = getMaster();
+  if (!m) return;
+  const { audio, out } = m;
+  const now = audio.currentTime;
+
+  const osc = audio.createOscillator();
+  const gain = audio.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(320, now);
+  osc.frequency.exponentialRampToValueAtTime(580, now + 0.22);
+
+  gain.gain.setValueAtTime(0.001, now);
+  gain.gain.linearRampToValueAtTime(0.22, now + 0.03);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.26);
+
+  osc.connect(gain);
+  gain.connect(out);
+  osc.start(now);
+  osc.stop(now + 0.28);
+}
+
+/**
+ * Light twinkling flutter for decoy butterfly/flower/cloud taps.
+ */
+export function playGiggleFlutter(): void {
+  if (!soundOn) return;
+  const notes = [523.25, 659.25, 783.99];
+  notes.forEach((n, idx) => {
+    window.setTimeout(() => playNote(n, 0.16, 0.14), idx * 55);
+  });
+}
