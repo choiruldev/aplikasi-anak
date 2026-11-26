@@ -8254,26 +8254,42 @@ html[data-theme='night'] .backup-reminder-bar {
   touch-action: manipulation;
 }
 
-.peek-spot-btn.is-wiggling {
-  animation: peekSpotWiggle 1.35s ease-in-out infinite;
+.peek-spot-btn .spot-cover {
+  transform-origin: center bottom;
+  will-change: transform;
 }
 
-.peek-spot-btn.is-peeking {
-  animation: peekSpotShake 360ms ease-in-out;
+.peek-spot-btn.is-wiggling .spot-cover {
+  animation: peekSpotRustle 2.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
 }
 
-@keyframes peekSpotWiggle {
-  0%, 58%, 100% { transform: rotate(0deg) scale(1); }
-  65% { transform: rotate(-5deg) scale(1.04); }
-  74% { transform: rotate(5deg) scale(1.06); }
-  82% { transform: rotate(-4deg) scale(1.04); }
-  90% { transform: rotate(3deg) scale(1.02); }
+.peek-spot-btn.is-peeking .spot-cover {
+  animation: peekSpotPeekNudge 480ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@keyframes peekSpotShake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-6px) rotate(-4deg); }
-  75% { transform: translateX(6px) rotate(4deg); }
+@keyframes peekSpotRustle {
+  0%, 48%, 100% {
+    transform: rotate(0deg) scale3d(1, 1, 1);
+  }
+  60% {
+    transform: rotate(-1.6deg) scale3d(1.03, 0.965, 1);
+  }
+  72% {
+    transform: rotate(1.7deg) scale3d(0.985, 1.025, 1);
+  }
+  84% {
+    transform: rotate(-0.8deg) scale3d(1.012, 0.99, 1);
+  }
+  92% {
+    transform: rotate(0.3deg) scale3d(1, 1, 1);
+  }
+}
+
+@keyframes peekSpotPeekNudge {
+  0% { transform: scale3d(1, 1, 1); }
+  35% { transform: scale3d(1.06, 0.93, 1); }
+  70% { transform: scale3d(0.98, 1.03, 1); }
+  100% { transform: scale3d(1, 1, 1); }
 }
 
 .peek-clue-badge {
@@ -8288,12 +8304,12 @@ html[data-theme='night'] .backup-reminder-bar {
   font-size: 0.82rem;
   font-weight: 900;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.14);
-  animation: peekClueFloat 1.1s ease-in-out infinite alternate;
+  animation: peekClueFloat 2.2s ease-in-out infinite alternate;
 }
 
 @keyframes peekClueFloat {
   from { transform: translateY(0); }
-  to { transform: translateY(-6px); }
+  to { transform: translateY(-4px); }
 }
 
 .peek-finger-hint {
@@ -8325,7 +8341,7 @@ html[data-theme='night'] .backup-reminder-bar {
   bottom: 14px;
   z-index: 2;
   pointer-events: none;
-  transition: transform 340ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 240ms ease;
+  transition: transform 480ms cubic-bezier(0.22, 1, 0.36, 1), opacity 320ms ease;
 }
 
 .peek-spot-actor.stage-hidden {
@@ -8518,7 +8534,28 @@ html[data-theme='night'] .backup-reminder-bar {
   cursor: pointer;
   font-family: var(--font-display);
   font-size: 0.9rem;
-  animation: peekSpotWiggle 1.8s ease-in-out infinite;
+  animation: peekGentleBreath 2.8s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes peekGentleBreath {
+  0%, 100% {
+    transform: scale3d(1, 1, 1);
+    box-shadow: 0 4px 12px rgba(232, 159, 28, 0.12);
+  }
+  50% {
+    transform: scale3d(1.03, 1.03, 1);
+    box-shadow: 0 8px 20px rgba(232, 159, 28, 0.22);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .peek-spot-btn.is-wiggling .spot-cover,
+  .peek-clue-badge,
+  .peek-cloud-btn,
+  .guess-mystery-box {
+    animation: none;
+  }
 }
 
 .guess-mystery-box.is-solved {
