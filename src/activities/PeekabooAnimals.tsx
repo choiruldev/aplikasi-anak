@@ -1,4 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
+import {
+  AnimatePresence,
+  motion,
+  useAnimationFrame,
+  useMotionValue,
+  useReducedMotion
+} from 'motion/react';
 import { AnimalIllustration, IconSpeaker, TapHintFinger, VisualStarMeter, type AnimalId } from '../components/Art.tsx';
 import {
   playAnimalMotif,
@@ -18,6 +25,7 @@ import { fireConfetti, triggerHaptic } from '../lib/confetti.ts';
 
 type ExtraAnimalId = 'bunny' | 'lion' | 'sheep' | 'chick';
 type SpotId = 'bush' | 'barn' | 'gift';
+type PeekStage = 'hidden' | 'peeking' | 'popped';
 
 interface PeekabooAnimal {
   id: string;
@@ -49,7 +57,8 @@ const SPOTS: Array<{ id: SpotId; label: string; decoyEmoji: string; decoyName: s
   { id: 'gift', label: 'Kotak Kado', decoyEmoji: '🌸', decoyName: 'Bunga mekar!' }
 ];
 
-type PeekStage = 'hidden' | 'peeking' | 'popped';
+const SPRING_SOFT = { type: 'spring' as const, stiffness: 200, damping: 17, mass: 0.9 };
+const SPRING_BOUNCY = { type: 'spring' as const, stiffness: 240, damping: 15, mass: 0.85 };
 
 function ExtraAnimalSvg({ id, size = 120 }: { id: ExtraAnimalId; size?: number }): JSX.Element {
   switch (id) {
@@ -138,6 +147,130 @@ function renderAnimalArt(animal: PeekabooAnimal, size = 128): JSX.Element {
   return <ExtraAnimalSvg id={animal.extraId ?? 'bunny'} size={size} />;
 }
 
+/**
+ * Silky 60-120fps continuous sine-wave harmonic sway (zero keyframe stops/kinks!).
+ * Anchored firmly at center-bottom so the bush/barn/gift stays planted naturally on the grass.
+ */
+function SmoothHidingCover({
+  spotId,
+  isWiggling,
+  isOpen
+}: {
+  spotId: SpotId;
+  isWiggling: boolean;
+  isOpen: boolean;
+}): JSX.Element {
+  const reducedMotion = useReducedMotion();
+  const rotate = useMotionValue(0);
+  const scaleX = useMotionValue(1);
+  const scaleY = useMotionValue(1);
+  const ampRef = useRef(0);
+
+  useAnimationFrame((time, delta) => {
+    const dt = Math.min(0.05, delta / 1000);
+    const targetAmp = isWiggling && !reducedMotion ? 1 : 0;
+    // Smooth exponential blend so starting/stopping the sway never snaps!
+    ampRef.current += (targetAmp - ampRef.current) * Math.min(1, dt * 6);
+    const a = ampRef.current;
+
+    if (a < 0.002) {
+      if (rotate.get() !== 0) {
+        rotate.set(0);
+        scaleX.set(1);
+        scaleY.set(1);
+      }
+      return;
+    }
+
+    const t = time / 1000;
+    // Pure C-infinity continuous sine wave pendulum + volume-preserving squishy breath
+    const sway = Math.sin(t * 2.4) * 4.2 * a;
+    const breath = Math.cos(t * 4.8) * 0.026 * a;
+    rotate.set(sway);
+    scaleX.set(1 + breath);
+    scaleY.set(1 - breath);
+  });
+
+  if (spotId === 'bush') {
+    return (
+      <motion.div
+        className="spot-cover spot-bush"
+        style={{ rotate, scaleX, scaleY, transformOrigin: 'center bottom' }}
+        aria-hidden="true"
+      >
+        <motion.svg
+          viewBox="0 0 120 84"
+          className="spot-svg-half left-half"
+          animate={isOpen ? { x: -30, rotate: -18, opacity: 0.42 } : { x: 0, rotate: 0, opacity: 1 }}
+          transition={SPRING_SOFT}
+        >
+          <circle cx="42" cy="54" r="30" fill="#3DA57A" />
+          <circle cx="76" cy="44" r="34" fill="#2B7A57" />
+          <circle cx="34" cy="48" r="6" fill="#FF8FAB" />
+          <circle cx="34" cy="48" r="2.5" fill="#FFE066" />
+        </motion.svg>
+        <motion.svg
+          viewBox="0 0 120 84"
+          className="spot-svg-half right-half"
+          animate={isOpen ? { x: 30, rotate: 18, opacity: 0.42 } : { x: 0, rotate: 0, opacity: 1 }}
+          transition={SPRING_SOFT}
+        >
+          <circle cx="44" cy="44" r="34" fill="#2B7A57" />
+          <circle cx="78" cy="54" r="30" fill="#3DA57A" />
+          <circle cx="84" cy="48" r="6" fill="#FFD166" />
+          <circle cx="84" cy="48" r="2.5" fill="#FF6B6B" />
+        </motion.svg>
+      </motion.div>
+    );
+  }
+
+  if (spotId === 'barn') {
+    return (
+      <motion.div
+        className="spot-cover spot-barn"
+        style={{ rotate, scaleX, scaleY, transformOrigin: 'center bottom' }}
+        aria-hidden="true"
+      >
+        <svg viewBox="0 0 140 108" className="barn-frame-svg">
+          <polygon points="70,6 132,42 8,42" fill="#D94848" stroke="#8C2626" strokeWidth="4" strokeLinejoin="round" />
+          <rect x="18" y="42" width="104" height="62" rx="8" fill="#4A2511" />
+        </svg>
+        <motion.div
+          className="barn-door left-door"
+          animate={isOpen ? { rotateY: -115 } : { rotateY: 0 }}
+          transition={SPRING_SOFT}
+          style={{ transformPerspective: 200 }}
+        />
+        <motion.div
+          className="barn-door right-door"
+          animate={isOpen ? { rotateY: 115 } : { rotateY: 0 }}
+          transition={SPRING_SOFT}
+          style={{ transformPerspective: 200 }}
+        />
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      className="spot-cover spot-gift"
+      style={{ rotate, scaleX, scaleY, transformOrigin: 'center bottom' }}
+      aria-hidden="true"
+    >
+      <motion.div
+        className="gift-lid"
+        animate={isOpen ? { y: -38, rotate: 20, opacity: 0.35 } : { y: 0, rotate: 0, opacity: 1 }}
+        transition={SPRING_SOFT}
+      >
+        <span className="gift-bow">🎀</span>
+      </motion.div>
+      <div className="gift-box">
+        <div className="gift-ribbon-v" />
+      </div>
+    </motion.div>
+  );
+}
+
 export function PeekabooAnimals({
   onComplete
 }: {
@@ -147,10 +280,10 @@ export function PeekabooAnimals({
   const [animalIndex, setAnimalIndex] = useState(0);
   const [activeSpot, setActiveSpot] = useState<SpotId>('bush');
   const [stage, setStage] = useState<PeekStage>('hidden');
-  const [pokeJump, setPokeJump] = useState(false);
-  const [sunSpin, setSunSpin] = useState(false);
+  const [pokeTick, setPokeTick] = useState(0);
+  const [sunAngle, setSunAngle] = useState(0);
   const [cloudPop, setCloudPop] = useState(false);
-  const [decoyBurst, setDecoyBurst] = useState<{ spot: SpotId; emoji: string; label: string } | null>(null);
+  const [decoyBurst, setDecoyBurst] = useState<{ id: number; spot: SpotId; emoji: string; label: string } | null>(null);
   const [discoveredCount, setDiscoveredCount] = useState(0);
   const [guessTargetIdx, setGuessTargetIdx] = useState(0);
   const [guessScore, setGuessScore] = useState(0);
@@ -158,7 +291,6 @@ export function PeekabooAnimals({
   const [guessMsg, setGuessMsg] = useState('Ketuk kotak suara, lalu pilih hewannya!');
   const [rewarded, setRewarded] = useState(false);
   const decoyTimerRef = useRef<number | null>(null);
-  const pokeTimerRef = useRef<number | null>(null);
 
   const currentAnimal = PEEKABOO_ANIMALS[animalIndex];
   const guessTarget = PEEKABOO_ANIMALS[guessTargetIdx];
@@ -170,7 +302,6 @@ export function PeekabooAnimals({
     return () => {
       stopVoice();
       if (decoyTimerRef.current !== null) window.clearTimeout(decoyTimerRef.current);
-      if (pokeTimerRef.current !== null) window.clearTimeout(pokeTimerRef.current);
     };
   }, []);
 
@@ -192,8 +323,7 @@ export function PeekabooAnimals({
     triggerHaptic('tap');
     setStage('hidden');
     setDecoyBurst(null);
-    setPokeJump(false);
-    // Pick a different random animal & a different random hiding spot!
+    setPokeTick(0);
     const nextAnimal = (animalIndex + 1 + Math.floor(Math.random() * 3)) % PEEKABOO_ANIMALS.length;
     const otherSpots = SPOTS.filter((s) => s.id !== activeSpot);
     const nextSpot = otherSpots[Math.floor(Math.random() * otherSpots.length)].id;
@@ -202,7 +332,6 @@ export function PeekabooAnimals({
   }
 
   function handleSpotTap(spotId: SpotId): void {
-    // If animal is already out, tapping another spot starts a fresh hide round
     if (stage === 'popped') {
       if (spotId === activeSpot) {
         handlePokeAnimal();
@@ -212,18 +341,16 @@ export function PeekabooAnimals({
       return;
     }
 
-    // Decoy spot -> cute butterfly/bee/flower surprise!
     if (spotId !== activeSpot) {
       const spotMeta = SPOTS.find((s) => s.id === spotId)!;
       triggerHaptic('tap');
       playGiggleFlutter();
-      setDecoyBurst({ spot: spotId, emoji: spotMeta.decoyEmoji, label: spotMeta.decoyName });
+      setDecoyBurst({ id: Date.now(), spot: spotId, emoji: spotMeta.decoyEmoji, label: spotMeta.decoyName });
       if (decoyTimerRef.current !== null) window.clearTimeout(decoyTimerRef.current);
       decoyTimerRef.current = window.setTimeout(() => setDecoyBurst(null), 1600);
       return;
     }
 
-    // Active wiggling spot!
     if (stage === 'hidden') {
       triggerHaptic('tap');
       playRustleSound();
@@ -256,17 +383,13 @@ export function PeekabooAnimals({
     triggerHaptic('tap');
     playBoingSound();
     playAnimalSound(currentAnimal, false);
-    setPokeJump(false);
-    window.requestAnimationFrame(() => setPokeJump(true));
-    if (pokeTimerRef.current !== null) window.clearTimeout(pokeTimerRef.current);
-    pokeTimerRef.current = window.setTimeout(() => setPokeJump(false), 500);
+    setPokeTick((n) => n + 1);
   }
 
   function handleSunTap(): void {
     triggerHaptic('tap');
     playGiggleFlutter();
-    setSunSpin(true);
-    window.setTimeout(() => setSunSpin(false), 750);
+    setSunAngle((deg) => deg + 180);
   }
 
   function handleCloudTap(): void {
@@ -317,52 +440,6 @@ export function PeekabooAnimals({
     }
   }
 
-  function renderSpotCover(spotId: SpotId, spotStage: PeekStage): JSX.Element {
-    const open = spotStage === 'popped';
-    if (spotId === 'bush') {
-      return (
-        <div className={`spot-cover spot-bush ${open ? 'is-open' : ''}`} aria-hidden="true">
-          <svg viewBox="0 0 120 84" className="spot-svg-half left-half">
-            <circle cx="42" cy="54" r="30" fill="#3DA57A" />
-            <circle cx="76" cy="44" r="34" fill="#2B7A57" />
-            <circle cx="34" cy="48" r="6" fill="#FF8FAB" />
-            <circle cx="34" cy="48" r="2.5" fill="#FFE066" />
-          </svg>
-          <svg viewBox="0 0 120 84" className="spot-svg-half right-half">
-            <circle cx="44" cy="44" r="34" fill="#2B7A57" />
-            <circle cx="78" cy="54" r="30" fill="#3DA57A" />
-            <circle cx="84" cy="48" r="6" fill="#FFD166" />
-            <circle cx="84" cy="48" r="2.5" fill="#FF6B6B" />
-          </svg>
-        </div>
-      );
-    }
-
-    if (spotId === 'barn') {
-      return (
-        <div className={`spot-cover spot-barn ${open ? 'is-open' : ''}`} aria-hidden="true">
-          <svg viewBox="0 0 140 108" className="barn-frame-svg">
-            <polygon points="70,6 132,42 8,42" fill="#D94848" stroke="#8C2626" strokeWidth="4" strokeLinejoin="round" />
-            <rect x="18" y="42" width="104" height="62" rx="8" fill="#4A2511" />
-          </svg>
-          <div className="barn-door left-door" />
-          <div className="barn-door right-door" />
-        </div>
-      );
-    }
-
-    return (
-      <div className={`spot-cover spot-gift ${open ? 'is-open' : ''}`} aria-hidden="true">
-        <div className="gift-lid">
-          <span className="gift-bow">🎀</span>
-        </div>
-        <div className="gift-box">
-          <div className="gift-ribbon-v" />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <section className="game-clean-stage" aria-label="Cilukba Hewan">
       <div className="game-top-bar">
@@ -407,11 +484,14 @@ export function PeekabooAnimals({
 
       {mode === 'peekaboo' ? (
         <div className={`peekaboo-world is-${stage}`}>
-          {/* Living Sky: Clickable Sun & Drifting Clouds */}
-          <button
+          {/* Living Sky: Spring-Spinning Sun & Smoothly Gliding Cloud */}
+          <motion.button
             type="button"
-            className={`peek-sun-btn ${sunSpin ? 'is-spinning' : ''}`}
+            className="peek-sun-btn"
             onClick={handleSunTap}
+            animate={{ rotate: sunAngle }}
+            whileTap={{ scale: 1.15 }}
+            transition={{ type: 'spring', stiffness: 120, damping: 14 }}
             aria-label="Matahari tersenyum"
           >
             <svg viewBox="0 0 64 64" width="54" height="54" aria-hidden="true">
@@ -432,19 +512,31 @@ export function PeekabooAnimals({
               <circle cx="38" cy="29" r="2.2" fill="#182421" />
               <path d="M26 36Q32 41 38 36" stroke="#182421" strokeWidth="2.5" strokeLinecap="round" fill="none" />
             </svg>
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
             type="button"
-            className={`peek-cloud-btn ${cloudPop ? 'is-popping' : ''}`}
+            className="peek-cloud-btn"
             onClick={handleCloudTap}
+            animate={{ x: [0, 24, 0], scale: cloudPop ? 1.25 : 1 }}
+            transition={{
+              x: { duration: 8, repeat: Infinity, ease: 'easeInOut' },
+              scale: SPRING_BOUNCY
+            }}
             aria-label="Awan ceria"
           >
             ☁️ {cloudPop ? '✨' : ''}
-          </button>
+          </motion.button>
 
-          {/* Dynamic Big Playful Prompt Banner */}
-          <div className="peek-banner-bubble" style={{ borderColor: stage === 'popped' ? currentAnimal.accent : undefined }}>
+          {/* Dynamic Playful Prompt Banner */}
+          <motion.div
+            key={`${stage}-${decoyBurst?.id ?? 'none'}`}
+            className="peek-banner-bubble"
+            style={{ borderColor: stage === 'popped' ? currentAnimal.accent : undefined }}
+            initial={{ scale: 0.94, opacity: 0.7 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={SPRING_SOFT}
+          >
             {stage === 'popped' ? (
               <strong style={{ color: currentAnimal.accent }}>
                 BAAA! {currentAnimal.soundWord} Ini {currentAnimal.name}!
@@ -456,49 +548,76 @@ export function PeekabooAnimals({
             ) : (
               <strong>Ada siapa yang goyang-goyang? 👆</strong>
             )}
-          </div>
+          </motion.div>
 
-          {/* Center Big Popped-Out Hero Stage (Tap animal to giggle & jump!) */}
-          {stage === 'popped' && (
-            <button
-              type="button"
-              className={`peek-hero-pop ${pokeJump ? 'is-poked' : ''}`}
-              onClick={handlePokeAnimal}
-              aria-label={`Ketuk ${currentAnimal.name} untuk bersuara lagi`}
-            >
-              <span className="peek-speech-tag" style={{ backgroundColor: currentAnimal.accent }}>
-                {currentAnimal.soundWord}
-              </span>
-              {renderAnimalArt(currentAnimal, 152)}
-              <span className="peek-poke-hint">Ketuk {currentAnimal.name} lagi! 👆</span>
-            </button>
-          )}
+          {/* Center Popped-Out Hero with Real Spring Physics */}
+          <AnimatePresence>
+            {stage === 'popped' && (
+              <motion.button
+                key={`hero-${currentAnimal.id}-${pokeTick}`}
+                type="button"
+                className="peek-hero-pop"
+                onClick={handlePokeAnimal}
+                initial={
+                  pokeTick === 0
+                    ? { y: 80, scale: 0.45, opacity: 0 }
+                    : { y: -18, scaleX: 0.92, scaleY: 1.1, opacity: 1 }
+                }
+                animate={{ y: 0, scale: 1, scaleX: 1, scaleY: 1, opacity: 1 }}
+                exit={{ y: 50, scale: 0.5, opacity: 0 }}
+                whileTap={{ scaleX: 1.08, scaleY: 0.9 }}
+                transition={SPRING_BOUNCY}
+                aria-label={`Ketuk ${currentAnimal.name} untuk bersuara lagi`}
+              >
+                <span className="peek-speech-tag" style={{ backgroundColor: currentAnimal.accent }}>
+                  {currentAnimal.soundWord}
+                </span>
+                {renderAnimalArt(currentAnimal, 152)}
+                <span className="peek-poke-hint">Ketuk {currentAnimal.name} lagi! 👆</span>
+              </motion.button>
+            )}
+          </AnimatePresence>
 
-          {/* Rolling Meadow Ground + 3 Interactive Hiding Spots */}
+          {/* Meadow Hill + 3 Interactive Hiding Spots */}
           <div className="peek-meadow-hill" aria-hidden="true" />
 
           <div className="peek-spots-row">
             {SPOTS.map((spot) => {
               const isTarget = spot.id === activeSpot;
-              const spotStage: PeekStage = isTarget ? stage : 'hidden';
               const isWiggling = isTarget && stage === 'hidden';
               const isPeeking = isTarget && stage === 'peeking';
+              const isOpen = isTarget && stage === 'popped';
               const hasDecoy = decoyBurst?.spot === spot.id;
 
               return (
-                <button
+                <motion.button
                   key={spot.id}
                   type="button"
-                  className={`peek-spot-btn ${isWiggling ? 'is-wiggling' : ''} ${isPeeking ? 'is-peeking' : ''} ${isTarget && stage === 'popped' ? 'is-popped' : ''}`}
+                  className={`peek-spot-btn ${isWiggling ? 'is-wiggling' : ''} ${isPeeking ? 'is-peeking' : ''} ${isOpen ? 'is-popped' : ''}`}
                   onClick={() => handleSpotTap(spot.id)}
+                  whileTap={{ scaleX: 1.06, scaleY: 0.93 }}
+                  transition={SPRING_SOFT}
+                  style={{ transformOrigin: 'center bottom' }}
                   aria-label={spot.label}
                 >
-                  {/* Floating '?' wiggle clue */}
-                  {isWiggling && (
-                    <span className="peek-clue-badge" aria-hidden="true">
-                      ✨ ?
-                    </span>
-                  )}
+                  {/* Smooth floating '?' clue */}
+                  <AnimatePresence>
+                    {isWiggling && (
+                      <motion.span
+                        className="peek-clue-badge"
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: [0, -5, 0] }}
+                        exit={{ opacity: 0, scale: 0.6 }}
+                        transition={{
+                          y: { duration: 2.2, repeat: Infinity, ease: 'easeInOut' },
+                          opacity: { duration: 0.25 }
+                        }}
+                        aria-hidden="true"
+                      >
+                        ✨ ?
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
 
                   {/* First-time tap finger guide */}
                   {discoveredCount === 0 && isWiggling && (
@@ -507,44 +626,77 @@ export function PeekabooAnimals({
                     </span>
                   )}
 
-                  {/* Decoy butterfly / bee / flower float */}
-                  {hasDecoy && (
-                    <span className="peek-decoy-float" aria-hidden="true">
-                      {decoyBurst.emoji}
-                    </span>
-                  )}
+                  {/* Smooth curved decoy butterfly / bee / flower */}
+                  <AnimatePresence>
+                    {hasDecoy && decoyBurst && (
+                      <motion.span
+                        key={decoyBurst.id}
+                        className="peek-decoy-float"
+                        initial={{ y: 20, x: 0, scale: 0.4, opacity: 0 }}
+                        animate={{ y: -64, x: [0, 12, -8, 10], scale: [0.5, 1.2, 1.05, 0.9], opacity: [0, 1, 1, 0] }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 1.45, ease: 'easeOut' }}
+                        aria-hidden="true"
+                      >
+                        {decoyBurst.emoji}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
 
-                  {/* Peeking animal head rising behind the hiding spot! */}
-                  {isTarget && stage !== 'popped' && (
-                    <div className={`peek-spot-actor stage-${spotStage}`}>
-                      {renderAnimalArt(currentAnimal, 92)}
-                    </div>
-                  )}
+                  {/* Animal peeking smoothly out on a real spring! */}
+                  <AnimatePresence>
+                    {isTarget && isPeeking && (
+                      <motion.div
+                        key={`peek-${currentAnimal.id}`}
+                        className="peek-spot-actor"
+                        initial={{ y: 34, scale: 0.65, opacity: 0 }}
+                        animate={{ y: -40, scale: 1, opacity: 1 }}
+                        exit={{ y: -64, scale: 1.1, opacity: 0 }}
+                        transition={SPRING_BOUNCY}
+                      >
+                        {renderAnimalArt(currentAnimal, 94)}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
-                  {/* Animated Cover (Bush / Barn / Gift) */}
-                  {renderSpotCover(spot.id, spotStage)}
-                </button>
+                  {/* 60-120fps Continuous Harmonic Sway Cover */}
+                  <SmoothHidingCover spotId={spot.id} isWiggling={isWiggling} isOpen={isOpen} />
+                </motion.button>
               );
             })}
           </div>
 
-          {/* Big Cheerful "Hide Again!" Button once popped */}
-          {stage === 'popped' && (
-            <button
-              type="button"
-              className="peek-next-btn touch-safe"
-              onClick={startNewHideRound}
-            >
-              🙈 Sembunyi Lagi!
-            </button>
-          )}
+          {/* Big Cheerful "Hide Again!" Button */}
+          <AnimatePresence>
+            {stage === 'popped' && (
+              <motion.button
+                type="button"
+                className="peek-next-btn touch-safe"
+                onClick={startNewHideRound}
+                initial={{ y: 24, opacity: 0, scale: 0.88 }}
+                animate={{ y: 0, opacity: 1, scale: 1 }}
+                exit={{ y: 16, opacity: 0 }}
+                whileTap={{ scale: 0.95 }}
+                transition={SPRING_SOFT}
+              >
+                🙈 Sembunyi Lagi!
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
       ) : (
         <div className="habit-visual-stage">
-          <button
+          <motion.button
             type="button"
             className={`guess-mystery-box ${guessSolved ? 'is-solved' : ''}`}
             onClick={() => playAnimalSound(guessTarget, false)}
+            animate={guessSolved ? { scale: [0.9, 1.06, 1], y: 0 } : { y: [0, -6, 0] }}
+            whileTap={{ scale: 0.94 }}
+            transition={
+              guessSolved
+                ? SPRING_BOUNCY
+                : { y: { duration: 2.6, repeat: Infinity, ease: 'easeInOut' } }
+            }
             aria-label="Dengarkan suara hewan misteri"
           >
             {guessSolved ? (
@@ -555,22 +707,24 @@ export function PeekabooAnimals({
                 <strong>Ketuk Dengar Suara 🔊</strong>
               </>
             )}
-          </button>
+          </motion.button>
 
           <h2 className="edu-prompt-title">{guessMsg}</h2>
 
           <div className="guess-options-row">
             {guessOptions.map((choice) => (
-              <button
+              <motion.button
                 key={choice.id}
                 type="button"
                 className="edu-word-card touch-safe"
                 style={{ backgroundColor: choice.cardTint }}
+                whileTap={{ scale: 0.94 }}
+                transition={SPRING_SOFT}
                 onClick={() => answerGuess(choice)}
               >
                 {renderAnimalArt(choice, 68)}
                 <strong>{choice.name}</strong>
-              </button>
+              </motion.button>
             ))}
           </div>
         </div>
