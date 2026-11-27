@@ -1,9 +1,12 @@
 import { lazy, Suspense, useCallback, useEffect, useState, type JSX } from 'react';
+import { BookOpen, Gamepad2, Home, LineChart, Moon, Sun } from 'lucide-react';
+import { AnimatePresence, MotionConfig, motion } from 'motion/react';
+import { Toaster, toast } from 'sonner';
 import { BrandMark } from './components/Art.tsx';
 import { ChildFocusShell } from './components/ChildFocusShell.tsx';
 import { InstallModal } from './components/InstallModal.tsx';
 import { LegalPrivacyModal } from './components/LegalPrivacyModal.tsx';
-import { AvatarIcon, MoonIcon } from './components/ModuleIcons.tsx';
+import { AvatarIcon } from './components/ModuleIcons.tsx';
 import { OnboardingModal } from './components/OnboardingModal.tsx';
 import {
   ParentDrawer,
@@ -107,34 +110,13 @@ const TAB_ITEMS: Array<{ id: MainTab; label: string }> = [
 function renderNavIcon(id: MainTab): JSX.Element {
   switch (id) {
     case 'stimulasi':
-      return (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M12 20V10" />
-          <path d="M12 14c-3.5 0-6-2.2-6-6 3.5 0 6 2.2 6 6Z" />
-          <path d="M12 11c3.5 0 6-2.2 6-6-3.5 0-6 2.2-6 6Z" />
-        </svg>
-      );
+      return <Home size={20} strokeWidth={2.1} aria-hidden="true" />;
     case 'simulasi':
-      return (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <polygon points="6 4 20 12 6 20 6 4" />
-        </svg>
-      );
+      return <Gamepad2 size={20} strokeWidth={2.1} aria-hidden="true" />;
     case 'catatan':
-      return (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M3 3v18h18" />
-          <path d="M7 14l4-4 3 3 5-6" />
-        </svg>
-      );
+      return <LineChart size={20} strokeWidth={2.1} aria-hidden="true" />;
     case 'tips':
-      return (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 16v-4" />
-          <path d="M12 8h.01" />
-        </svg>
-      );
+      return <BookOpen size={20} strokeWidth={2.1} aria-hidden="true" />;
   }
 }
 
@@ -149,7 +131,6 @@ export function App(): JSX.Element {
   const [legalOpen, setLegalOpen] = useState(false);
   const [installModalOpen, setInstallModalOpen] = useState(false);
   const [albumOpen, setAlbumOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [isIos, setIsIos] = useState(false);
@@ -186,12 +167,6 @@ export function App(): JSX.Element {
     setAudioPreferences(settings.soundEnabled, settings.voiceEnabled);
     document.documentElement.setAttribute('data-theme', settings.nightMode ? 'night' : 'light');
   }, [settings.soundEnabled, settings.voiceEnabled, settings.nightMode]);
-
-  useEffect(() => {
-    if (!toastMessage) return;
-    const id = window.setTimeout(() => setToastMessage(null), 3200);
-    return () => window.clearTimeout(id);
-  }, [toastMessage]);
 
   useEffect(() => {
     if (activeSimulation === 'baby-soother' || activeSimulation === 'motor') {
@@ -275,7 +250,9 @@ export function App(): JSX.Element {
     const newlyUnlocked = nextStickers.find((id) => !prevStickers.includes(id));
     if (newlyUnlocked) {
       const label = STICKER_META.find((s) => s.id === newlyUnlocked)?.label ?? 'Stiker Baru';
-      setToastMessage(`Stiker terbuka: ${label}!`);
+      toast.success(`Stiker terbuka: ${label}!`, {
+        description: 'Lihat koleksi di Album Stiker.'
+      });
     }
   };
 
@@ -441,7 +418,7 @@ export function App(): JSX.Element {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     recordBackupTimestamp(dateStr);
     setLastBackupDate(dateStr);
-    setToastMessage('Cadangan JSON berhasil diunduh.');
+    toast.success('Cadangan JSON berhasil diunduh.');
   };
 
   const handleImportBackup = (rawJson: string): { ok: boolean; error?: string } => {
@@ -512,26 +489,45 @@ export function App(): JSX.Element {
     }
   };
 
+  const toasterEl = (
+    <Toaster
+      position="top-center"
+      theme={settings.nightMode ? 'dark' : 'light'}
+      richColors
+      closeButton
+      duration={3000}
+      toastOptions={{
+        style: {
+          borderRadius: '18px',
+          fontFamily: 'var(--font-body)'
+        }
+      }}
+    />
+  );
+
   if (activeSimulation && activeSimMeta) {
     return (
-      <ChildFocusShell
-        moduleMeta={activeSimMeta}
-        isTimeUp={isGameTimeUp}
-        remainingSec={remainingSeconds}
-        dailyLimitMinutes={settings.dailyLimitMinutes}
-        bgmEnabled={settings.bgmEnabled}
-        childLockExit={settings.childLockExit}
-        toastMessage={toastMessage}
-        onToggleBgm={() =>
-          handleUpdateSettings({ ...settings, bgmEnabled: !settings.bgmEnabled })
-        }
-        onExit={handleExitSimulation}
-        onRequestResetTimer={handleResetTimer}
-      >
-        <Suspense fallback={<div className="module-loading-fallback">Memuat modul...</div>}>
-          {renderSimulationModule(activeSimulation)}
-        </Suspense>
-      </ChildFocusShell>
+      <MotionConfig reducedMotion="user">
+        {toasterEl}
+        <ChildFocusShell
+          moduleMeta={activeSimMeta}
+          isTimeUp={isGameTimeUp}
+          remainingSec={remainingSeconds}
+          dailyLimitMinutes={settings.dailyLimitMinutes}
+          bgmEnabled={settings.bgmEnabled}
+          childLockExit={settings.childLockExit}
+          toastMessage={null}
+          onToggleBgm={() =>
+            handleUpdateSettings({ ...settings, bgmEnabled: !settings.bgmEnabled })
+          }
+          onExit={handleExitSimulation}
+          onRequestResetTimer={handleResetTimer}
+        >
+          <Suspense fallback={<div className="module-loading-fallback">Memuat modul...</div>}>
+            {renderSimulationModule(activeSimulation)}
+          </Suspense>
+        </ChildFocusShell>
+      </MotionConfig>
     );
   }
 
@@ -541,312 +537,359 @@ export function App(): JSX.Element {
     : `${displayChildName} · ${activePhase.shortLabel}`;
 
   return (
-    <div className="companion-shell">
-      <header className="companion-topbar">
-        <div className="brand-title-wrap">
-          <BrandMark size={36} />
-          <div className="brand-text-block">
-            <span className="brand-name">Cilukba</span>
+    <MotionConfig reducedMotion="user">
+      {toasterEl}
+      <div className="companion-shell">
+        <header className="companion-topbar">
+          <div className="brand-title-wrap">
+            <BrandMark size={36} />
+            <div className="brand-text-block">
+              <span className="brand-name">Cilukba</span>
+            </div>
           </div>
-        </div>
 
-        <nav className="desktop-nav" aria-label="Navigasi utama">
-          {TAB_ITEMS.map((item) => (
-            <button
-              key={item.id}
+          <nav className="desktop-nav" aria-label="Navigasi utama">
+            {TAB_ITEMS.map((item) => {
+              const active = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`desktop-nav-btn ${active ? 'is-active' : ''}`}
+                  onClick={() => setActiveTab(item.id)}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  {active && (
+                    <motion.span
+                      layoutId="desktop-nav-active-pill"
+                      className="nav-active-pill-bg"
+                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span className="nav-btn-content">
+                    {renderNavIcon(item.id)}
+                    <span>{item.label}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="topbar-right-group">
+            <motion.button
               type="button"
-              className={`desktop-nav-btn ${activeTab === item.id ? 'is-active' : ''}`}
-              onClick={() => setActiveTab(item.id)}
-              aria-current={activeTab === item.id ? 'page' : undefined}
+              whileTap={{ scale: 0.9 }}
+              className={`icon-circle-btn ${settings.nightMode ? 'is-active' : ''}`}
+              onClick={() => handleUpdateSettings({ ...settings, nightMode: !settings.nightMode })}
+              aria-label={settings.nightMode ? 'Matikan mode malam' : 'Nyalakan mode malam'}
+              title={settings.nightMode ? 'Mode Terang' : 'Mode Malam'}
             >
-              {renderNavIcon(item.id)}
-              <span>{item.label}</span>
-            </button>
-          ))}
+              {settings.nightMode ? <Sun size={16} strokeWidth={2.2} /> : <Moon size={16} strokeWidth={2.2} />}
+            </motion.button>
+
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.96 }}
+              className="profile-chip"
+              onClick={() => setParentOpen(true)}
+              aria-label="Buka profil anak dan pengaturan"
+            >
+              <AvatarIcon avatarId={avatarId} size={22} />
+              <span>{profileChipLabel}</span>
+            </motion.button>
+          </div>
+        </header>
+
+        <main className="companion-main">
+          {isOffline && (
+            <div className="offline-status-bar" role="status">
+              Mode Offline aktif — seluruh catatan &amp; 21 permainan tetap berjalan lancar.
+            </div>
+          )}
+
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.16, ease: 'easeOut' }}
+            >
+              {activeTab === 'stimulasi' && (
+                <StimulasiTab
+                  childName={displayChildName}
+                  gender={settings.gender}
+                  avatarId={avatarId}
+                  ageInfo={ageInfo}
+                  activeBand={activeBand}
+                  streakDays={streakInfo.streakDays}
+                  nightMode={settings.nightMode}
+                  onSelectBand={handleSelectBand}
+                  progress={progress}
+                  babyCare={babyCare}
+                  onToggleMission={handleToggleMission}
+                  onToggleRoutine={(routineId) =>
+                    setProfilesState((prev) =>
+                      updateActiveProfile(prev, (p) => ({
+                        ...p,
+                        journal: toggleRoutineItem(p.journal, todayKey(), routineId)
+                      }))
+                    )
+                  }
+                  journal={journal}
+                  onOpenSimulation={handleLaunchSimulation}
+                  onOpenProfile={() => setParentOpen(true)}
+                  onOpenTabCatatan={() => setActiveTab('catatan')}
+                />
+              )}
+
+              {activeTab === 'simulasi' && (
+                <SimulasiTab
+                  activeBand={activeBand}
+                  isGameTimeUp={isGameTimeUp}
+                  stickersCount={progress.stickers.length}
+                  favoriteModules={progress.favoriteModules}
+                  playCounts={progress.playCounts}
+                  onToggleFavorite={handleToggleFavorite}
+                  onOpenStickerAlbum={() => setAlbumOpen(true)}
+                  onLaunchSimulation={handleLaunchSimulation}
+                  onOpenTimeLimitReset={() => setParentOpen(true)}
+                />
+              )}
+
+              {activeTab === 'catatan' && (
+                <CatatanTab
+                  childName={displayChildName}
+                  gender={settings.gender}
+                  birthDate={settings.birthDate}
+                  ageLabel={ageInfo?.label ?? activePhase.rangeLabel}
+                  ageInfo={ageInfo}
+                  activeBand={activeBand}
+                  progress={progress}
+                  stickersCount={progress.stickers.length}
+                  streakDays={streakInfo.streakDays}
+                  journal={journal}
+                  babyCare={babyCare}
+                  onToggleMilestone={(id) =>
+                    setProfilesState((prev) =>
+                      updateActiveProfile(prev, (p) => ({ ...p, journal: toggleMilestone(p.journal, id) }))
+                    )
+                  }
+                  onToggleImmunization={(id) =>
+                    setProfilesState((prev) =>
+                      updateActiveProfile(prev, (p) => ({
+                        ...p,
+                        journal: toggleImmunization(p.journal, id)
+                      }))
+                    )
+                  }
+                  onAddGrowth={(input) =>
+                    setProfilesState((prev) =>
+                      updateActiveProfile(prev, (p) => ({
+                        ...p,
+                        journal: addGrowthLog(p.journal, input)
+                      }))
+                    )
+                  }
+                  onDeleteGrowth={(id) =>
+                    setProfilesState((prev) =>
+                      updateActiveProfile(prev, (p) => ({
+                        ...p,
+                        journal: deleteGrowthLog(p.journal, id)
+                      }))
+                    )
+                  }
+                  onAddKpspResult={(input) =>
+                    setProfilesState((prev) =>
+                      updateActiveProfile(prev, (p) => ({
+                        ...p,
+                        journal: addKpspResult(p.journal, input)
+                      }))
+                    )
+                  }
+                  onAddNote={(input) =>
+                    setProfilesState((prev) =>
+                      updateActiveProfile(prev, (p) => ({
+                        ...p,
+                        journal: addDailyNote(p.journal, input)
+                      }))
+                    )
+                  }
+                  onDeleteNote={(id) =>
+                    setProfilesState((prev) =>
+                      updateActiveProfile(prev, (p) => ({
+                        ...p,
+                        journal: deleteDailyNote(p.journal, id)
+                      }))
+                    )
+                  }
+                  onAddBabyCare={(type: BabyCareType) =>
+                    setProfilesState((prev) =>
+                      updateActiveProfile(prev, (p) => ({
+                        ...p,
+                        babyCare: addBabyCareEntry(p.babyCare, { type })
+                      }))
+                    )
+                  }
+                  onDeleteBabyCare={(id) =>
+                    setProfilesState((prev) =>
+                      updateActiveProfile(prev, (p) => ({
+                        ...p,
+                        babyCare: deleteBabyCareEntry(p.babyCare, id)
+                      }))
+                    )
+                  }
+                  onOpenSimulation={handleLaunchSimulation}
+                  lastBackupDate={lastBackupDate}
+                  onExportBackup={handleExportBackup}
+                />
+              )}
+
+              {activeTab === 'tips' && (
+                <TipsTab
+                  activeBand={activeBand}
+                  savedTipIds={journal.savedTipIds}
+                  triedMpasiFoods={journal.triedMpasiFoods}
+                  onToggleSaveTip={(tipId) =>
+                    setProfilesState((prev) =>
+                      updateActiveProfile(prev, (p) => ({
+                        ...p,
+                        journal: toggleSavedTip(p.journal, tipId)
+                      }))
+                    )
+                  }
+                  onToggleMpasiFood={(foodId) =>
+                    setProfilesState((prev) =>
+                      updateActiveProfile(prev, (p) => ({
+                        ...p,
+                        journal: toggleMpasiFood(p.journal, foodId)
+                      }))
+                    )
+                  }
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
+
+          <footer className="public-trust-footer" aria-label="Informasi privasi dan pemasangan">
+            <span>Cilukba · 100% Lokal &amp; Bebas Iklan</span>
+            <div className="public-trust-links">
+              <button type="button" className="text-action-btn" onClick={() => setLegalOpen(true)}>
+                Privasi &amp; Rujukan WHO/KIA
+              </button>
+              <button type="button" className="text-action-btn" onClick={() => setInstallModalOpen(true)}>
+                Pasang di HP
+              </button>
+            </div>
+          </footer>
+        </main>
+
+        <nav className="mobile-bottom-nav" aria-label="Navigasi seluler">
+          {TAB_ITEMS.map((item) => {
+            const active = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`bottom-nav-btn ${active ? 'is-active' : ''}`}
+                onClick={() => setActiveTab(item.id)}
+                aria-current={active ? 'page' : undefined}
+              >
+                {active && (
+                  <motion.span
+                    layoutId="mobile-nav-active-pill"
+                    className="mobile-nav-active-pill-bg"
+                    transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                    aria-hidden="true"
+                  />
+                )}
+                <span className="mobile-nav-btn-content">
+                  {renderNavIcon(item.id)}
+                  <span>{item.label}</span>
+                </span>
+              </button>
+            );
+          })}
         </nav>
 
-        <div className="topbar-right-group">
-          <button
-            type="button"
-            className={`icon-circle-btn ${settings.nightMode ? 'is-active' : ''}`}
-            onClick={() => handleUpdateSettings({ ...settings, nightMode: !settings.nightMode })}
-            aria-label={settings.nightMode ? 'Matikan mode malam' : 'Nyalakan mode malam'}
-            title="Mode Malam"
-          >
-            <MoonIcon size={16} />
-          </button>
-
-          <button
-            type="button"
-            className="profile-chip"
-            onClick={() => setParentOpen(true)}
-            aria-label="Buka profil anak dan pengaturan"
-          >
-            <AvatarIcon avatarId={avatarId} size={22} />
-            <span>{profileChipLabel}</span>
-          </button>
-        </div>
-      </header>
-
-      <main className="companion-main">
-        {isOffline && (
-          <div className="offline-status-bar" role="status">
-            Mode Offline aktif — seluruh catatan &amp; 21 permainan tetap berjalan lancar.
-          </div>
-        )}
-        {activeTab === 'stimulasi' && (
-          <StimulasiTab
-            childName={displayChildName}
-            gender={settings.gender}
-            avatarId={avatarId}
-            ageInfo={ageInfo}
-            activeBand={activeBand}
-            streakDays={streakInfo.streakDays}
-            onSelectBand={handleSelectBand}
-            progress={progress}
-            babyCare={babyCare}
-            onToggleMission={handleToggleMission}
-            onToggleRoutine={(routineId) =>
-              setProfilesState((prev) =>
-                updateActiveProfile(prev, (p) => ({
-                  ...p,
-                  journal: toggleRoutineItem(p.journal, todayKey(), routineId)
-                }))
-              )
-            }
-            journal={journal}
-            onOpenSimulation={handleLaunchSimulation}
-            onOpenProfile={() => setParentOpen(true)}
-            onOpenTabCatatan={() => setActiveTab('catatan')}
-          />
-        )}
-
-        {activeTab === 'simulasi' && (
-          <SimulasiTab
-            activeBand={activeBand}
-            isGameTimeUp={isGameTimeUp}
-            stickersCount={progress.stickers.length}
-            favoriteModules={progress.favoriteModules}
-            playCounts={progress.playCounts}
-            onToggleFavorite={handleToggleFavorite}
-            onOpenStickerAlbum={() => setAlbumOpen(true)}
-            onLaunchSimulation={handleLaunchSimulation}
-            onOpenTimeLimitReset={() => setParentOpen(true)}
-          />
-        )}
-
-        {activeTab === 'catatan' && (
-          <CatatanTab
-            childName={displayChildName}
-            gender={settings.gender}
-            birthDate={settings.birthDate}
-            ageLabel={ageInfo?.label ?? activePhase.rangeLabel}
-            ageInfo={ageInfo}
-            activeBand={activeBand}
-            progress={progress}
-            stickersCount={progress.stickers.length}
-            streakDays={streakInfo.streakDays}
-            journal={journal}
-            babyCare={babyCare}
-            onToggleMilestone={(id) =>
-              setProfilesState((prev) =>
-                updateActiveProfile(prev, (p) => ({ ...p, journal: toggleMilestone(p.journal, id) }))
-              )
-            }
-            onToggleImmunization={(id) =>
-              setProfilesState((prev) =>
-                updateActiveProfile(prev, (p) => ({
-                  ...p,
-                  journal: toggleImmunization(p.journal, id)
-                }))
-              )
-            }
-            onAddGrowth={(input) =>
-              setProfilesState((prev) =>
-                updateActiveProfile(prev, (p) => ({
-                  ...p,
-                  journal: addGrowthLog(p.journal, input)
-                }))
-              )
-            }
-            onDeleteGrowth={(id) =>
-              setProfilesState((prev) =>
-                updateActiveProfile(prev, (p) => ({
-                  ...p,
-                  journal: deleteGrowthLog(p.journal, id)
-                }))
-              )
-            }
-            onAddKpspResult={(input) =>
-              setProfilesState((prev) =>
-                updateActiveProfile(prev, (p) => ({
-                  ...p,
-                  journal: addKpspResult(p.journal, input)
-                }))
-              )
-            }
-            onAddNote={(input) =>
-              setProfilesState((prev) =>
-                updateActiveProfile(prev, (p) => ({
-                  ...p,
-                  journal: addDailyNote(p.journal, input)
-                }))
-              )
-            }
-            onDeleteNote={(id) =>
-              setProfilesState((prev) =>
-                updateActiveProfile(prev, (p) => ({
-                  ...p,
-                  journal: deleteDailyNote(p.journal, id)
-                }))
-              )
-            }
-            onAddBabyCare={(type: BabyCareType) =>
-              setProfilesState((prev) =>
-                updateActiveProfile(prev, (p) => ({
-                  ...p,
-                  babyCare: addBabyCareEntry(p.babyCare, { type })
-                }))
-              )
-            }
-            onDeleteBabyCare={(id) =>
-              setProfilesState((prev) =>
-                updateActiveProfile(prev, (p) => ({
-                  ...p,
-                  babyCare: deleteBabyCareEntry(p.babyCare, id)
-                }))
-              )
-            }
-            onOpenSimulation={handleLaunchSimulation}
-            lastBackupDate={lastBackupDate}
-            onExportBackup={handleExportBackup}
-          />
-        )}
-
-        {activeTab === 'tips' && (
-          <TipsTab
-            activeBand={activeBand}
-            savedTipIds={journal.savedTipIds}
-            triedMpasiFoods={journal.triedMpasiFoods}
-            onToggleSaveTip={(tipId) =>
-              setProfilesState((prev) =>
-                updateActiveProfile(prev, (p) => ({
-                  ...p,
-                  journal: toggleSavedTip(p.journal, tipId)
-                }))
-              )
-            }
-            onToggleMpasiFood={(foodId) =>
-              setProfilesState((prev) =>
-                updateActiveProfile(prev, (p) => ({
-                  ...p,
-                  journal: toggleMpasiFood(p.journal, foodId)
-                }))
-              )
-            }
-          />
-        )}
-        <footer className="public-trust-footer" aria-label="Informasi privasi dan pemasangan">
-          <span>Cilukba · 100% Lokal &amp; Bebas Iklan</span>
-          <div className="public-trust-links">
-            <button type="button" className="text-action-btn" onClick={() => setLegalOpen(true)}>
-              Privasi &amp; Rujukan WHO/KIA
-            </button>
-            <button type="button" className="text-action-btn" onClick={() => setInstallModalOpen(true)}>
-              Pasang di HP
-            </button>
-          </div>
-        </footer>
-      </main>
-
-      <nav className="mobile-bottom-nav" aria-label="Navigasi seluler">
-        {TAB_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={`bottom-nav-btn ${activeTab === item.id ? 'is-active' : ''}`}
-            onClick={() => setActiveTab(item.id)}
-            aria-current={activeTab === item.id ? 'page' : undefined}
-          >
-            {renderNavIcon(item.id)}
-            <span>{item.label}</span>
-          </button>
-        ))}
-      </nav>
-
-      <OnboardingModal
-        open={!settings.onboardingCompleted}
-        initialSettings={settings}
-        initialAvatarId={avatarId}
-        onFinish={(nextSettings, nextAvatar) => {
-          handleUpdateSettings(nextSettings, nextAvatar);
-        }}
-        onSkip={() => {
-          handleUpdateSettings({ ...settings, onboardingCompleted: true });
-        }}
-      />
-
-      <ParentDrawer
-        open={parentOpen}
-        onClose={() => setParentOpen(false)}
-        profiles={profilesState.profiles}
-        activeProfileId={profilesState.activeProfileId}
-        activeAvatarId={avatarId}
-        settings={settings}
-        onSwitchProfile={(id) => {
-          setProfilesState((prev) => switchProfile(prev, id));
-          setManualBandOverride(null);
-        }}
-        onAddProfile={(input) => {
-          setProfilesState((prev) => addProfile(prev, input, todayKey()));
-          setManualBandOverride(null);
-        }}
-        onDeleteProfile={(id) => {
-          setProfilesState((prev) => deleteProfile(prev, id));
-          setManualBandOverride(null);
-        }}
-        onUpdateSettings={handleUpdateSettings}
-        playedSeconds={progress.playedSeconds}
-        isGameTimeUp={isGameTimeUp}
-        onResetTimer={handleResetTimer}
-        onExportBackup={handleExportBackup}
-        onImportBackup={handleImportBackup}
-        onOpenLegalPrivacy={() => {
-          setParentOpen(false);
-          setLegalOpen(true);
-        }}
-        installEvent={installEvent}
-        isIos={isIos}
-        onOpenInstallGuide={() => setInstallModalOpen(true)}
-      />
-
-      <LegalPrivacyModal
-        open={legalOpen}
-        onClose={() => setLegalOpen(false)}
-        onDeleteAllData={handleDeleteAllData}
-      />
-
-      <InstallModal
-        isOpen={installModalOpen}
-        onClose={() => setInstallModalOpen(false)}
-        installEvent={installEvent}
-        onTriggerInstall={() => {
-          if (installEvent) {
-            void installEvent.prompt();
-            void installEvent.userChoice.then(() => setInstallEvent(null));
-          }
-          setInstallModalOpen(false);
-        }}
-        isIos={isIos}
-      />
-
-      {albumOpen && (
-        <StickerAlbumModal
-          unlockedStickers={progress.stickers}
-          onClose={() => setAlbumOpen(false)}
+        <OnboardingModal
+          open={!settings.onboardingCompleted}
+          initialSettings={settings}
+          initialAvatarId={avatarId}
+          onFinish={(nextSettings, nextAvatar) => {
+            handleUpdateSettings(nextSettings, nextAvatar);
+          }}
+          onSkip={() => {
+            handleUpdateSettings({ ...settings, onboardingCompleted: true });
+          }}
         />
-      )}
-    </div>
+
+        <ParentDrawer
+          open={parentOpen}
+          onClose={() => setParentOpen(false)}
+          profiles={profilesState.profiles}
+          activeProfileId={profilesState.activeProfileId}
+          activeAvatarId={avatarId}
+          settings={settings}
+          onSwitchProfile={(id) => {
+            setProfilesState((prev) => switchProfile(prev, id));
+            setManualBandOverride(null);
+            const targetName = profilesState.profiles.find((p) => p.id === id)?.settings.childName;
+            if (targetName) toast.success(`Beralih ke profil ${targetName}`);
+          }}
+          onAddProfile={(input) => {
+            setProfilesState((prev) => addProfile(prev, input, todayKey()));
+            setManualBandOverride(null);
+            toast.success(`Profil ${input.childName} ditambahkan!`);
+          }}
+          onDeleteProfile={(id) => {
+            setProfilesState((prev) => deleteProfile(prev, id));
+            setManualBandOverride(null);
+          }}
+          onUpdateSettings={handleUpdateSettings}
+          playedSeconds={progress.playedSeconds}
+          isGameTimeUp={isGameTimeUp}
+          onResetTimer={handleResetTimer}
+          onExportBackup={handleExportBackup}
+          onImportBackup={handleImportBackup}
+          onOpenLegalPrivacy={() => {
+            setParentOpen(false);
+            setLegalOpen(true);
+          }}
+          installEvent={installEvent}
+          isIos={isIos}
+          onOpenInstallGuide={() => setInstallModalOpen(true)}
+        />
+
+        <LegalPrivacyModal
+          open={legalOpen}
+          onClose={() => setLegalOpen(false)}
+          onDeleteAllData={handleDeleteAllData}
+        />
+
+        <InstallModal
+          isOpen={installModalOpen}
+          onClose={() => setInstallModalOpen(false)}
+          installEvent={installEvent}
+          onTriggerInstall={() => {
+            if (installEvent) {
+              void installEvent.prompt();
+              void installEvent.userChoice.then(() => setInstallEvent(null));
+            }
+            setInstallModalOpen(false);
+          }}
+          isIos={isIos}
+        />
+
+        {albumOpen && (
+          <StickerAlbumModal
+            unlockedStickers={progress.stickers}
+            onClose={() => setAlbumOpen(false)}
+          />
+        )}
+      </div>
+    </MotionConfig>
   );
 }
 

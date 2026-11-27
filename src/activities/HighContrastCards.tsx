@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type JSX } from 'react';
+import { useDrag } from '@use-gesture/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { playBubblePop } from '../lib/audio.ts';
 
 interface ContrastCard {
@@ -204,8 +206,10 @@ export function HighContrastCards({ onComplete }: Props): JSX.Element {
   const [autoSlide, setAutoSlide] = useState(false);
   const [fullFocus, setFullFocus] = useState(false);
   const [seenIds, setSeenIds] = useState<string[]>(['concentric']);
-  const touchStartXRef = useRef<number | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
+  const reducedMotion = useReducedMotion();
   const completedRef = useRef(false);
+  const swipedRef = useRef(false);
 
   const card = CARDS[index];
 
@@ -224,6 +228,27 @@ export function HighContrastCards({ onComplete }: Props): JSX.Element {
       return updated;
     });
   };
+
+  const bindDrag = useDrag(
+    ({ active, movement: [mx], velocity: [vx], direction: [dx], tap }) => {
+      if (tap) {
+        swipedRef.current = false;
+        stepCard(1);
+        return;
+      }
+      if (active) {
+        setDragOffset(Math.max(-110, Math.min(110, mx)));
+      } else {
+        const shouldStep = Math.abs(mx) > 48 || (vx > 0.35 && Math.abs(mx) > 20);
+        if (shouldStep) {
+          swipedRef.current = true;
+          stepCard(dx < 0 || mx < 0 ? 1 : -1);
+        }
+        setDragOffset(0);
+      }
+    },
+    { axis: 'x', filterTaps: true, pointer: { touch: true } }
+  );
 
   useEffect(() => {
     if (!autoSlide) return;
@@ -253,28 +278,38 @@ export function HighContrastCards({ onComplete }: Props): JSX.Element {
         </div>
       )}
 
-      <button
-        type="button"
+      <div
+        {...bindDrag()}
+        role="button"
+        tabIndex={0}
         className={`hc-card-stage ${inverted ? 'is-dark' : 'is-light'} ${fullFocus ? 'is-fullfocus' : ''}`}
-        onClick={() => stepCard(1)}
-        onTouchStart={(e) => {
-          touchStartXRef.current = e.changedTouches[0]?.clientX ?? null;
-        }}
-        onTouchEnd={(e) => {
-          const startX = touchStartXRef.current;
-          const endX = e.changedTouches[0]?.clientX;
-          touchStartXRef.current = null;
-          if (startX === null || endX === undefined) return;
-          const diff = endX - startX;
-          if (Math.abs(diff) > 42) {
+        style={{ touchAction: 'pan-y', userSelect: 'none' }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight') {
             e.preventDefault();
-            stepCard(diff < 0 ? 1 : -1);
+            stepCard(1);
+          } else if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            stepCard(-1);
           }
         }}
-        aria-label={`Kartu kontras ${card.title}. Ketuk untuk berikutnya.`}
+        aria-label={`Kartu kontras ${card.title}. Geser atau ketuk untuk berikutnya.`}
       >
-        {card.renderGraphic(inverted)}
-      </button>
+        <motion.div
+          key={card.id}
+          initial={reducedMotion ? false : { opacity: 0.72, scale: 0.96 }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+            x: reducedMotion ? 0 : dragOffset,
+            rotate: reducedMotion ? 0 : dragOffset * 0.045
+          }}
+          transition={{ type: 'spring', stiffness: 360, damping: 28 }}
+          style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          {card.renderGraphic(inverted)}
+        </motion.div>
+      </div>
 
       {fullFocus ? (
         <button

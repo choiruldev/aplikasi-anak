@@ -1,4 +1,6 @@
-import { useRef, useState, type JSX } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
+import { X } from 'lucide-react';
+import { Drawer } from 'vaul';
 import { AGE_PHASES } from '../data/stimulationData.ts';
 import { computeAgeInfo, type AgeBand } from '../lib/development.ts';
 import {
@@ -83,9 +85,18 @@ export function ParentDrawer({
   const [newKidBand, setNewKidBand] = useState<AgeBand>('1-2y');
   const [newKidAvatar, setNewKidAvatar] = useState<ProfileAvatarId>('bunny');
   const [backupNotice, setBackupNotice] = useState<string | null>(null);
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)').matches : false
+  );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(min-width: 768px)');
+    const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   const computedAge = computeAgeInfo(settings.birthDate);
   const playedMinutes = Math.floor(playedSeconds / 60);
@@ -154,25 +165,34 @@ export function ParentDrawer({
   };
 
   return (
-    <div
-      className="modal-backdrop"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Profil & Pengaturan"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) handleClose();
+    <Drawer.Root
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) handleClose();
       }}
+      direction={isDesktop ? 'right' : 'bottom'}
     >
-      <div className="drawer-sheet">
-        <div className="drawer-head">
-          <div>
-            <span className="eyebrow">Orang Tua</span>
-            <h2>Profil & Kontrol</h2>
+      <Drawer.Portal>
+        <Drawer.Overlay className="vaul-overlay" />
+        <Drawer.Content
+          className={`drawer-sheet vaul-drawer-content ${isDesktop ? 'is-desktop-side' : 'is-mobile-bottom'}`}
+          aria-label="Profil & Pengaturan"
+        >
+          {!isDesktop && <div className="vaul-handle-bar" aria-hidden="true" />}
+          <div className="drawer-head">
+            <div>
+              <span className="eyebrow">Orang Tua</span>
+              <Drawer.Title asChild>
+                <h2>Profil &amp; Kontrol</h2>
+              </Drawer.Title>
+              <Drawer.Description className="sr-only">
+                Kelola profil anak, batas waktu layar, mode malam, suara, dan cadangan data lokal.
+              </Drawer.Description>
+            </div>
+            <button type="button" className="icon-circle-btn" onClick={handleClose} aria-label="Tutup panel">
+              <X size={18} />
+            </button>
           </div>
-          <button type="button" className="btn-outline small" onClick={handleClose}>
-            Tutup
-          </button>
-        </div>
 
         <div className="drawer-body">
           {/* Multi-Child Switcher */}
@@ -542,7 +562,8 @@ export function ParentDrawer({
             </section>
           )}
         </div>
-      </div>
-    </div>
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer.Root>
   );
 }

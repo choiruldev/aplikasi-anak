@@ -1,19 +1,6 @@
-// Lightweight, 60fps canvas confetti explosion & haptic sensory helper
-// Zero external dependencies, pure HTML5 Canvas & Web Audio friendly.
-
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  size: number;
-  color: string;
-  rotation: number;
-  vRot: number;
-  shape: 'rect' | 'circle' | 'star';
-  alpha: number;
-  decay: number;
-}
+// High-framerate celebratory confetti powered by canvas-confetti + haptic helper.
+// Respects prefers-reduced-motion automatically and remains 100% offline.
+import confetti from 'canvas-confetti';
 
 const COLORS = [
   '#FF5E7E', // Bright Pink
@@ -25,123 +12,53 @@ const COLORS = [
   '#06D6A0'  // Emerald
 ];
 
-let canvas: HTMLCanvasElement | null = null;
-let animId: number | null = null;
-let particles: Particle[] = [];
+export function fireConfetti(options?: { count?: number; originX?: number; originY?: number }): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const particleCount = options?.count ?? 48;
+    const x = options?.originX !== undefined ? Math.max(0.05, Math.min(0.95, options.originX / Math.max(1, window.innerWidth))) : 0.5;
+    const y = options?.originY !== undefined ? Math.max(0.05, Math.min(0.95, options.originY / Math.max(1, window.innerHeight))) : 0.42;
 
-function ensureCanvas(): HTMLCanvasElement {
-  if (canvas && document.body.contains(canvas)) return canvas;
-  canvas = document.createElement('canvas');
-  canvas.setAttribute('aria-hidden', 'true');
-  canvas.style.position = 'fixed';
-  canvas.style.top = '0';
-  canvas.style.left = '0';
-  canvas.style.width = '100vw';
-  canvas.style.height = '100vh';
-  canvas.style.pointerEvents = 'none';
-  canvas.style.zIndex = '9999';
-  document.body.appendChild(canvas);
-  return canvas;
+    void confetti({
+      particleCount,
+      spread: 76,
+      startVelocity: 34,
+      ticks: 130,
+      gravity: 0.95,
+      scalar: 0.95,
+      colors: COLORS,
+      origin: { x, y },
+      disableForReducedMotion: true,
+      zIndex: 9999
+    });
+  } catch {
+    // Ignore environments without HTML5 canvas support
+  }
 }
 
-export function fireConfetti(options?: { count?: number; originX?: number; originY?: number }): void {
-  const c = ensureCanvas();
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  c.width = window.innerWidth * dpr;
-  c.height = window.innerHeight * dpr;
-
-  const count = options?.count ?? 45;
-  const originX = (options?.originX ?? window.innerWidth / 2) * dpr;
-  const originY = (options?.originY ?? window.innerHeight / 2.5) * dpr;
-
-  const newParticles: Particle[] = [];
-  for (let i = 0; i < count; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 4 * dpr + Math.random() * 8 * dpr;
-    const shapeRand = Math.random();
-    const shape: Particle['shape'] = shapeRand < 0.45 ? 'rect' : shapeRand < 0.8 ? 'circle' : 'star';
-
-    newParticles.push({
-      x: originX,
-      y: originY,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 3 * dpr,
-      size: (6 + Math.random() * 8) * dpr,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      rotation: Math.random() * Math.PI * 2,
-      vRot: (Math.random() - 0.5) * 0.25,
-      shape,
-      alpha: 1,
-      decay: 0.012 + Math.random() * 0.015
+export function fireCelebrationBurst(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    void confetti({
+      particleCount: 36,
+      angle: 62,
+      spread: 60,
+      origin: { x: 0.12, y: 0.65 },
+      colors: COLORS,
+      disableForReducedMotion: true,
+      zIndex: 9999
     });
-  }
-
-  particles = [...particles, ...newParticles];
-
-  if (!animId) {
-    let lastTime = performance.now();
-    const loop = (time: number) => {
-      const dt = Math.min((time - lastTime) / 16.67, 3);
-      lastTime = time;
-
-      const ctx = c.getContext('2d');
-      if (!ctx) return;
-      ctx.clearRect(0, 0, c.width, c.height);
-
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.vy += 0.25 * dpr * dt; // Gravity
-        p.vx *= 0.98; // Air resistance
-        p.rotation += p.vRot * dt;
-        p.alpha -= p.decay * dt;
-
-        if (p.alpha <= 0 || p.y > c.height) {
-          particles.splice(i, 1);
-          continue;
-        }
-
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, p.alpha);
-        ctx.fillStyle = p.color;
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.rotation);
-
-        if (p.shape === 'rect') {
-          ctx.fillRect(-p.size / 2, -p.size / 3, p.size, p.size * 0.65);
-        } else if (p.shape === 'circle') {
-          ctx.beginPath();
-          ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          // Star
-          ctx.beginPath();
-          for (let s = 0; s < 5; s++) {
-            ctx.lineTo(
-              Math.cos(((18 + s * 72) * Math.PI) / 180) * (p.size / 2),
-              -Math.sin(((18 + s * 72) * Math.PI) / 180) * (p.size / 2)
-            );
-            ctx.lineTo(
-              Math.cos(((54 + s * 72) * Math.PI) / 180) * (p.size / 4),
-              -Math.sin(((54 + s * 72) * Math.PI) / 180) * (p.size / 4)
-            );
-          }
-          ctx.closePath();
-          ctx.fill();
-        }
-
-        ctx.restore();
-      }
-
-      if (particles.length > 0) {
-        animId = requestAnimationFrame(loop);
-      } else {
-        ctx.clearRect(0, 0, c.width, c.height);
-        animId = null;
-      }
-    };
-    animId = requestAnimationFrame(loop);
+    void confetti({
+      particleCount: 36,
+      angle: 118,
+      spread: 60,
+      origin: { x: 0.88, y: 0.65 },
+      colors: COLORS,
+      disableForReducedMotion: true,
+      zIndex: 9999
+    });
+  } catch {
+    // Ignore environments without HTML5 canvas support
   }
 }
 

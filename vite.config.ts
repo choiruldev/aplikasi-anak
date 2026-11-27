@@ -65,6 +65,29 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/motion') || id.includes('node_modules/framer-motion')) {
+            return 'vendor-motion';
+          }
+          if (id.includes('node_modules/lottie-web') || id.includes('node_modules/lottie-react')) {
+            return 'vendor-lottie';
+          }
+          if (
+            id.includes('node_modules/vaul') ||
+            id.includes('node_modules/sonner') ||
+            id.includes('node_modules/lucide-react') ||
+            id.includes('node_modules/@radix-ui')
+          ) {
+            return 'vendor-ui';
+          }
+          return undefined;
+        }
+      }
+    }
+  },
   server: {
     // Lets a phone on the same Wi-Fi open the dev server (installing still needs HTTPS, see README)
     host: true
